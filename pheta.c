@@ -9,6 +9,7 @@
 #include "list.h"
 #include "decode.h"
 #include "pqueue.h"
+#include "palloc.h"
 
 // this should be moved somewhere sensible
 extern uint5 setbits(uint5);
@@ -109,7 +110,7 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
 
   list_add(&c->blocks);
   c->blocks->data = b = cnew(pheta_basicblock);
-  b->base = calloc(sizeof(char), b->size = 8);
+  b->base = clist_new();
   b->length = 0;
   b->predicate = ph_AL;
   b->trueblk = 0;
@@ -179,7 +180,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
   p = hash_insert(leaders, 0);
   chunk->root = p->data = pheta_newbasicblock(chunk, base);
   chunk->currentblock = 0;
-  fprintf(stderr, "Chunk root=%x\n", chunk->root);
+  fprintf(stderr, "Chunk root=%p\n", chunk->root);
   
   for (i=0; i<length; i++)
   {
@@ -253,6 +254,7 @@ void pheta_link(pheta_basicblock* from, uint5 pred,
   from->falseblk = condfalse;
 }
 
+/*
 static void emitbyte(pheta_basicblock* block, uint5* written, uint3 byte)
 {
   if (++block->length == block->size)
@@ -261,6 +263,7 @@ static void emitbyte(pheta_basicblock* block, uint5* written, uint3 byte)
   block->base[block->length-1] = byte;
   (*written)++;
 }
+*/
 
 // sometimes (ie complicated shifts) we need to use the same output
 // for more than one ph2 instruction. This is the nicest solution I
@@ -280,83 +283,64 @@ void pheta_unforceoutput(pheta_chunk* chunk)
 uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
 {
   va_list ap;
-  uint5 dest=0, written=0;
+  uint5 dest=0;
+  pheta_instr* instr;
+  clist* item;
   pheta_basicblock* block = chunk->currentblock;
   
-  emitbyte(block, &written, opcode);
-
+  item = clist_append(block->base);
+  instr = item->data = cnew(pheta_instr);
+  
+  instr->opcode = opcode;
+  
   va_start(ap, opcode);
   switch (opcode)
   {
     case ph_CONST:
-    {
-      uint5 word = va_arg(ap, uint5);
-      if (chunk->force != -1)
-        emitbyte(block, &written, dest = chunk->force);
-      else
-        emitbyte(block, &written, (dest = chunk->tempno++));
-      emitbyte(block, &written, word & 0xff);
-      emitbyte(block, &written, (word>>8) & 0xff);
-      emitbyte(block, &written, (word>>16) & 0xff);
-      emitbyte(block, &written, (word>>24) & 0xff);
-    }
+    instr->data.con.dest = dest = chunk->tempno++;
+    instr->data.con.imm = va_arg(ap, uint5);
     break;
     
     case ph_CONSTB:
     {
       uint5 word = va_arg(ap, uint5);
       assert(word<0x100);
-      if (chunk->force != -1)
-        emitbyte(block, &written, dest = chunk->force);
-      else
-        emitbyte(block, &written, (dest = chunk->tempno++));
-      emitbyte(block, &written, word & 0xff);
+      instr->data.con.dest = dest = chunk->tempno++;
+      instr->data.con.imm = word;
     }
     break;
     
     case ph_FETCH:
-    if (chunk->force != -1)
-      emitbyte(block, &written, dest = chunk->force);
-    else
-      emitbyte(block, &written, (dest = chunk->tempno++));
-    emitbyte(block, &written, va_arg(ap, uint5));
+    instr->data.op.dest = dest = chunk->tempno++;
+    instr->data.op.src1 = va_arg(ap, uint5);
     break;
     
     case ph_COMMIT:
     case ph_ASSOC:
-    emitbyte(block, &written, va_arg(ap, uint5));
-    emitbyte(block, &written, va_arg(ap, uint5));
+    instr->data.op.dest = va_arg(ap, uint5);
+    instr->data.op.src1 = va_arg(ap, uint5);
     break;
 
     case ph_SPILL:
-    emitbyte(block, &written, va_arg(ap, uint5));
+    instr->data.op.src1 = va_arg(ap, uint5);
     break;
 
     case ph_RELOAD:
-    emitbyte(block, &written, va_arg(ap, uint5));
+    instr->data.op.dest = va_arg(ap, uint5);
     break;
     
     case ph_FEXPECT:
     case ph_FENSURE:
     case ph_NFEXPECT:
     case ph_NFENSURE:
-    {
-      uint5 pattern = va_arg(ap, uint5);
-      emitbyte(block, &written, pattern & 0xff);
-    }
+    instr->data.flag.need = va_arg(ap, uint5);
     break;
 
     case ph_FCOMMIT:
     case ph_NFCOMMIT:
-    {
-      uint5 have = va_arg(ap, uint5);
-      uint5 need = va_arg(ap, uint5);
-      uint5 pred = va_arg(ap, uint5);
-      emitbyte(block, &written, have);
-      emitbyte(block, &written, need);
-      emitbyte(block, &written, pred & 0xff);
-      emitbyte(block, &written, (pred>>8) & 0xff);
-    }
+    instr->data.flag.have = va_arg(ap, uint5);
+    instr->data.flag.need = va_arg(ap, uint5);
+    instr->data.flag.pred = va_arg(ap, uint5);
     break;
 
 /*    case ph_SETPRED:
@@ -366,14 +350,8 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     break;*/
     
     case ph_XJMP:
-    {
-      uint5 word = va_arg(ap, uint5);
-      dest = block->length;  // for patchbacking
-      emitbyte(block, &written, word & 0xff);
-      emitbyte(block, &written, (word>>8) & 0xff);
-      emitbyte(block, &written, (word>>16) & 0xff);
-      emitbyte(block, &written, (word>>24) & 0xff);
-    }
+    dest = (uint5) &instr->data.imm;  // for patchbacking
+    instr->data.imm = va_arg(ap, uint5);
     break;
     
     case ph_LSL:
@@ -389,14 +367,9 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     case ph_SUB:
     case ph_SBC:
     case ph_MUL:
-    {
-      if (chunk->force != -1)
-        emitbyte(block, &written, dest = chunk->force);
-      else
-        emitbyte(block, &written, (dest = chunk->tempno++));
-      emitbyte(block, &written, va_arg(ap, uint5));
-      emitbyte(block, &written, va_arg(ap, uint5));
-    }
+    instr->data.op.dest = dest = chunk->tempno++;
+    instr->data.op.src1 = va_arg(ap, uint5);
+    instr->data.op.src2 = va_arg(ap, uint5);
     break;
     
     case ph_RRX:
@@ -405,14 +378,13 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     case ph_NOT:
     case ph_LDW:
     case ph_LDB:
+    instr->data.op.dest = dest = chunk->tempno++;
+    instr->data.op.src1 = va_arg(ap, uint5);
+    break;
+    
     case ph_FWRITE:
-    {
-      if (chunk->force != -1)
-        emitbyte(block, &written, dest = chunk->force);
-      else
-        emitbyte(block, &written, (dest = chunk->tempno++));
-      emitbyte(block, &written, va_arg(ap, uint5));
-    }
+    instr->data.op.dest = va_arg(ap, uint5);
+    instr->data.op.src1 = va_arg(ap, uint5);
     break;
     
     case ph_TEQ:
@@ -421,79 +393,69 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     case ph_CMN:
     case ph_STW:
     case ph_STB:
-    {
-      emitbyte(block, &written, va_arg(ap, uint5));
-      emitbyte(block, &written, va_arg(ap, uint5));
-    }
+    instr->data.op.src1 = va_arg(ap, uint5);
+    instr->data.op.src2 = va_arg(ap, uint5);
     break;
     
     case ph_STATE:
-    {
-      uint5 addr = va_arg(ap, uint5);
-      emitbyte(block, &written, addr & 0xff);
-      emitbyte(block, &written, (addr>>8) & 0xff);
-      emitbyte(block, &written, (addr>>16) & 0xff);
-      emitbyte(block, &written, (addr>>24) & 0xff);
-    }
+    instr->data.imm = va_arg(ap, uint5);
     break;
     
     default:
     break;
   }
   va_end(ap);
-  
-  emitbyte(block, &written, written+1);
-  
+    
   return dest;
 }
 
 // return the intermediate registers used by an instruction
-void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
+void pheta_getused(pheta_instr* instr, int index, uint5* numdest, uint5 dest[],
   uint5* numsrc, uint5 src[])
 {
   *numdest = 0;
   *numsrc = 0;
-  switch (base[index++])
+  switch (instr->opcode)
   {
     case ph_CONST:
     {
-      dest[(*numdest)++] = base[index];
+      dest[(*numdest)++] = instr->data.con.dest;
     }
     break;
 
     case ph_CONSTB:
     {
-      dest[(*numdest)++] = base[index];
+      dest[(*numdest)++] = instr->data.con.dest;
     }
     break;
 
     case ph_FETCH:
     {
-      dest[(*numdest)++] = base[index];
+      dest[(*numdest)++] = instr->data.op.dest;
     }
     break;
     
     case ph_COMMIT:
     {
-      src[(*numsrc)++] = base[index+1];
+      src[(*numsrc)++] = instr->data.op.src1;
     }
     break;
 
     case ph_SPILL:
     {
-      src[(*numsrc)++] = base[index];
+      src[(*numsrc)++] = instr->data.op.src1;
     }
     break;
 
     case ph_RELOAD:
     {
-      dest[(*numdest)++] = base[index];
+      dest[(*numdest)++] = instr->data.op.dest;
     }
     break;
 
     case ph_FWRITE:
     {
-      src[(*numsrc)++] = base[index+1];
+      src[(*numsrc)++] = instr->data.op.src1;
     }
     break;
 
@@ -511,9 +473,9 @@ void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
     case ph_SBC:
     case ph_MUL:
     {
-      dest[(*numdest)++] = base[index];
-      src[(*numsrc)++] = base[index+1];
-      src[(*numsrc)++] = base[index+2];
+      dest[(*numdest)++] = instr->data.op.dest;
+      src[(*numsrc)++] = instr->data.op.src1;
+      src[(*numsrc)++] = instr->data.op.src2;
     }
     break;
 
@@ -524,8 +486,8 @@ void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
     case ph_LDW:
     case ph_LDB:
     {
-      dest[(*numdest)++] = base[index];
-      src[(*numsrc)++] = base[index+1];
+      dest[(*numdest)++] = instr->data.op.dest;
+      src[(*numsrc)++] = instr->data.op.src1;
     }
     break;
 
@@ -536,8 +498,8 @@ void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
     case ph_STW:
     case ph_STB:
     {
-      src[(*numsrc)++] = base[index];
-      src[(*numsrc)++] = base[index+1];
+      src[(*numsrc)++] = instr->data.op.src1;
+      src[(*numsrc)++] = instr->data.op.src2;
     }
     break;
   }
@@ -612,16 +574,16 @@ void pheta_predecessor(pheta_chunk* chunk)
 void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag)
 {
-  sint5 i;
+  clist* walk;
   
   if (needpred==ph_AL || needpred==ph_NV) needpred = -1;
   
-  for (i=blk->length-1; i>=0; i--)
+  for (walk=blk->base->prev; walk->data; walk=walk->prev)
   {
-    uint5 inststart = i-blk->base[i]+1;
-    uint5 opcode = blk->base[inststart];
+    pheta_instr* instr = walk->data;
+    uint5 opcode;
     
-    switch (opcode)
+    switch (opcode = instr->opcode)
     {
       case ph_SYNC:
       needflag |= ph_C | ph_V | ph_N | ph_Z;
@@ -638,9 +600,9 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
       case ph_FCOMMIT:
       case ph_NFCOMMIT:
       {
-        uint5 have = blk->base[inststart+1];
-        uint5 need = blk->base[inststart+2];
-        uint5 pred = blk->base[inststart+3] | (blk->base[inststart+4]<<8);
+        uint5 have = instr->data.flag.have;
+        uint5 need = instr->data.flag.need;
+        uint5 pred = instr->data.flag.pred;
         // flag stuff only for ARM state affecting variant
         if (opcode==ph_FCOMMIT)
         {
@@ -651,7 +613,7 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
         {
           if ((ccflags[needpred] & have) == ccflags[needpred])
           {
-            fprintf(stderr, "Fully satisfied predicate flags for %x\n", blk);
+            fprintf(stderr, "Fully satisfied predicate flags for %p\n", blk);
             pred |= 1<<needpred;
 //            need |= ccflags[needpred];
             needpred = -1;
@@ -662,15 +624,14 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
             abort();
           }
         }
-        blk->base[inststart+2] = need;
-        blk->base[inststart+3] = pred & 0xff;
-        blk->base[inststart+4] = (pred>>8) & 0xff;
+        instr->data.flag.need = need;
+        instr->data.flag.pred = pred;
       }
       break;
 
       case ph_FENSURE:
       {
-        uint5 mask = blk->base[inststart+1];
+        uint5 mask = instr->data.flag.need;
         needflag |= mask;
       }
       break;
@@ -678,19 +639,16 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
       default:
       // do nothing
     } // switch (opcode)
-    
-    i = inststart;
   }
   if (needflag != 0 || needpred != -1)
   {
     list* l;
-    uint5 i;
     fprintf(stderr, "Trying next level up\n");
 
     for (l=blk->predecessor; l; l=l->prev)
     {
       pheta_basicblock* pre = l->data;
-      fprintf(stderr, "-- trying %x\n", pre);
+      fprintf(stderr, "-- trying %p\n", pre);
       pheta_fixup_flags_inner(pre, blktag, needpred, needflag);
     }
   }
@@ -721,7 +679,6 @@ uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno)
 
 void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno)
 {
-  pheta_rpair* rpair;
   chunk->currentblock->lbuf[regno] = tempno;
   chunk->currentblock->dirtybuf[regno] = 1;
   pheta_emit(chunk, ph_ASSOC, regno, tempno);
@@ -793,7 +750,6 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
         pheta_basicblock* atshiftlimit;
         pheta_basicblock* overshiftlimit;
         pheta_basicblock* rest;
-        int gtpred, shlimpred;
 
         pheta_emit(chunk, ph_NFEXPECT, ph_C | ph_V | ph_N | ph_Z);
         pheta_emit(chunk, ph_CMP, shiftreg, pheta_emit(chunk, ph_CONSTB, 31));
@@ -1469,7 +1425,6 @@ void pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   {
     hashentry* taken = hash_lookup(chunk->leaders, dest);
     hashentry* nottaken = hash_lookup(chunk->leaders, next);
-    uint5 blkpred;
 
 //  pheta_emit(chunk, ph_FEXPECT, ph_C|ph_V|ph_N|ph_Z);
 /*    fprintf(stderr, "linking %x to %x,%x with %d\n", chunk->currentblock,

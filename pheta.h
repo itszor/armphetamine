@@ -225,10 +225,11 @@ extern pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
                                          uint5 length);
 extern void pheta_link(pheta_basicblock* from, uint5 code,
                        pheta_basicblock* condtrue, pheta_basicblock* condfalse);
-extern void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
-                          uint5* numsrc, uint5 src[]);
+extern void pheta_getused(pheta_instr* instr, int index, uint5* numdest,
+                          uint5 dest[], uint5* numsrc, uint5 src[]);
 extern void pheta_dfs_visit(pheta_basicblock* blk);
 extern void pheta_dfs(pheta_chunk* chunk);
+extern void pheta_predecessor(pheta_chunk* chunk);
 
 extern void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag);

@@ -1003,20 +1003,21 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
   nativeblockinfo* truebranch = 0, *falsebranch = 0;
   palloc_info nul;
   list* map = 0;
+  clist* walk;
   
   nul.type = pal_UNSET;
   
-  for (i=0; i<blk->length; i++)
+  for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
   {
-    uint5 opcode = blk->base[i];
-/*  uint5 line = startline+i; */
+    pheta_instr* instr = walk->data;
+    uint5 opcode = instr->opcode;
     
     switch (opcode)
     {
       case ph_FETCH:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        uint5 armsrc = blk->base[i+2];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        uint5 armsrc = instr->data.op.src1;
         switch (dest->type)
         {
           case pal_IREG:
@@ -1033,14 +1034,17 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
             dest->info.value = armsrc*4;
           }
           break;
+          
+          default:
+          break;
         }
       }
       break;
       
       case ph_COMMIT:
       {
-        uint5 armdest = blk->base[i+1];
-        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        uint5 armdest = instr->data.op.dest;
+        palloc_info* src = &chunk->alloc[instr->data.op.src1];
         if (src->type == pal_IREG)
         {
           palloc_info pdest;
@@ -1053,9 +1057,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_LSL:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_SHL, dest, src2, &nul, map);
       }
@@ -1063,9 +1067,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_LSR:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_SHR, dest, src2, &nul, map);
       }
@@ -1073,9 +1077,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_ASR:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_SAR, dest, src2, &nul, map);
       }
@@ -1083,9 +1087,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_ROR:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_ROR, dest, src2, &nul, map);
       }
@@ -1093,9 +1097,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_ROL:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_ROL, dest, src2, &nul, map);
       }
@@ -1103,9 +1107,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
 
       case ph_AND:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_AND, dest, src2, &nul, map);
       }
@@ -1113,9 +1117,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
 
       case ph_OR:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_OR, dest, src2, &nul, map);
       }
@@ -1123,9 +1127,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
 
       case ph_EOR:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_XOR, dest, src2, &nul, map);
       }
@@ -1133,9 +1137,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_ADD:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         if (dest->type==pal_IREG && src1->type==pal_IREG && 
             src2->type==pal_IREG && nat->expecting==0)
         {
@@ -1151,9 +1155,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_ADC:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_ADC, dest, src2, &nul, map);
       }
@@ -1161,9 +1165,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_SUB:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_SUB, dest, src2, &nul, map);
       }
@@ -1171,9 +1175,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
 
       case ph_SBC:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_move(nat, dest, src1, map);
         genx86_out(nat, ab_SBB, dest, src2, &nul, map);
       }
@@ -1181,9 +1185,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_MUL:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         
         if ((src2->type==pal_CONST || src2->type==pal_CONSTB) && 
             dest->type==pal_IREG)
@@ -1200,8 +1204,8 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
               
       case ph_RRX:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src = &chunk->alloc[instr->data.op.src1];
         palloc_info one;
         one.type = pal_CONSTB;
         one.info.value = 1;
@@ -1212,8 +1216,8 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_RLX:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src = &chunk->alloc[instr->data.op.src1];
         palloc_info one;
         one.type = pal_CONSTB;
         one.info.value = 1;
@@ -1224,16 +1228,16 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_MOV:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src = &chunk->alloc[instr->data.op.src1];
         genx86_move(nat, dest, src, map);
       }
       break;
       
       case ph_NOT:
       {
-        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+        palloc_info* src = &chunk->alloc[instr->data.op.src1];
         genx86_move(nat, dest, src, map);
         genx86_out(nat, ab_NOT, dest, &nul, &nul, map);
       }
@@ -1241,8 +1245,8 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_TEQ:  // nasty
       {
-        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_out(nat, ab_PUSH, src1, &nul, &nul, map);
         genx86_out(nat, ab_XOR, src1, src2, &nul, map);
         genx86_out(nat, ab_POP, src1, &nul, &nul, map);
@@ -1251,24 +1255,24 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_TST:
       {
-        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_out(nat, ab_TEST, src1, src2, &nul, map);
       }
       break;
       
       case ph_CMP:
       {
-        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_out(nat, ab_CMP, src1, src2, &nul, map);
       }
       break;
       
       case ph_CMN:  // also nasty
       {
-        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
-        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
         genx86_out(nat, ab_PUSH, src1, &nul, &nul, map);
         genx86_out(nat, ab_ADD, src1, src2, &nul, map);
         genx86_out(nat, ab_POP, src1, &nul, &nul, map);
@@ -1278,7 +1282,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       case ph_FEXPECT:
       case ph_NFEXPECT:
       {
-        uint5 expmask = blk->base[i+1];
+        uint5 expmask = instr->data.flag.need;
         nat->expecting |= expmask;
         nat->beenset = 0;
       }
@@ -1286,8 +1290,8 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_FCOMMIT:
       {
-        uint5 needmask = blk->base[i+2];
-        uint5 pred = blk->base[i+3] | (blk->base[i+4]<<8);
+        uint5 needmask = instr->data.flag.need;
+        uint5 pred = instr->data.flag.pred;
         palloc_info off;
         off.type = pal_RFILE;
         if (needmask & ph_C)
@@ -1340,7 +1344,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_FENSURE:
       {
-        uint5 mask = blk->base[i+1];
+        uint5 mask = instr->data.flag.need;
         palloc_info off;
         if (mask)
         {
@@ -1375,7 +1379,6 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       case ph_LDW:
       {
         palloc_info rel, dest, src;
-        uint5 i;
         list* scan;
         rel.type = pal_CONST;
         rel.info.value = 0;
@@ -1424,10 +1427,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
 
       case ph_STATE:
       {
-        uint5 start = blk->base[i+1], first = 1;
-        start |= blk->base[i+2]<<8;
-        start |= blk->base[i+3]<<16;
-        start |= blk->base[i+4]<<24;
+        uint5 start = instr->data.imm;
         map = (list*)start;
       }
       break;
@@ -1452,8 +1452,6 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       break;
       // !!! things missing
     }
-    
-    i += pheta_instlength[opcode];
   }  // for (...)
 
   phetadism_block(blk, *startline);

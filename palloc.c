@@ -26,23 +26,22 @@ void palloc_free(pheta_chunk* chunk)
 void palloc_constant(pheta_chunk* chunk)
 {
   list* scanblock;
+  clist* walk;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
-    int i;
-    for (i=0; i<blk->length; i++)
+
+    for (walk=blk->base->next; walk->data; walk=walk->next)
     {
-      uint5 opcode = blk->base[i];
-      switch (opcode)
+      pheta_instr* instr = walk->data;
+
+      switch (instr->opcode)
       {
         case ph_CONST:
         {
-          uint5 dest = blk->base[i+1];
-          uint5 word = blk->base[i+2];
-          word |= blk->base[i+3]<<8;
-          word |= blk->base[i+4]<<16;
-          word |= blk->base[i+5]<<24;
+          uint5 dest = instr->data.con.dest;
+          uint5 word = instr->data.con.imm;
           chunk->alloc[dest].type = pal_CONST;
           chunk->alloc[dest].info.value = word;
         }
@@ -50,14 +49,13 @@ void palloc_constant(pheta_chunk* chunk)
         
         case ph_CONSTB:
         {
-          uint5 dest = blk->base[i+1];
-          uint5 byte = blk->base[i+2];
+          uint5 dest = instr->data.con.dest;
+          uint5 byte = instr->data.con.imm;
           chunk->alloc[dest].type = pal_CONSTB;
           chunk->alloc[dest].info.value = byte;
         }
         break;
       }
-      i += pheta_instlength[opcode];
     }
   }
 }
@@ -71,10 +69,12 @@ void palloc_nonorthog(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
-    int i;
-    for (i=0; i<blk->length; i++)
+    clist* walk;
+
+    for (walk=blk->base->next; walk->data; walk=walk->next)
     {
-      uint5 opcode = blk->base[i];
+      pheta_instr* instr = walk->data;
+      uint5 opcode = instr->opcode;
       switch (opcode)
       {
         // these shift operations can only use the 'cl' (ie, ecx) register
@@ -84,7 +84,7 @@ void palloc_nonorthog(pheta_chunk* chunk)
         case ph_ROR:
         case ph_ROL:
         {
-          uint5 shiftby = blk->base[i+3];
+          uint5 shiftby = instr->data.op.src2;
           if (chunk->alloc[shiftby].type == pal_UNSET)
           {
             chunk->alloc[shiftby].type = pal_IREG;
@@ -98,7 +98,7 @@ void palloc_nonorthog(pheta_chunk* chunk)
         case ph_LDB:
         case ph_LDW:
         {
-          uint5 dest = blk->base[i+1];
+          uint5 dest = instr->data.op.dest;
           if (chunk->alloc[dest].type == pal_UNSET)
           {
             chunk->alloc[dest].type = pal_IREG;
@@ -107,7 +107,6 @@ void palloc_nonorthog(pheta_chunk* chunk)
         }
         break;
       }
-      i += pheta_instlength[opcode];
     }
   }
 }
@@ -119,10 +118,12 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
                                 uint5 startline)
 {
   int i;
+  clist* walk;
     
-  for (i=0; i<blk->length; i++)
+  for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
   {
-    uint5 opcode = blk->base[i];
+    pheta_instr* instr = walk->data;
+    uint5 opcode = instr->opcode;
     uint5 nsrc, srcr[ph_MAXSRC], ndest, destr[ph_MAXDEST];
     uint5 thisline = startline+i;
 
@@ -131,8 +132,8 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       // mov aliasing? hmmmm.
       case ph_MOV:
       {
-        uint5 dest = blk->base[1];
-        uint5 src = blk->base[2];
+        uint5 dest = instr->data.op.dest;
+        uint5 src = instr->data.op.src1;
         if (chunk->alloc[dest].type==pal_UNSET)
         {
           chunk->alloc[dest].type = pal_ALIAS;
@@ -152,7 +153,7 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
       default:
       {
-        pheta_getused(blk->base, i, &ndest, destr, &nsrc, srcr);
+        pheta_getused(instr, i, &ndest, destr, &nsrc, srcr);
 
         if (ndest==1 && (nsrc==1 || nsrc==2))
         {
@@ -174,13 +175,11 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       }
       break;
     }
-    
-    i += pheta_instlength[opcode];
   }
   
   blk->marker = 1;
 
-  startline += blk->length;
+  startline += i;
 
   if (blk->trueblk && !blk->trueblk->marker)
   {
@@ -245,10 +244,12 @@ void palloc_fetchmem(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
-    int i;
-    for (i=0; i<blk->length; i++)
+    clist* walk;
+    for (walk=blk->base->next; walk->data; walk=walk->next)
     {
-      uint5 opcode = blk->base[i];
+      pheta_instr* instr = walk->data;
+      uint5 opcode = instr->opcode;
+
       switch (opcode)
       {
 /*      case ph_FETCH:
@@ -265,8 +266,8 @@ void palloc_fetchmem(pheta_chunk* chunk)
         
         case ph_COMMIT:
         {
-          uint5 armreg = blk->base[i+1];
-          uint5 src = blk->base[i+2];
+          uint5 armreg = instr->data.op.dest;
+          uint5 src = instr->data.op.src1;
           if (chunk->alloc[src].type == pal_UNSET)
           {
             chunk->alloc[src].type = pal_RFILE;
@@ -275,7 +276,6 @@ void palloc_fetchmem(pheta_chunk* chunk)
         }
         break;
       }
-      i += pheta_instlength[opcode];
     }
   }
 }
@@ -303,16 +303,17 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                        uint5 startline)
 {
   int i;
+  clist* walk;
     
  /* fprintf(stderr, "Block %x\n", blk);*/
     
-  for (i=0; i<blk->length; i++)
+  for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
   {
     uint5 j, destr[ph_MAXDEST], srcr[ph_MAXSRC], ndest, nsrc;
-    uint5 opcode = blk->base[i];
+    pheta_instr* instr = walk->data;
     list* scanblock;
 
-    pheta_getused(blk->base, i, &ndest, destr, &nsrc, srcr);
+    pheta_getused(instr, i, &ndest, destr, &nsrc, srcr);
 
     for (j=0; j<ndest; j++)
     {
@@ -345,14 +346,12 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
         }
       }
     }
-
-    i += pheta_instlength[opcode];
   }
 
   // prevent scanning of self!
   blk->marker = 1;
 
-  startline += blk->length;
+  startline += i;
   
   if (blk->trueblk && !blk->trueblk->marker)
   {
@@ -559,7 +558,8 @@ void palloc_printspans(pheta_chunk* chunk)
 // the best I can manage.
 void palloc_shufflecommit(pheta_chunk* chunk)
 {
-  list* scanblock;
+  return;
+/*  list* scanblock;
   sint5 i;
   sint5 lookfor[ph_NUMREG];
   sint5 commitplace[ph_NUMREG];
@@ -587,7 +587,7 @@ void palloc_shufflecommit(pheta_chunk* chunk)
         uint5 armreg = blk->base[inststart+1];
         uint5 src = blk->base[inststart+2];
         lookfor[armreg] = src;
-   /* fprintf(stderr, "Found a commit for reg %d at %d\n", armreg, inststart);*/
+   // fprintf(stderr, "Found a commit for reg %d at %d\n", armreg, inststart);
       }
       
       pheta_getused(blk->base, inststart, &ndest, destr, &nsrc, srcr);
@@ -599,7 +599,7 @@ void palloc_shufflecommit(pheta_chunk* chunk)
         {
           if (lookfor[k]==destr[j])
           {
-     /*   fprintf(stderr, "Setting commitplace[%d] to %d\n", k, inststart);*/
+     //   fprintf(stderr, "Setting commitplace[%d] to %d\n", k, inststart);
             commitplace[k] = inststart;
           }
         }
@@ -634,7 +634,7 @@ void palloc_shufflecommit(pheta_chunk* chunk)
     
     free(blk->base);
     blk->base = newbase;
-  }
+  }*/
 }
 
 // this has gone stale

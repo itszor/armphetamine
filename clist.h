@@ -12,6 +12,6 @@ typedef struct clist_t {
 extern clist* clist_new(void);
 extern clist* clist_append(clist*);
 extern clist* clist_prepend(clist*);
-extern clist* clist_delinkitem(clist*);
+extern void clist_delinkitem(clist*);
 
 #endif

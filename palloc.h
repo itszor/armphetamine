@@ -46,7 +46,9 @@ typedef struct {
   uint5 splitline;
 } palloc_splitalloc;
 
-
+extern void palloc_init(pheta_chunk* chunk);
+extern void palloc_constant(pheta_chunk* chunk);
+extern void palloc_shufflecommit(pheta_chunk* chunk);
 extern void palloc_srcdestalias(pheta_chunk* chunk);
 extern uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* 
                                        blk, uint5 startline);
@@ -61,5 +63,6 @@ extern void palloc_linearscan(pheta_chunk* chunk);
 extern uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                               uint5 startline);
 extern void palloc_printspans(pheta_chunk* chunk);
+extern void palloc_print(pheta_chunk* chunk);
 
 #endif

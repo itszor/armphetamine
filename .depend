@@ -15,7 +15,8 @@ codegen.o: codegen.c cnew.h defs.h machine.h processor.h registers.h \
  x86asm.h pseudo.h decode.h block.h analyse.h codegen_p.h pqueue.h
 decode.o: decode.c machine.h defs.h processor.h registers.h memory.h \
  keyboard.h mouse.h hash.h list.h decode.h disassemble.h execute.h \
- pseudo.h codegen.h allocate.h x86asm.h pheta.h bset.h pqueue.h
+ pseudo.h codegen.h allocate.h x86asm.h pheta.h bset.h pqueue.h \
+ clist.h
 disassemble.o: disassemble.c defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h decode.h
 execute26.o: execute26.c execute.inc.c defs.h machine.h processor.h \
@@ -46,7 +47,7 @@ main.o: main.c cnew.h defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h decode.h loadaout.h block.h \
  pseudo.h codegen.h allocate.h x86asm.h analyse.h generators.h \
  riscos.h execute.h pqueue.h debug.h genx86.h rtasm.h rtasm_fns.h \
- palloc.h pheta.h bset.h
+ palloc.h pheta.h bset.h clist.h
 memory.o: memory.c defs.h cnew.h memory.h keyboard.h mouse.h \
  processor.h vidc20.h iomd.h machine.h registers.h hash.h list.h
 nativesupport.o: nativesupport.c defs.h registers.h processor.h \
@@ -54,10 +55,11 @@ nativesupport.o: nativesupport.c defs.h registers.h processor.h \
  machine.h execute.h decode.h fakesys.h block.h pseudo.h codegen.h \
  allocate.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
- registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h cnew.h
+ registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h \
+ clist.h cnew.h palloc.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
- pqueue.h phetadism.h
+ pqueue.h clist.h phetadism.h
 pqueue.o: pqueue.c cnew.h pqueue.h defs.h
 processor.o: processor.c cnew.h registers.h defs.h processor.h \
  machine.h memory.h keyboard.h mouse.h hash.h list.h decode.h
@@ -84,16 +86,18 @@ flush.o: flush.c defs.h flush.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h block.h pseudo.h decode.h \
  codegen.h allocate.h x86asm.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
- registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h cnew.h
+ registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h \
+ clist.h cnew.h palloc.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
- pqueue.h phetadism.h
+ pqueue.h clist.h phetadism.h
 vidc20.o: vidc20.c defs.h vidc20.h memory.h keyboard.h mouse.h
 iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h machine.h \
  processor.h registers.h hash.h list.h
 debug.o: debug.c defs.h machine.h processor.h registers.h memory.h \
  keyboard.h mouse.h hash.h list.h debug.h execute.h decode.h pheta.h \
- bset.h pqueue.h phetadism.h vidc20.h iomd.h palloc.h
+ bset.h pqueue.h clist.h phetadism.h vidc20.h iomd.h palloc.h genx86.h \
+ x86asm.h rtasm.h rtasm_fns.h
 bset.o: bset.c defs.h bset.h cnew.h
 asmalutab.o: asmalutab.c defs.h asmalu.h
 fifo.o: fifo.c fifo.h defs.h cnew.h
@@ -101,13 +105,14 @@ mouse.o: mouse.c mouse.h defs.h
 keyboard.o: keyboard.c keyboard.h defs.h
 genx86.o: genx86.c genx86.h defs.h x86asm.h hash.h list.h registers.h \
  processor.h rtasm.h rtasm_fns.h palloc.h pheta.h decode.h machine.h \
- memory.h keyboard.h mouse.h bset.h pqueue.h x86dism.h pseudo.h \
- codegen.h allocate.h phetadism.h
+ memory.h keyboard.h mouse.h bset.h pqueue.h clist.h x86dism.h \
+ pseudo.h codegen.h allocate.h phetadism.h
 palloc.o: palloc.c palloc.h defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
- pqueue.h cnew.h x86asm.h
+ pqueue.h clist.h cnew.h x86asm.h
 decodet.o: decodet.c decode.h defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h
 executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
  decode.h fakesys.h
+clist.o: clist.c cnew.h defs.h clist.h list.h

@@ -38,39 +38,38 @@ static void writeflags(uint5 flags)
 
 void phetadism_block(pheta_basicblock* blk, uint5 startline)
 {
+  clist* walk;
   uint5 i;
+    
+  printf("Block base: %p  (source start %x)\n", blk, blk->srcstart);
   
-  printf("Block base: %x  (source start %x)\n", blk, blk->srcstart);
-  
-  for (i=0; i<blk->length; i++)
+  for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
   {
-    uint5 opcode = blk->base[i++];
-    printf("%4d: ", startline+i-1);
+    pheta_instr* instr = walk->data;
+    uint5 opcode = instr->opcode;
+    printf("%4d: ", startline+i);
     switch (opcode)
     {
       case ph_CONST:
       {
-        uint5 dest = blk->base[i++];
-        uint5 word = blk->base[i++];
-        word |= blk->base[i++]<<8;
-        word |= blk->base[i++]<<16;
-        word |= blk->base[i++]<<24;
+        uint5 dest = instr->data.con.dest;
+        uint5 word = instr->data.con.imm;
         printf("const     %%%d, #0x%.8x\n", dest, word);
       }
       break;
 
       case ph_CONSTB:
       {
-        uint5 dest = blk->base[i++];
-        uint5 byte = blk->base[i++];
+        uint5 dest = instr->data.con.dest;
+        uint5 byte = instr->data.con.imm;
         printf("constb    %%%d, #0x%.2x\n", dest, byte);
       }
       break;
 
       case ph_FETCH:
       {
-        uint5 dest = blk->base[i++];
-        uint5 reg = blk->base[i++];
+        uint5 dest = instr->data.op.dest;
+        uint5 reg = instr->data.op.src1;
         printf("fetch     %%%d, r%d\n", dest, reg);
       }
       break;
@@ -78,16 +77,22 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_COMMIT:
       case ph_ASSOC:
       {
-        uint5 reg = blk->base[i++];
-        uint5 src = blk->base[i++];
+        uint5 reg = instr->data.op.dest;
+        uint5 src = instr->data.op.src1;
         printf("%-10sr%d, %%%d\n", opname[opcode], reg, src);
       }
       break;
 
       case ph_SPILL:
+      {
+        uint5 reg = instr->data.op.src1;
+        printf("%-10s%%%d\n", opname[opcode], reg);
+      }
+      break;
+      
       case ph_RELOAD:
       {
-        uint5 reg = blk->base[i++];
+        uint5 reg = instr->data.op.dest;
         printf("%-10s%%%d\n", opname[opcode], reg);
       }
       break;
@@ -97,8 +102,7 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_NFEXPECT:
       case ph_NFENSURE:
       {
-        uint5 mask = blk->base[i++], first=1;
-        uint5 j;
+        uint5 mask = instr->data.flag.need;
         
         printf("%-10s{", opname[opcode]);
         writeflags(mask);
@@ -116,10 +120,9 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_FCOMMIT:
       case ph_NFCOMMIT:
       {
-        uint5 have = blk->base[i++], first=1, j;
-        uint5 need = blk->base[i++];
-        uint5 pred = blk->base[i++];
-        pred |= blk->base[i++]<<8;
+        uint5 have = instr->data.flag.have, first=1, j;
+        uint5 need = instr->data.flag.need;
+        uint5 pred = instr->data.flag.pred;
         
         printf("%-10s{", opname[opcode]);
         writeflags(have);
@@ -149,8 +152,8 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
 
       case ph_FWRITE:
       {
-        uint5 mask = blk->base[i++], first = 1;
-        uint5 src = blk->base[i++];
+        uint5 mask = instr->data.op.dest, first = 1;
+        uint5 src = instr->data.op.src1;
         char flags[10];
         
         flags[0] = 0;
@@ -166,10 +169,7 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
 
       case ph_XJMP:
       {
-        uint5 word = blk->base[i++];
-        word |= blk->base[i++]<<8;
-        word |= blk->base[i++]<<16;
-        word |= blk->base[i++]<<24;
+        uint5 word = instr->data.imm;
         printf("xjmp      #%.8x\n", word);
       }
       break;
@@ -188,9 +188,9 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_SBC:
       case ph_MUL:
       {
-        uint5 dest = blk->base[i++];
-        uint5 op1 = blk->base[i++];
-        uint5 op2 = blk->base[i++];
+        uint5 dest = instr->data.op.dest;
+        uint5 op1 = instr->data.op.src1;
+        uint5 op2 = instr->data.op.src2;
         printf("%-10s%%%d, %%%d, %%%d\n", opname[opcode], dest, op1, op2);
       }
       break;
@@ -199,13 +199,20 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_RLX:
       case ph_MOV:
       case ph_NOT:
+      {
+        uint5 op1 = instr->data.op.dest;
+        uint5 op2 = instr->data.op.src1;
+        printf("%-10s%%%d, %%%d\n", opname[opcode], op1, op2);
+      }
+      break;
+
       case ph_TEQ:
       case ph_TST:
       case ph_CMP:
       case ph_CMN:
       {
-        uint5 op1 = blk->base[i++];
-        uint5 op2 = blk->base[i++];
+        uint5 op1 = instr->data.op.src1;
+        uint5 op2 = instr->data.op.src2;
         printf("%-10s%%%d, %%%d\n", opname[opcode], op1, op2);
       }
       break;
@@ -213,8 +220,8 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_LDW:
       case ph_LDB:
       {
-        uint5 op1 = blk->base[i++];
-        uint5 op2 = blk->base[i++];
+        uint5 op1 = instr->data.op.dest;
+        uint5 op2 = instr->data.op.src1;
         printf("%-10s%%%d, [%%%d]\n", opname[opcode], op1, op2);
       }
       break;
@@ -222,8 +229,8 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_STW:
       case ph_STB:
       {
-        uint5 op1 = blk->base[i++];
-        uint5 op2 = blk->base[i++];
+        uint5 op1 = instr->data.op.src1;
+        uint5 op2 = instr->data.op.src2;
         printf("%-10s[%%%d], %%%d\n", opname[opcode], op1, op2);
       }
       break;
@@ -231,10 +238,7 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_STATE:
       {
         list* scan;
-        uint5 start = blk->base[i++], first = 1;
-        start |= blk->base[i++]<<8;
-        start |= blk->base[i++]<<16;
-        start |= blk->base[i++]<<24;
+        uint5 start = instr->data.imm, first = 1;
         
         printf("%-10s(", opname[opcode]);
         
@@ -267,7 +271,7 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       break;
     }
   }
-  printf("Block predicate: %s\n  True block: %x\n  False block: %x\n"
-         "  Parent block: %x\n\n",
+  printf("Block predicate: %s\n  True block: %p\n  False block: %p\n"
+         "  Parent block: %p\n\n",
          txtcc[blk->predicate], blk->trueblk, blk->falseblk, blk->parent);
 }

@@ -21,6 +21,7 @@
 #include "vidc20.h"
 #include "iomd.h"
 #include "palloc.h"
+#include "genx86.h"
 
 void debug_shell(machineinfo* machine)
 {
@@ -108,6 +109,7 @@ int debug_getnum(char* cmd)
   int val;
   if (sscanf(cmd, " 0x%x", &val)) return val;
   if (sscanf(cmd, " %d", &val)) return val;
+  return -1;
 }
 
 char* debug_getstring(char* cmd)
@@ -123,6 +125,7 @@ int debug_getreg(char* cmd)
   if (sscanf(cmd, " flags")) return 18;
   if (sscanf(cmd, " r%d", &val)) return val;
   if (sscanf(cmd, " %d", &val)) return val;
+  return -1;
 }
 
 int debug_getyesno(char* cmd)
@@ -505,7 +508,7 @@ void debug_virtual(machineinfo* machine, char* cmd)
 void debug_phetatrans(machineinfo* machine, char* cmd)
 {
   pheta_chunk* mychunk;
-  uint5 start, end, i, line=0;
+  uint5 start=0, end=0, line=0;
   strsep(&cmd, " \t");
   if (!cmd)
   {
