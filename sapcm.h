@@ -42,6 +42,8 @@ typedef struct sapcm_serial_fifo sapcm_serial_fifo;
 #define sapcm_INTERRUPT_SERIAL4_MCP  18
 #define sapcm_INTERRUPT_SERIAL4_SSP  19
 
+extern void sa1100_serial_initialise(meminfo* mem);
+
 extern uint5 sa1100_serial_read(meminfo* mem, uint5 physaddress);
 
 extern void sa1100_serial_write(meminfo* mem, uint5 physaddress, uint5 data);

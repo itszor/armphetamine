@@ -1,8 +1,21 @@
 #include <stdio.h>
+#include <pty.h>
+#include <utmp.h>
+#include <errno.h>
 
 #include "defs.h"
 #include "sapcm.h"
 #include "memory.h"
+
+void sa1100_serial_initialise(meminfo* mem)
+{
+  if (openpty(&mem->sapcm.amaster, &mem->sapcm.aslave, NULL, NULL, NULL)==-1)
+  {
+    fprintf(stderr, "Can't open pty, error=%d\n", errno);
+    return errno;
+  }
+  write(mem->sapcm.aslave, "Hello world\n", 12);
+}
 
 uint5 sa1100_serial_read(meminfo* mem, uint5 physaddress)
 {

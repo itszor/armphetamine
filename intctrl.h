@@ -14,4 +14,6 @@ struct intctrl_registers {
 
 typedef struct intctrl_registers intctrl_registers;
 
+extern intctrl_registers* intctrl_new(void);
+
 #endif

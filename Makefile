@@ -31,7 +31,7 @@ SRC =	asmalutab.c cnew.c decode.c \
 
 TESTS =	divide simple armtest
 
-LIBS = -lm -lreadline -lhistory -lncurses `sdl-config --libs`
+LIBS = -lm -lreadline -lhistory -lncurses `sdl-config --libs` -lutil
 
 .PHONY:	clean cleaner package webpkg romdump
 

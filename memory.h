@@ -104,6 +104,8 @@ struct meminfo {
   struct {
     struct sapcm_dma_channel* dma;
     struct sapcm_serial_fifo* serial_fifo;
+    int amaster;
+    int aslave;
   } sapcm;
   struct ostimer_registers* ostimer;
   struct intctrl_registers* intctrl;

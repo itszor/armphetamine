@@ -27,6 +27,7 @@ machineinfo* machine_create(uint5 memory)
   machine->trace = 0;
   machine->detracecounter = 0;
   machine->pstate = profile_initialise();
+  sa1100_serial_initialise(machine->mem);
     
 	return machine;
 }
