@@ -61,6 +61,27 @@ static const char* otype[] = { "empty", "partial", "immediate", "register",
    inst->op[1] ? otype[inst->op[1]->type] : "(nil)", \
    inst->op[2] ? otype[inst->op[2]->type] : "(nil)"); abort(); }
 
+static void genx86_asm_r32_r32_3(nativeblockinfo* nat, genx86_op* inst,
+  uint5 opcode, uint5 ops, uint5 reg0, uint5 reg1)
+{
+  switch SIZEDTYPE(inst->op[2]->type, inst->op[2]->width)
+  {
+    case SIZEDTYPE(gotype_REGISTER, gowidth_DWORD):
+    {
+      if (opcode==ab_LEA && genx86_tab[opcode].r32_rm32)
+      {
+        genx86_tab[opcode].r32_rm32(nat, reg0, rtasm_scind(reg1,
+          inst->op[2]->data.reg, scale_1));
+      }
+      else ERR;
+    }
+    break;
+    
+    default:
+    ERR;
+  }
+}
+
 static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
   uint5 opcode, uint5 ops, uint5 reg)
 {
@@ -96,7 +117,7 @@ static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
         {
           genx86_tab[opcode].r32_i32(nat, reg, inst->op[1]->data.imm);
         }
-        else if (genx86_tab[opcode].rm8_i8)
+        else if (genx86_tab[opcode].rm32_i32)
         {
           genx86_tab[opcode].rm32_i32(nat, rtasm_reg(reg), 
             inst->op[1]->data.imm);
@@ -123,7 +144,11 @@ static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
         }
         else ERR;
       }
-      else ERR;
+      else
+      {
+        genx86_asm_r32_r32_3(nat, inst, opcode, ops, reg,
+          inst->op[1]->data.reg);
+      }
     }
     break;
     
