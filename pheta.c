@@ -376,6 +376,7 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     break;
 
     case ph_CAJMP:
+    case ph_CAJMP26F:
     instr->data.op.dest = dest = chunk->tempno++;
     instr->data.op.src1 = va_arg(ap, uint5);
     break;
@@ -472,6 +473,7 @@ void pheta_getused(pheta_instr* instr, uint5* numdest, uint5 dest[],
     case ph_LDW:
     case ph_LDB:
     case ph_CAJMP:
+    case ph_CAJMP26F:
     {
       dest[(*numdest)++] = instr->data.op.dest;
       src[(*numsrc)++] = instr->data.op.src1;
@@ -1855,7 +1857,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
       destr = inst.dp.s ? ph_R15_FULL : ph_R15_ADDR;
 
       // sometimes this should be a RTS
-      dest = pheta_emit(chunk, ph_CAJMP, dest);
+      dest = pheta_emit(chunk, inst.dp.s ? ph_CAJMP26F : ph_CAJMP, dest);
       pheta_emit(chunk, ph_SYNC);
     }
     pheta_lcommit(chunk, destr, dest);
@@ -2129,7 +2131,7 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   {
     // use an extra cycle for pipeline bubble or something
     pheta_cycles(chunk, 1);
-    loadreg = pheta_emit(chunk, ph_CAJMP, loadreg);
+    loadreg = pheta_emit(chunk, ph_CAJMP26F, loadreg);
     pheta_emit(chunk, ph_SYNC);
     pheta_lcommit(chunk, ph_R15_FULL, loadreg);
   }
@@ -2233,7 +2235,7 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
   // !!! exception semantics? !!!  
   if (setpc)
   {
-    loadreg = pheta_emit(chunk, ph_CAJMP, loadreg);
+    loadreg = pheta_emit(chunk, inst.bdt.s ? ph_CAJMP26F : ph_CAJMP, loadreg);
     pheta_emit(chunk, ph_SYNC);
     pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, loadreg);
   }

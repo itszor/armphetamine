@@ -2,7 +2,7 @@
 
 CC	= gcc
 CFLAGS	= -g -pipe -W -Wall -pedantic -O0 -DQUICKWRITE \
-	  -DVERSION=\"0.2\" -DVIDCSUPPORT -DIOMDSUPPORT
+	  -DVERSION=\"0.3\" -DVIDCSUPPORT -DIOMDSUPPORT
 NASM	= nasm
 
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.

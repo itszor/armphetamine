@@ -57,6 +57,7 @@ typedef enum {
   ph_XJMP,
   ph_UKJMP,
   ph_CAJMP,
+  ph_CAJMP26F,
   ph_RTS,
   ph_ADDRESS
 } pheta_opcode;

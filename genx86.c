@@ -1766,10 +1766,35 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     case ph_CAJMP:
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       genx86_operand* src = genx86_findoperand(chunk, src1);
       genx86_operand* c8 = genx86_makeconstant(chunk, 8);
-      genx86_append(chunk, buf, ab_ADD, src, c8, 0);
-      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_ADD, genx86_findoperand(chunk, dest), c8, 0);
+/*      genx86_append(chunk, buf, ab_RET, 0, 0, 0);*/
+    }
+    break;
+
+    case ph_CAJMP26F:
+    {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      genx86_operand* src = genx86_findoperand(chunk, src1);
+      genx86_operand* c8 = genx86_makeconstant(chunk, 8);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_ADD, genx86_findoperand(chunk, dest), c8, 0);
+      genx86_append(chunk, buf, ab_BT, src, genx86_makeconstant(chunk, 28), 0);
+      genx86_append(chunk, buf, ab_SETB, genx86_makebaseoffset(chunk,
+        offsetof(registerinfo, vflag), gowidth_BYTE), 0, 0);
+      genx86_append(chunk, buf, ab_BT, src, genx86_makeconstant(chunk, 29), 0);
+      genx86_append(chunk, buf, ab_SETB, genx86_makebaseoffset(chunk,
+        offsetof(registerinfo, cflag), gowidth_BYTE), 0, 0);
+      genx86_append(chunk, buf, ab_BT, src, genx86_makeconstant(chunk, 30), 0);
+      genx86_append(chunk, buf, ab_SETB, genx86_makebaseoffset(chunk,
+        offsetof(registerinfo, zflag), gowidth_BYTE), 0, 0);
+      genx86_append(chunk, buf, ab_BT, src, genx86_makeconstant(chunk, 31), 0);
+      genx86_append(chunk, buf, ab_SETB, genx86_makebaseoffset(chunk,
+        offsetof(registerinfo, nflag), gowidth_BYTE), 0, 0);
     }
     break;
 
@@ -1810,7 +1835,7 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
 {
   list* scan;
   const uint5 offset[] = {
-    0, 4, 8, 12,
+    0,  4,  8,  12,
     16, 20, 24, 28,
     32, 36, 40, 44,
     48, 52, 56, 60,
@@ -1845,6 +1870,17 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
         genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, mem, dfc->var->slot,
           0);
       }
+      break;
+      
+      default:
+      break;
+    }
+
+    switch (dfc->src)
+    {
+      case ph_R15_ADDR:
+      case ph_R15_FULL:
+      genx86_insert(chunk, buf, dfc->loc->next->next, ab_RET, 0, 0, 0);
       break;
       
       default:
