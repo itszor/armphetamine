@@ -1,5 +1,5 @@
 romload lart-blob        0x00000000
-romload lart-kernel-2417 0x00020000
+romload lart-kernel      0x00020000
 romload lart-initrd      0x00100000
 # break 0xc0008000
 # trace on
@@ -11,7 +11,7 @@ romload lart-initrd      0x00100000
 # break 0xc00379bc
 # break 0xc0083220
 # break 0xc00379bc
-break 0xc001a880
+# break 0xc001a880
 run 0x0
 # clear 0x00020090
 # trace on

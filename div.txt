@@ -10,6 +10,6 @@ setreg 0 0x144
 setreg 1 0x12
 setreg 13 0x10000200
 setreg 14 0x100000d0
-breakset 0x100000cc
+break 0x100000cc
 run 0x10000074
 registers
