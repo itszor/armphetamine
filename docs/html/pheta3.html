@@ -1,0 +1,351 @@
+<html><head><title>Notes on IR</title></head>
+<body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
+
+<center><h1>CPU-Twist Intermediate Representation (ph3)</h1></center>
+<p align=center>Julian Brown, 2001-2003. Updated 21 January 2003.
+
+<p>ph3 is a generic ISA description language for dynamic binary translation. The unit of internal storage is the register, but each register represents not a fixed-size set of bits but an abstract value. Operations on these values are concrete, eg add two 32-bit values giving a 32-bit result, or multiply two eight bit values with signed, saturated 16-bit result.
+
+<p>ph3 has "many" opcodes. A basic set of operations which are expected to be supported by architectures form the core of the language. Additionally there are specialised instructions to abstract notions such as side effects and flag handling. ph3 is used to describe source and target instruction sets. Certain instruction sets may have specialised instructions -- these are translated "as-is" by the front-end (source layer), and should be implemented (as one or more primitive operations) by each target layer. That is, each target layer should implement all the specialised instructions of each source layer, as well as the "core" set. Where specialised instructions are similar between source ISAs, we can share the opcode.
+
+<p>In contrast to the original phetacode, we're going to use a variable-length bytecode, mainly to keep things neat but extendable, but also because we're only building a decoder in software, and it won't hurt much. Note though that it may be necessary to scan this code backwards, so each instruction shall be postfixed with its length in bytes.
+
+<p>Each result in ph3 generates a new register (we use SSA form). ph3 code is grouped into basic blocks, linked together with predicates and true/false block pointers. The representation of each block with probably be a circular list of instructions, or a variable-length vector.
+
+<h2>Opcode listing and format</h2>
+
+<p>Ignoring all below, we will use a bytecode for ph3. Instructions are formed from primitives:
+
+<ul>
+<li>vn - abstract variable 'n'
+<li>rn - concrete register 'n' (predefined for each arch)
+<li>const x c - make x constant c
+<li>bs[a,b] - specify bits 'a' to 'b' of result, overwriting all others.
+<li>ins[a,b] m - insert result at bits 'a' to 'b' of m, retaining others.
+<li>bit[a] - insert/extract bit 'a', retaining others
+<li>ext[a,b] - extract bits a through b
+<li>exs[a,b] - sign-extend extract bits a through b
+<li>cat x y - bit-concatenation of 'x' and 'y'
+<li>par/rap - block for parallel assignment
+<li>add, sub, mul, div, lsl, lsr, asr, and, not, ior, xor...
+<li>cp, op - carry, overflow predicates
+<li>np, zp - negative, zero predicates
+<li>ap, pp - auxiliary carry, parity predicates
+<li>load, store
+<li>fetch, commit - move variables to and from real registers
+<li>call, ret - function/macro invocation
+<li>def &lt;name&gt;,args.../fed - function/macro definition
+</ul>
+
+<p>Instructions are built up in a flattened tree form. bit,ins prefixes occur before var or reg specifiers. Eg ARM 'adds r0,r1,r2' might be encoded:
+
+<tt>
+fetch v4 r1
+fetch v6 r2
+set par
+      res cc bs[31,0] v15	
+      cp bit[3] cc
+      op bit[2] cc
+      np bit[1] cc
+      zp bit[0] cc
+    rap
+    add bs[31,0] v4
+        bs[31,0] v6
+commit r0 v15
+</tt>
+
+<p>Intel 'cmc':
+
+<tt>
+fetch v3 cc
+set bit[6] v4
+    not bit[6] v3
+commit cc v4
+</tt>
+
+<p>Intel 'lea 4(2,%eax,%ecx),%ebx'
+
+<tt>
+fetch v1 eax
+fetch v2 ecx
+set bs[31,0] v5
+    add const 4
+        add lsl bs[31,0] v1
+	        const 2
+            bs[31,0] v2
+commit ebx v5
+</tt>
+
+<p>Versus Intel 'add %eax,%ecx'
+
+<tt>
+fetch v1 eax
+fetch v2 ecx
+set par
+      res bs[31,0] v3
+      cp bit[0] cc
+      op bit[11] cc
+      np bit[7] cc
+      zp bit[6] cc
+      ap bit[4] cc
+      pp bit[2] cc
+    rap
+    add bs[31,0] v1
+        bs[31,0] v2
+commit ecx v3
+</tt>      
+
+<p>Intel 'shl $4,%bl':
+
+<tt>
+fetch bs[7,0] v1 ebx
+set par
+      res bs[7,0] v2
+      cp bit[0] cc
+      op bit[11] cc
+      np bit[7] cc
+      zp bit[6] cc
+    rap
+    lsl bs[7,0] v1
+        const 4
+commit ins[7,0] ebx v2
+</tt>
+
+<p>The tentative <b>ph3</b> instruction set looks like this:
+
+<p>Type field [t] can be: unsigned byte (8 bits), halfword (16 bits), word (32 bits), dword (64 bits), any of those saturating or signed.
+
+<p><table align=center>
+<tr>
+  <td><tt>const:[t]</tt></td>
+  <td>Load constant immediate of type [t]. Immediate constant length same as [t]</td>
+</tr>
+
+<tr>
+  <td><tt>shl:[t] rd,rm:[u],rn</tt></td>
+  <td>Shift-left of rm (truncated to sizeof[t]) by rn.</td>
+</tr>
+
+<tr>
+  <td><tt>shr:[t] rd,rm:[u],rn</tt></td>
+  <td>Shift right. If [t] is signed, does saturating shift.</td>
+</tr>
+
+<tr>
+  <td><tt>ror:[t] rd,rm:[u],rn</tt></td>
+  <td>Rotate right</td>
+</tr>
+
+<tr>
+  <td><tt>rol:[t] rd,rm:[u],rn</tt></td>
+  <td>Rotate left</td>
+</tr>
+
+<tr>
+  <td><tt>mov rd,rm</tt></td>
+  <td>Copy value</td>
+</tr>
+
+<tr>
+  <td><tt>not rd,rm</tt></td>
+  <td>Copy negated register</td>
+  <td>dest r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>AND</tt></td>
+  <td>Bitwise AND</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>OR</tt></td>
+  <td>Bitwise OR</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>EOR</tt></td>
+  <td>Bitwise Exclusive OR</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>TEQ</tt></td>
+  <td>Bitwise Exclusive OR, discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>TST</tt></td>
+  <td>Bitwise AND, discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ADD</tt></td>
+  <td>Addition</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ADC</tt></td>
+  <td>Add with carry</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>SUB</tt></td>
+  <td>Subtract</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>SBC</tt></td>
+  <td>Subtract with carry (in the ARM sense, ie rd = rm + rn + NOT(c))</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>CMP</tt></td>
+  <td>Subtract discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>CMN</tt></td>
+  <td>Add discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>MUL</tt></td>
+  <td>Multiply</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>FETCH</tt></td>
+  <td>Fetch ARM register</td>
+  <td>ph2 r# (one byte), ARM r# (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>COMMIT</tt></td>
+  <td>Commit ARM register</td>
+  <td>ARM r#, ph2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>FEXPECT</tt></td>
+  <td>Prime following instruction for setting flags</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>FCOMMIT</tt></td>
+  <td>Indicate that flags should have been set, write into ARM flags</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>FENSURE</tt></td>
+  <td>Ensure that flags are resident in native flags register</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+  <td><tt>NFEXPECT</tt></td>
+  <td>Same as fexpect, but don't involve ARM flags</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>NFCOMMIT</tt></td>
+  <td>Indicate that (native) flags should have been set</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>NFENSURE</tt></td>
+  <td>Roughly the same as fensure</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>FWRITE</tt></td>
+  <td>Write bit zero of register into a flag</td>
+  <td>flag number, ph2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>XJMP</tt></td>
+  <td>Transfer control to start of another chunk</td>
+  <td>Address of destination chunk (4 bytes)</td>
+</tr>
+
+<tr>
+  <td><tt>LDW</tt></td>
+  <td>Load word</td>
+  <td>dest r#, addr r#</td>
+</tr>
+
+<tr>
+  <td><tt>LDB</tt></td>
+  <td>Load byte</td>
+  <td>dest r#, addr r#</td>
+</tr>
+
+<tr>
+  <td><tt>STW</tt></td>
+  <td>Store word</td>
+  <td>addr r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>STB</tt></td>
+  <td>Store byte</td>
+  <td>addr r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>SWI</tt></td>
+  <td>Generate software interrupt</td>
+  <td>(none?)</td>
+</tr>
+
+<tr>
+  <td><tt>UNDEF</tt></td>
+  <td>Trigger undefined instruction exception</td>
+  <td>(none?)</td>
+</tr>
+
+<tr>
+  <td><tt>SYNC</tt></td>
+  <td>Synchronise register allocation (dump all registers to memory)</td>
+  <td>(none)</td>
+</tr>
+
+<tr>
+  <td><tt>END</tt></td>
+  <td>Finish a basic block</td>
+  <td>(none)</td>
+</tr>
+
+</table>
+
+<h2>Miscellaneous extras</h2>
+
+<h3>Interrupts</h3>
+
+<p>It is the intention that cycles will be (approximately) counted (decremented), and checked for zero-crossings at the end of each basic block, for the purposes of interrupt handling, which should hopefully provide "good enough" latency for most applications. In the unlikely event that enough instructions accumulate inbetween checks that two or more interrupts should have been fired, both can (probably?) be done simultaneously until the 'debt' is repaid. This will undoubtedly cause havoc with timing-sensitive code.
+
+<h3>Memory access</h3>
+
+<p>Memory access should use the two-entry TLB (not) documented elsewhere. There is a big problem though, and that is restoring registers after an exception. In general, we won't be returning to the original recompiled chunk after an exception has occured (well, we never will be), but before it happened our register values could have been anywhere.
+
+<p>We're going to take the stance that page faults, access permission faults, etc. hardly ever happen, so try to streamline the most frequent case (that is, hopefully, we have the right TLB entry and the access has the correct permissions). In that case, we run inline code. The next-worst scenario, TLB miss, will be dealt with by a function call, in the same way that memory access works in the current system. This can harmlessly continue running the same recompiled chunk.
+
+<p>In the worst scenario, page fault/access denied, one way of coping with the situation would be to have a look-up table associated with each load/store instruction in each block, which stores the mapping between ARM and x86 registers at the corresponding point in the code, so the complete transfer to the memory-based register file need be done only when an exception occurs. There would probably be a good deal of evil which needed to be done to get that working properly though - whether it'd be worth the effort over just saving all registers before memory accesses and hence avoiding the problem at the expense of potentially less efficient code, I don't know.
+
+</body>
+</html>
