@@ -24,11 +24,11 @@
 <li>Support for memory and memory-mapped hardware
 </ul>
 
-<p>Currently this emulation core is wired into a built-in debugger, which forms a useful test environment. Later, the structure will proceed like this:
+<p>Currently this emulation core is wired into a built-in debugger, which forms a useful test environment. Later, the structure will work like this:
 
-<p>Instructions are fetched and executed sequentially by the interpretive core, as would be done by a real processor. These instructions are decoded and executed, and their effects are mirrored in the state of the virtual processor and memory system.
+<p>Instructions are fetched and executed sequentially by the interpretive core, as would be done by a real processor. These instructions are decoded and executed in software, and their effects are mirrored in the state of the virtual processor and memory system (this is a very processor-intensive task).
 
-<p>As this is done, the flow of control is examined by a profiler, which identifies chunks of commonly-executed code. If a particular chunk of code is executed often, we assume the overall speed of execution will benefit from this piece of code being run faster in the future. So, we take that piece of binary code and translate it into a fragment of binary code for the host computer. When the chunk is encountered the next time, we can transfer control directly to the newly-compiled piece of code. This technique is known as dynamic recompilation, or perhaps more accurately, dynamic binary code translation.
+<p>As this is done, the flow of control is examined by a profiler, which identifies chunks of commonly-executed code. If a particular chunk of code is executed often, we assume the overall speed of execution will benefit from this piece of code being run faster in the future. So, we take that piece of binary code and translate it into a fragment of binary code for the host computer. When the chunk is encountered on subsequent occasions, we can transfer control directly to the newly-compiled piece of code intead of doing the time-consuming interpretation of the code in software. This technique is known as dynamic recompilation, or perhaps more accurately, dynamic binary code translation, and is capable of speeding up the emulation of a virtual machine by orders of magnitude.
 
 <p>In Java terminology, this technique would be called Just-In-Time (JIT) compilation. The difference in this case is that binary code for the typical processor is not designed with the intention of being used as the source code for any sort of compiler, so various new methods need to be developed to deal with the special problems involved (discussed further <a href="oldinfo.html">here</a> or <a href="diss.ps">here</a>).
 
@@ -42,17 +42,17 @@
 <li>IOMD - input/output controller, timers, interrupt control
 </ul>
 
-<p>Of particular interest for the time being are IOMD (or some equivalent in different types of system), which contains timers and is able to generate interrupts (which cause problems later), and MMU.
+<p>Of particular interest for the time being are IOMD (or its equivalent in other system configurations), which contains timers and is able to generate interrupts (which cause problems later), and the MMU which handles the mapping from virtual to physical addresses, and provides access control to memory and memory-mapped devices.
 
-<p>Due to the way the MMU works, it will be extremely difficult to get memory access by the processor going at a good speed in the general case (ie, random access all over the virtual memory map), even if dynamic recompilation is being employed. Vendors of existing solutions have employed tricks such as programming the host memory management unit to behave like that of the guest (in the case of Virtual PC on the Macintosh), or making unsafe assumptions like that instructions which access memory will <i>always</i> access memory and not memory-mapped I/O space (in the case of an experimental dynarec core for UAE, a free Amiga emulator). I have a solution which should reduce the minimum latency for memory operations to a fairly low level (perhaps 10-30 cycles), without using any hardware tricks or making any unsafe assumptions about memory access patterns.
+<p>Due to the way the MMU works, it is extremely difficult to get memory accesses to and from the processor going at a good speed in the general case (ie, random access all over the virtual memory map), even if dynamic recompilation is being employed. Vendors of existing solutions have employed tricks such as programming the host memory management unit to behave like that of the guest (in the case of Virtual PC on the Macintosh), or making unsafe assumptions like that instructions which access memory will <i>always</i> access memory and not memory-mapped I/O space (in the case of an experimental dynarec core for UAE, a free Amiga emulator). One safe software-only solution is described below, which should reduce the minimum latency for memory operations to a fairly low level (perhaps 10-30 cycles), without using any hardware tricks or making any unsafe assumptions about memory access patterns.
 
 <p>The basic idea is to use a one-entry TLB, which contains a (virtual, physical) address tuple, a bitmask for the page size, and pointers to byte- and word-sized load and store functions. When a new virtual address is encountered, it is masked, compared to half the (virtual, physical) tuple, combined with the physical part if the match is successful then the appropriate access function is transferred to directly. If a miss occurs, code is called which walks over the page tables and generates a new TLB entry. The function pointers may point to functions which handle emulated physical RAM, ROM, or memory-mapped I/O space, providing a uniform interface for each.
 
-<p>The TLB is also tagged with the current processor mode, to avoid potential unsafe access by user-mode code by a tuple which was set up in a priveleged mode. 
+<p>The TLB is also tagged with the current processor mode, to avoid potential unsafe access by user-mode code by a tuple which was set up in a priveleged mode.
+
+<p>It might be worth investigating whether more than one TLB entry provides better results. Intuition suggests otherwise, since emulating CAM in software is not a particularly fast operation. However, one interesting scheme to try might be to keep a buffer containing the last few translated entries - still always only checking the first on most memory accesses, but keeping the previous few entries in a fifo or move-to-front buffer before doing a full page-table walk.
 
 <h3>A Malleable Intermediate Representation: ph2</h3>
-
-<p>(Originally from <a href="pheta2.html">"Notes on revised Intermediate Representation (ph2)"</a>, Julian Brown, 21 January-4 February 2001).
 
 <p>The original intermediate representation used by ARMphetamine ("Phetacode"), while just about adequate, suffered from a couple of fairly serious flaws which limited its usefulness. These included:
 
@@ -137,23 +137,21 @@
 
 <p>are used directly after an fcommit or nfcommit instruction to signal that a particular predicate number should be set, and the condition which it should be set by. Code can be pruned at the IR level to remove unnecessary condition-code storing/retrieval.
 
-<p>(Opcode list omitted.)
-
 <h5>Summary of ph2</h5>
 
 <p>ph2 is essentially a register-transfer language. The translation stage from ARM code to ph2 performs <b>register renaming</b> in much the same way as many modern superscalar processors, which aids register allocation later by splitting the liveness of registers in many fragments of ARM code into smaller pieces, which overlap less and thus ease the allocation of registers on the register-starved IA-32 architecture.
 
-<p>Translation of ARM code chunks to ph2 results in a directed graph which represents the flow of control between basic blocks, where one block of ph2 code corresponds exactly to one block of ARM code. These blocks are position-independent and non-internally referencing, which makes them easy to manipulate.
+<p>Translation of ARM code chunks to ph2 results in a directed graph which represents the flow of control between basic blocks, where one block of ph2 code corresponds exactly to one block of ARM code. These blocks are position-independent and non-internally referencing, which makes them easier to manipulate.
 
 <h3>Efficiently Compiling ph2 to IA-32</h3>
 
-<p>The algorithm to perform translation of ph2 to IA-32 is a full, albeit lightweight, optimising compiler. Currently the main optimisation it performs is register allocation, though according to (x) this alone can improve performance of generated code by two to three times. The current code-generator is flexibly-structured enough to make adding peephole optimisation and simple instruction scheduling fairly easy.
+<p>The algorithm to perform translation of ph2 to IA-32 is a 'proper', albeit lightweight, optimising compiler. Currently the main optimisation it performs is register allocation. (According to Poletto &amp; Sarkar in their <a href="linearscan.ps">Linear Scan</a> paper, this alone can improve performance of generated code by an order of magnitude if done well, over register allocation done badly or not at all). The current code-generator is flexibly-structured enough to make adding peephole optimisation and instruction scheduling fairly easy.
 
 <h5>Register Allocation</h5>
 
-<p>Register allocation uses the fast <a href="linearscan.ps">Linear Scan</a> algorithm, which the inventors claim produces code within 10% of the speed of that generated with a register allocator based on Chaitin-style graph colouring, but with O(n) time complexity rather than O(n<sup>2</sup>).
+<p>Register allocation uses the fast <a href="linearscan.ps">Linear Scan</a> algorithm, which the Poletto &amp; Sarkar claim produces code within 10% of the speed of that generated with a register allocator based on Chaitin-style graph colouring, but with O(n) time complexity rather than O(n<sup>2</sup>).
 
-<p>An additional phase is employed, which I call "source-destination aliasing", which opportunistically aliases the destination register for ph2 instructions to the first source register, which can aid in the generation IA-32 code. This is because ph2 code uses three addresses for each operation:
+<p>An additional phase is employed, which I call "source-destination aliasing", which opportunistically aliases the destination register for ph2 instructions to the first source register, which can aid in the generation IA-32 code: since ph2 code uses three addresses for each operation,
 
 <blockquote><tt>add    %3,%6,%5</tt></blockquote>
 
@@ -162,11 +160,11 @@
 <blockquote><tt>mov    %ebx,%ecx</tt>
 <br><tt>add     %eax,%ecx</tt></blockquote>
 
-<p>The 'first' source operand, <tt>ecx</tt>, is overwritten with the result of the operation. We can rewrite the original ph2 code as this, which we can do if register %6 is not used afterwards:
+<p>The 'first' source operand, <tt>ecx</tt> in this case, is overwritten with the result of the operation. We can rewrite the original ph2 code as the following, so long as (the original) register %6 is not used afterwards:
 
 <blockquote><tt>add    %6,%6,%5</tt></blockquote>
 
-<p>Now we've eliminated a register copy instruction, so we can just do this:
+<p>Now we've eliminated a <tt>mov</tt> instruction, so we can just do this:
 
 <blockquote><tt>add     %eax,%ecx</tt></blockquote>
 
@@ -174,9 +172,9 @@
 
 <p>We generate code simply by choosing IA-32 instructions which correspond to ph2 instructions one at a time (ARMphetamine v1 used a complicated tree-based matching method). Code is generated indirectly via an abstraction layer (ab86), which performs a similar task to a text-source assembler in choosing instruction variants for different operand types, but also knows about which instructions set up and destroy condition-code flags. A few simple substitutions are performed at this level for optimisation reasons.
 
-<h3>Flow Control</h3>
+<p>(It goes without saying that binary code must be generated directly by the recompiler rather than by, say, forking an external assembler, for performance reasons).
 
-(Originally from <a href="livehash.html">"A neat hack for speeding up arbitrary flow control in dynamically-recompiled code"</a>, Julian Brown, 2-7 March 2001)
+<h3>Flow Control</h3>
 
 <p>Due to the way the profiling algorithm works, only a small portion of the whole emulated program is available for analysis during any given invocation of the recompilation algorithm. Often on exit from a particular chunk of code, no further recompiled code is readily available for execution, so the system must fall back to the interpretive emulator and continue emulation in that way.
 
@@ -223,13 +221,13 @@
 <li>(any others?)
 </ol>
 
-<p>The easy (but inefficient) way of translating each of these cases to native code is simple - don't. This is the solution used in ARMphetamine 1: when the program counter is set to an arbitrary address, just drop back to the interpretive emulator. This isn't quite so bad as it might be - due to the way the profiling system works, it's possible that the emulator will do a hash table lookup on the new program counter address before any code has been (slowly) emulated, and discover that a block of translated code does indeed exist for that address. Unfortunately this involves dropping back into C code and doing a slow (at the level of instruction granularity) hash-table lookup before execution of emulated code can continue.
+<p>The easy (but inefficient) way of translating each of these cases to native code is simple - don't. This is the solution used in ARMphetamine v1: when the program counter is set to an arbitrary address, just drop back to the interpretive emulator. This isn't quite so bad as it might be - due to the way the profiling system works, it's possible that the emulator will do a hash table lookup on the new program counter address before any code has been (slowly) emulated, and discover that a block of translated code does indeed exist for that address. Unfortunately this involves dropping back into C code and doing a slow (at the level of instruction granularity) hash-table lookup before execution of emulated code can continue.
 
 <p>If we propose the hypothesis that each calculated jump is only likely to transfer control to one of a handful of addresses, we can avoid doing a global hash-table lookup by <i>dynamically compiling the hash table as inline code</i>, in such a way that:
 
 <ul>
-<li>The fall-through case can be used to implement a closed hash table (ie, if a table-lookup collision occurs, check the following entry, etc.)
-<li>The default case can be used to call a function which will modify (or rewrite) the hash table to include the new, previously unknown address.
+<li>The fall-through case can be used to implement an open-addressed hash table with linear probing (ie, if a table-lookup collision occurs, check the following entry, etc.)
+<li>The default case can be used to call a function which will dynamically modify (or rewrite) the hash table to include the new, previously unknown address.
 </ul>
 
 <p>Both of these conditions can be implemented extremely efficiently in the target machine code, and should serve to speed up emulation considerably.
@@ -275,7 +273,7 @@
 
 <p>There must be at least one jump to the default case in the table, otherwise we might go into an infinite loop if we encounter an unknown address. The patchup code should therefore have the ability to extend the hash table as necessary (probably by doubling its size). To do this it's probably necessary (or at least desirable) to maintain some metadata along with each block, containing the (emulated address, native address) tuples which the hash table encodes, to avoid having to parse code we've previously created to recover this information.
 
-<p>The question arises of when to add new entries to each local active hash table. One solution might be to do translation of code a little more 'eagerly', so each time the patchup code is called, follow through to that address and translate it as well. This would mean doing static analysis of program code, and detecting anything longer than a single basic block is likely to get slightly overcomplicated. The alternative would be to do some sort of global backpatching, so an ARM address is tagged with a list of local hash tables to modify when that address eventually gets passed to the recompiler. The latter approach would be more in keeping with the lazy translation approach currently employed by the program. The patchup code then wouldn't actually do any patching up, but instead it would just put in a request to be patched up at some later time. Initially we have to drop back to the emulator as before after making this request, but the point is that eventually the modified table will be created and we'll have fast emulation.
+<p>The question arises of when to add new entries to each local hash table. One solution might be to do translation of code a little more 'eagerly', so each time the patchup code is called, follow through to that address and translate it as well. This would mean doing static analysis of program code, and detecting anything longer than a single basic block is likely to get slightly overcomplicated. The alternative would be to do some sort of global backpatching, so an ARM address is tagged with a list of local hash tables to modify when that address eventually gets passed to the recompiler. The latter approach would be more in keeping with the lazy translation approach currently employed by the program. The patchup code then wouldn't actually do any patching up, but instead it would just put in a request to be patched up at some later time. Initially we have to drop back to the emulator as before after making this request, but the point is that eventually the modified table will be created and emulation can proceed at maximum speed.
 
 <h5>Summary of "Active Hashing"</h5>
 
@@ -318,10 +316,6 @@
 <p>The ARM registers are held in an array whose base is at %ebp. The ratio of source:destination intructions (for this example at least) is better than that reported by some other systems, which are typically of the order 1:10. Addition of load/store instructions will blow the code up immensely though.
 
 <p>The interpretive emulator can run the first (couple of million?) instructions of a real operating system (Acorn's RISC OS 3.70), but is unfortunately let down by poor/non-existent hardware emulation after that.
-
-<h3>Get The Code!</h3>
-
-<p>The code is available by anonymous CVS from <a href="http://www.sourceforge.net/projects/armphetamine">Sourceforge</a>.
 
 <hr>
 

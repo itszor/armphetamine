@@ -1,0 +1,3 @@
+load divide 10000000
+disassemble 10000034 10000090
+phetatrans 0x10000034 0x10000090
