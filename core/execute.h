@@ -80,7 +80,7 @@
                                      ~0xfc000003)
 #  define PCSETADFL(X) do { \
             reg->r[15] = (reg->r[15] & reg->pcmask) | ((X) & ~reg->pcmask); \
-            processor_mode(machine, reg->r[15] & 0x3); \
+          /*  processor_mode(machine, reg->r[15] & 0x3); */\
           } while (0);
 
 #else
@@ -88,18 +88,18 @@
 #  define PCSETADDR(X) reg->r[15] = (X)
 // also do (somethingorother) with CPSR...
 #  define PCSETADFL(X) do { \
-            psrinfo spsr = reg->spsr[reg->spsr_current]; \
+            /*psrinfo spsr = reg->spsr[reg->spsr_current]; */\
             reg->r[15] = (X); \
-            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
+            /*processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
             reg->cpsr = spsr; \
             if (reg->cpsr.flag.interrupt & 0x2) \
               fprintf(stderr, "-- IRQ Disabled (pcsetadfl)\n"); \
             else \
             { \
               fprintf(stderr, "-- IRQ Enabled\n"); \
-             /* fprintf(stderr, "Unchecked (pcsetadfl)\n"); \
-              abort();*/ \
-            } \
+             |* fprintf(stderr, "Unchecked (pcsetadfl)\n"); \
+              abort();*| \
+            } */\
           } while (0);
 #endif
 

@@ -1,9 +1,9 @@
 #ifndef TRANSMAP_H
 #define TRANSMAP_H 1
 
-#include "defs.h"
-#include "hash.h"
-#include "pheta.h"
+#include "libjtype/defs.h"
+#include "libjtype/hash.h"
+#include "dynarec/pheta.h"
 
 typedef struct {
   uint3* code;

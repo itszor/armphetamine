@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "defs.h"
-#include "registers.h"
-#include "memory.h"
-#include "nativesupport.h"
-#include "execute.h"
-#include "hash.h"
-#include "block.h"
+#include "libjtype/defs.h"
+#include "core/registers.h"
+#include "core/memory.h"
+#include "dynarec/arch/x86/nativesupport.h"
+#include "core/execute.h"
+#include "libjtype/hash.h"
+#include "dynarec/block.h"
 
 #ifdef ROHLE
-#include "fakesys.h"
+#include "mach/riscos/fakesys.h"
 #endif
 
 #if defined(ROHLE) || defined(RISCOSE)

@@ -1,11 +1,11 @@
 #ifndef NATIVESUPPORT_H
 #define NATIVESUPPORT_H 1
 
-#include "defs.h"
-#include "registers.h"
-#include "memory.h"
-#include "x86asm.h"
-#include "machine.h"
+#include "libjtype/defs.h"
+#include "core/registers.h"
+#include "core/memory.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "core/machine.h"
 
 extern void nativesupport_invoke2(machineinfo* machine, uint3* code);
 extern void nativesupport_invoke(machineinfo* machine, nativeblockinfo* code);

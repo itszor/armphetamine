@@ -1,8 +1,8 @@
 #ifndef RELOCATE_H
 #define RELOCATE_H 1
 
-#include "defs.h"
-#include "list.h"
+#include "libjtype/defs.h"
+#include "libjtype/list.h"
 
 typedef enum {
   reloc_ABSOLUTE,

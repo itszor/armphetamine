@@ -1,8 +1,8 @@
 #ifndef RTASM_H
 #define RTASM_H 1
 
-#include "defs.h"
-#include "x86asm.h"
+#include "libjtype/defs.h"
+#include "dynarec/arch/x86/x86asm.h"
 
 typedef struct {
   uint3 mod;

@@ -3,9 +3,9 @@
 
 #include <stdio.h>
 
-#include "defs.h"
-#include "pheta.h"
-#include "machine.h"
+#include "libjtype/defs.h"
+#include "dynarec/pheta.h"
+#include "core/machine.h"
 
 extern const char* opname[];
 

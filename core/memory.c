@@ -2,15 +2,15 @@
 #include <string.h>
 #include <assert.h>
 
-#include "defs.h"
-#include "cnew.h"
-#include "memory.h"
-#include "processor.h"
-#include "machine.h"
+#include "libjtype/defs.h"
+#include "libjtype/cnew.h"
+#include "core/memory.h"
+#include "core/processor.h"
+#include "core/machine.h"
 
 #ifdef RISCPCEMU
-#  include "vidc20.h"
-#  include "iomd.h"
+#include "mach/riscpc/vidc20.h"
+#include "mach/riscpc/iomd.h"
 #endif
 
 const mem_writebank mem_wfault =
@@ -331,10 +331,9 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
   switch (firstleveldescriptor & 3)
   {
-    case 0:  // fault
-    case 3:
+    case 0:  // first level descriptor: fault
     {
-      fprintf(stderr, "Section translation fault at %.8x\n", virtualaddress);
+      fprintf(stderr, "First level descriptor fault at %.8x\n", virtualaddress);
       fprintf(stderr, "First-level descriptor=%.8x\n", firstleveldescriptor);
       fprintf(stderr, "Translation base=%.8x\n", mem->translationbase);
       fprintf(stderr, "Table index=%.8x\n", tableindex);
@@ -342,7 +341,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     }
     break;
 
-    case 1:  // page
+    case 1:  // first level descriptor: coarse second-level table
     {
       uint5 l2tableindex = (virtualaddress >> 12) & 0xff;
       uint5 pagetablebaseaddress = firstleveldescriptor >> 10;  
@@ -472,7 +471,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     }
     break;
 
-    case 2:  // section
+    case 2:  // first-level descriptor: section
     {
       uint5 sectionindex, physaddress;
       uint5 domainaccess = (mem->domainaccesscontrol >> (domain << 1)) & 0x3;
@@ -507,6 +506,13 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
       tlb->virtual = virtualaddress & 0xfff00000;
       tlb->modestamp = mem->currentmode;
       return physaddress;
+    }
+    break;
+    
+    case 3:  // first-level descriptor: fine second-level table
+    {
+      fprintf(stderr, "Trying to translate fine second-level table\n");
+      exit(1);
     }
     break;
   }
@@ -554,7 +560,7 @@ uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
 void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
-  static int dec = 8;
+  static int dec = 9;
 /*  fprintf(stderr, "Write data word %.8x to virtual addr %.8x\n", data, 
           virtualaddress);*/
   if (mem->datatlb.modestamp != mem->currentmode ||
@@ -568,12 +574,9 @@ void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
-  if (physaddress>=0xc0004000 && physaddress<0xc0010000) {
-    if (physaddress==0xc0004000 && data==0) {
- /*     ((machineinfo*)mem->parent)->trace = 1;*/
-    }
+  if (physaddress==0xc0004000) {
     fprintf(stderr, "Writing %.8x to %.8x\n", data, physaddress);
-//    if (!--dec) ((machineinfo*)mem->parent)->trace = 1;
+    if (!--dec) ((machineinfo*)mem->parent)->trace = 1;
   }
   mem->datatlb.write.word(mem, physaddress, data);
 }

@@ -2,10 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "defs.h"
-#include "pheta.h"
-#include "phetadism.h"
-#include "list.h"
+#include "libjtype/defs.h"
+#include "dynarec/pheta.h"
+#include "dynarec/phetadism.h"
+#include "libjtype/list.h"
 
 const char* opname[] = { "const", "constb", "fetch", "commit", "assoc", 
   "spill", "reload", "phi", "fexpect", "fcommit", "fensure", "nfexpect", 

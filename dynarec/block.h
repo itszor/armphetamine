@@ -1,10 +1,10 @@
 #ifndef BLOCK_H
 #define BLOCK_H 1
 
-#include "defs.h"
-#include "machine.h"
-#include "hash.h"
-#include "x86asm.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "libjtype/hash.h"
+#include "dynarec/arch/x86/x86asm.h"
 
 typedef struct {
   uint5 length;  // extent of this block

@@ -1,10 +1,10 @@
 #ifndef X86ASM_H
 #define X86ASM_H 1
 
-#include "defs.h"
-#include "hash.h"
-#include "registers.h"
-#include "clist.h"
+#include "libjtype/defs.h"
+#include "libjtype/hash.h"
+#include "core/registers.h"
+#include "libjtype/clist.h"
 
 // Instruction encodings ((number of bits, value) pairs)
 #define ADClrr   8,0x11,3,rm,3,reg,2,0x3

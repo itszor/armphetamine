@@ -1,7 +1,8 @@
-#include "defs.h"
-#include "memory.h"
-#include "mexreg.h"
-#include "cnew.h"
+#include "libjtype/defs.h"
+#include "core/memory.h"
+
+#include "mach/lart/mexreg.h"
+#include "libjtype/cnew.h"
 
 mex_registers* mexreg_new()
 {

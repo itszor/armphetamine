@@ -3,10 +3,10 @@
 
 /* SA-1100 peripheral control module */
 
-#include "defs.h"
-#include "memory.h"
-#include "machine.h"
-#include "fifo.h"
+#include "libjtype/defs.h"
+#include "core/memory.h"
+#include "core/machine.h"
+#include "mach/lart/fifo.h"
 
 struct sapcm_dma_channel {
   uint5 device_address;

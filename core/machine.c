@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "cnew.h"
-#include "machine.h"
-#include "hash.h"
-#include "block.h"
-#include "execute.h"
-#include "profile.h"
+#include "libjtype/cnew.h"
+#include "core/machine.h"
+#include "libjtype/hash.h"
+#include "dynarec/block.h"
+#include "core/execute.h"
+#include "dynarec/profile.h"
 
 #ifdef EMULART
-#  include "sapcm.h"
-#  include "ostimer.h"
+#include "mach/lart/sapcm.h"
+#include "mach/lart/ostimer.h"
 #endif
 
 machineinfo* machine_create(uint5 memory)
@@ -32,7 +32,7 @@ machineinfo* machine_create(uint5 memory)
   #ifdef EMULART
   sa1100_serial_initialise(machine->mem);
   #endif
-  machine->maxblocks = 2;
+  machine->maxblocks = 1;
   machine->curblocks = 0;
 
 	return machine;

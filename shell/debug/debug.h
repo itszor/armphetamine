@@ -3,7 +3,7 @@
 
 #include <stdarg.h>
 
-#include "machine.h"
+#include "core/machine.h"
 
 typedef enum {
   debug_COMMENT,

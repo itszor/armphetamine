@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "profile.h"
-#include "transmap.h"
-#include "cnew.h"
-#include "nativesupport.h"
-#include "recompile.h"
+#include "dynarec/profile.h"
+#include "dynarec/transmap.h"
+#include "libjtype/cnew.h"
+#include "dynarec/arch/x86/nativesupport.h"
+#include "dynarec/recompile.h"
 
 profile_state* profile_initialise(void)
 {

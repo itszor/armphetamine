@@ -1,8 +1,8 @@
 #include <stdio.h>
 
-#include "cnew.h"
-#include "defs.h"
-#include "registers.h"
+#include "libjtype/cnew.h"
+#include "libjtype/defs.h"
+#include "core/registers.h"
 
 registerinfo* registers_new(void)
 {
@@ -14,6 +14,7 @@ registerinfo* registers_new(void)
 
   reg->cpsr.value = 0;
   reg->cpsr.flag.mode = pm_SVC32;
+  reg->vectorbase = 0;
 
 //	fprintf(stderr, "Initialised register bank\n");
 	

@@ -1,8 +1,8 @@
 #ifndef OSTIMER_H
 #define OSTIMER_H 1
 
-#include "memory.h"
-#include "machine.h"
+#include "core/memory.h"
+#include "core/machine.h"
 
 struct ostimer_registers {
   uint5 clock;

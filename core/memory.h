@@ -1,8 +1,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H 1
 
-#include "defs.h"
-#include "hash.h"
+#include "libjtype/defs.h"
+#include "libjtype/hash.h"
 
 #if defined(RISCPCEMU) 
 #include <SDL/SDL.h>

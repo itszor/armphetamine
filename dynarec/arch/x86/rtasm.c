@@ -1,8 +1,8 @@
-#include "defs.h"
-#include "cnew.h"
-#include "x86asm.h"
-#include "rtasm.h"
-#include "clist.h"
+#include "libjtype/defs.h"
+#include "libjtype/cnew.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "dynarec/arch/x86/rtasm.h"
+#include "libjtype/clist.h"
 
 nativeblockinfo* rtasm_new(void)
 {

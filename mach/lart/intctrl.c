@@ -1,7 +1,7 @@
-#include "intctrl.h"
-#include "machine.h"
-#include "registers.h"
-#include "cnew.h"
+#include "mach/lart/intctrl.h"
+#include "core/machine.h"
+#include "core/registers.h"
+#include "libjtype/cnew.h"
 
 /* hmm. */
 static const uint5 sourcemod[] =
@@ -51,7 +51,7 @@ intctrl_registers* intctrl_new(void)
 void intctrl_blank(machineinfo* machine, uint5 unit)
 {
   intctrl_registers* icr = machine->mem->intctrl;
-  uint5 bits = ~sourcemod[unit];
+  uint5 bits = ~(1<<unit);
 
   icr->icpr &= bits;
   icr->icip &= bits;
@@ -64,8 +64,8 @@ void intctrl_add(machineinfo* machine, uint5 intsrc)
   intctrl_registers* icr = machine->mem->intctrl;
   
   icr->icpr |= intsrc;
-  icr->icfp |= intsrc & icr->icmr & icr->iclr;
   icr->icip |= intsrc & icr->icmr & ~icr->iclr;
+  icr->icfp |= intsrc & icr->icmr & icr->iclr;
 }
 
 void intctrl_fire(machineinfo* machine)

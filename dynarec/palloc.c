@@ -1,11 +1,11 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "palloc.h"
-#include "cnew.h"
-#include "hash.h"
-#include "x86asm.h"
-#include "genx86.h"
+#include "dynarec/palloc.h"
+#include "libjtype/cnew.h"
+#include "libjtype/hash.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "dynarec/arch/x86/genx86.h"
 
 const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
                          "ESP", "EBP", "ESI", "EDI"};

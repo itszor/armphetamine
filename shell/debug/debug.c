@@ -10,17 +10,17 @@
 #include <readline.h>
 #include <history.h>
 
-#include "defs.h"
-#include "machine.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
 #include "debug.h"
-#include "execute.h"
-#include "memory.h"
-#include "decode.h"
-#include "pheta.h"
-#include "phetadism.h"
-#include "palloc.h"
-#include "genx86.h"
-#include "recompile.h"
+#include "core/execute.h"
+#include "core/memory.h"
+#include "core/decode.h"
+#include "dynarec/pheta.h"
+#include "dynarec/phetadism.h"
+#include "dynarec/palloc.h"
+#include "dynarec/arch/x86/genx86.h"
+#include "dynarec/recompile.h"
 
 #ifdef RISCPCEMU
 #include "vidc20.h"

@@ -1,11 +1,11 @@
 #ifndef MACHINE_H
 #define MACHINE_H 1
 
-#include "defs.h"
-#include "processor.h"
-#include "registers.h"
-#include "memory.h"
-#include "hash.h"
+#include "libjtype/defs.h"
+#include "core/processor.h"
+#include "core/registers.h"
+#include "core/memory.h"
+#include "libjtype/hash.h"
 
 struct insttab;
 struct profile_state;

@@ -1,8 +1,8 @@
 #ifndef PROFILE_H
 #define PROFILE_H 1
 
-#include "defs.h"
-#include "transmap.h"
+#include "libjtype/defs.h"
+#include "dynarec/transmap.h"
 
 struct profile_state {
   uint5 context;

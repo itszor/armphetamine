@@ -1,9 +1,10 @@
 #include <stdlib.h>
 
-#include "defs.h"
-#include "flush.h"
-#include "block.h"
-#include "hash.h"
+#include "libjtype/defs.h"
+#include "libjtype/cnew.h"
+#include "dynarec/flush.h"
+#include "dynarec/block.h"
+#include "libjtype/hash.h"
 
 static void flush_releaseblock(void* data)
 {

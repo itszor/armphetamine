@@ -1,8 +1,8 @@
 #ifndef REGISTERS_H
 #define REGISTERS_H 1
 
-#include "defs.h"
-#include "processor.h"
+#include "libjtype/defs.h"
+#include "core/processor.h"
 
 typedef enum {
   spsr_FIQ,
@@ -24,6 +24,7 @@ typedef struct {
   psrinfo cpsr;
   uint5 pcmask;
   uint5 process_id;
+  uint5 vectorbase;
   // only used by mode switch code (not written yet...)
   uint5 usr[7];		  // saved 'usr' registers
   uint5 fiq[7];		  // saved 'fiq' registers

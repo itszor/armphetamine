@@ -1,5 +1,5 @@
 #define EXECUTEFN(X) X##_32
 
-#include "execute.inc.c"
+#include "core/execute.inc.c"
 
 #undef EXECUTEFN

@@ -1,9 +1,9 @@
-#include "defs.h"
-#include "machine.h"
-#include "decode.h"
-#include "disassemble.h"
-#include "execute.h"
-#include "pheta.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "core/decode.h"
+#include "core/disassemble.h"
+#include "core/execute.h"
+#include "dynarec/pheta.h"
 
 // disassembler function table
 insttab diss = {

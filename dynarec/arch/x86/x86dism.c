@@ -6,8 +6,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "x86asm.h"
-#include "x86dism.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "dynarec/arch/x86/x86dism.h"
 
 void x86dism_block(nativeblockinfo* nat)
 {

@@ -2,17 +2,17 @@
 #include <stddef.h>
 #include <assert.h>
 
-#include "genx86.h"
-#include "x86asm.h"
-#include "x86dism.h"
-#include "rtasm.h"
-#include "pheta.h"
-#include "palloc.h"
-#include "phetadism.h"
-#include "relocate.h"
-#include "cnew.h"
-#include "genx86_tab.h"
-#include "dynsupport.h"
+#include "dynarec/arch/x86/genx86.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "dynarec/arch/x86/x86dism.h"
+#include "dynarec/arch/x86/rtasm.h"
+#include "dynarec/pheta.h"
+#include "dynarec/palloc.h"
+#include "dynarec/phetadism.h"
+#include "dynarec/relocate.h"
+#include "libjtype/cnew.h"
+#include "dynarec/arch/x86/genx86_tab.h"
+#include "dynarec/arch/x86/dynsupport.h"
 
 /* static const char* allocname[] = {
   "unset", "constb", "const", "rfile", "ireg",

@@ -1,7 +1,7 @@
 #include <assert.h>
 
-#include "cnew.h"
-#include "transmap.h"
+#include "libjtype/cnew.h"
+#include "dynarec/transmap.h"
 
 transmap_entry* transmap_new(void)
 {

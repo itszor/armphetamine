@@ -1,6 +1,6 @@
 #define ARM26BIT
 #define EXECUTEFN(X) X##_26
 
-#include "execute.inc.c"
+#include "core/execute.inc.c"
 
 #undef EXECUTEFN

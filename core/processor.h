@@ -1,7 +1,7 @@
 #ifndef PROCESSOR_H
 #define PROCESSOR_H 1
 
-#include "defs.h"
+#include "libjtype/defs.h"
 
 // flags are held in Intel EFLAG register format, just because, even for
 // non-recompiled emulation. If direct access to flags is required, necessary

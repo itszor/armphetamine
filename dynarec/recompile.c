@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "recompile.h"
-#include "pheta.h"
-#include "phetadism.h"
-#include "machine.h"
-#include "palloc.h"
-#include "genx86.h"
-#include "x86asm.h"
-#include "cnew.h"
+#include "dynarec/recompile.h"
+#include "dynarec/pheta.h"
+#include "dynarec/phetadism.h"
+#include "core/machine.h"
+#include "dynarec/palloc.h"
+#include "dynarec/arch/x86/genx86.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "libjtype/cnew.h"
 
 nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
 {

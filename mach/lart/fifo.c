@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "fifo.h"
-#include "cnew.h"
+#include "libjtype/cnew.h"
 
 fifo_info* fifo_create(uint5 size)
 {

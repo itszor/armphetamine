@@ -2,13 +2,13 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "cnew.h"
-#include "defs.h"
-#include "machine.h"
-#include "hash.h"
-#include "pseudo.h"
-#include "x86asm.h"
-#include "registers.h"
+#include "libjtype/cnew.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "libjtype/hash.h"
+#include "dynarec/pseudo.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "core/registers.h"
 
 nativeblockinfo* x86asm_newnative(void)
 {

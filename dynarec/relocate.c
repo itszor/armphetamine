@@ -1,8 +1,8 @@
 #include <stdio.h>
 
-#include "relocate.h"
-#include "list.h"
-#include "cnew.h"
+#include "dynarec/relocate.h"
+#include "libjtype/list.h"
+#include "libjtype/cnew.h"
 
 void relocate_add(jt_list** to, uint5 value, uint5 offset, reloc_size size,
   reloc_type type)

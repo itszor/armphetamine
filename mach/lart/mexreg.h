@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
-#include "defs.h"
-#include "memory.h"
+#include "libjtype/defs.h"
+#include "core/memory.h"
 
 struct mex_registers {
   uint5 dramconfig;

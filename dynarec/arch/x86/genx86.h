@@ -1,13 +1,13 @@
 #ifndef GENX86_H
 #define GENX86_H 1
 
-#include "defs.h"
-#include "x86asm.h"
-#include "rtasm.h"
-#include "rtasm_fns.h"
-#include "palloc.h"
-#include "list.h"
-#include "memory.h"
+#include "libjtype/defs.h"
+#include "dynarec/arch/x86/x86asm.h"
+#include "dynarec/arch/x86/rtasm.h"
+#include "dynarec/arch/x86/rtasm_fns.h"
+#include "dynarec/palloc.h"
+#include "libjtype/list.h"
+#include "core/memory.h"
 
 typedef enum {
   ab_SHL,

@@ -1,6 +1,6 @@
-romload lart-blob     0x00000000
-romload lart-kernel   0x00020000
-romload lart-ramdisk  0x00100000
+romload lart-blob2     0x00000000
+romload lart-kernel-2417   0x00020000
+romload ramdisk-lart-minimal-new-tty-net.gz  0x00100000
 # break 0xc0008000
 # trace on
 # break 0xc0015320

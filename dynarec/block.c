@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "defs.h"
-#include "machine.h"
-#include "cnew.h"
-#include "block.h"
-#include "decode.h"
-#include "execute.h"
-#include "x86dism.h"
-#include "nativesupport.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "libjtype/cnew.h"
+#include "dynarec/block.h"
+#include "core/decode.h"
+#include "core/execute.h"
+#include "dynarec/arch/x86/x86dism.h"
+#include "dynarec/arch/x86/nativesupport.h"
 
 blockinfo* block_new(void)
 {

@@ -2,9 +2,9 @@
 
 #include <stdio.h>
 
-#include "defs.h"
-#include "machine.h"
-#include "decode.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "core/decode.h"
 
 static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
 														"hi","ls","ge","lt","gt","le","","nv"};

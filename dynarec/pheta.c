@@ -3,18 +3,18 @@
 #include <stdio.h>
 #include <limits.h>
 
-#include "defs.h"
-#include "pheta.h"
-#include "cnew.h"
-#include "machine.h"
-#include "list.h"
-#include "decode.h"
-#include "pqueue.h"
-#include "palloc.h"
-#include "clist.h"
-#include "phetadism.h"
-#include "bset.h"
-#include "genx86.h"
+#include "libjtype/defs.h"
+#include "dynarec/pheta.h"
+#include "libjtype/cnew.h"
+#include "core/machine.h"
+#include "libjtype/list.h"
+#include "core/decode.h"
+#include "libjtype/pqueue.h"
+#include "dynarec/palloc.h"
+#include "libjtype/clist.h"
+#include "dynarec/phetadism.h"
+#include "libjtype/bset.h"
+#include "dynarec/arch/x86/genx86.h"
 
 static const uint5 ccflags[] =
 {

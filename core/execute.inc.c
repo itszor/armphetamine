@@ -1,25 +1,25 @@
 #include <stdio.h>
-#include <sys/syscall.h>
+//#include <sys/syscall.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "defs.h"
-#include "machine.h"
-#include "memory.h"
-#include "registers.h"
-#include "processor.h"
-#include "execute.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "core/memory.h"
+#include "core/registers.h"
+#include "core/processor.h"
+#include "core/execute.h"
 
 #ifdef ROHLE
 #include "fakesys.h"
 #endif
 
-#include "decode.h"
-#include "debug.h"
+#include "core/decode.h"
+#include "shell/debug/debug.h"
 
 #ifdef EMULART
-#include "intctrl.h"
+#include "mach/lart/intctrl.h"
 #endif
 
 /* nzcv eq ne cs cc mi pl vs vc hi ls ge lt gt le al nv
@@ -285,7 +285,8 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   // mask for rd-affecting instructions
   const uint5 affectrd = 0xf0ff;
   // I suppose this should be...
-  uint5 rm = ((temp&15)==15 && regshift) ? GET(temp&15)+INSTSIZE : GET(temp&15);
+  uint5 rm = ((temp&15)==15 && regshift) ? RGET(temp&15)+INSTSIZE
+                                         : RGET(temp&15);
   uint5 shifttype = (temp>>5)&3, amount;
   // islogic affects the way the carry flag is set
   int islogic = logic & (1<<inst.dp.opcode);
@@ -823,7 +824,8 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       /* control fields updated? */
       if (field & 0xff)
       {
-        processor_mode(machine, val & 0x1f);
+        if (val<=0x1f)
+          processor_mode(machine, val & 0x1f);
 
      /*   if (!(reg->cpsr.flag.interrupt & 0x2))
         {
@@ -1361,10 +1363,21 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 
     if (inst.bdt.s && inst.bdt.l && (inst.bdt.reglist & (1<<15)))
     {
+      int oldmode;
       fprintf(stderr, "Potential trouble spot (LDM)\n");
       fprintf(stderr, "Address = %.8x\n", oldpc-8);
 /*      machine->trace = 1;*/
     /*  reg->cpsr.flag.interrupt &= 1;*/
+      oldmode = reg->spsr_current;
+      fprintf(stderr, "Old (current) mode: %d\n", oldmode);
+      fprintf(stderr, "Causing mode switch to: %d\n", 
+        reg->spsr[oldmode].flag.mode);
+      processor_mode(machine, reg->spsr[oldmode].flag.mode);
+      reg->cpsr.flag.interrupt = reg->spsr[oldmode].flag.interrupt;
+      reg->cpsr.flag.v = reg->spsr[oldmode].flag.v;
+      reg->cpsr.flag.c = reg->spsr[oldmode].flag.c;
+      reg->cpsr.flag.n = reg->spsr[oldmode].flag.n;
+      reg->cpsr.flag.z = reg->spsr[oldmode].flag.z;
      /* fprintf(stderr, "Unimplemented mode change in LDM!\n");
       abort();*/
     }
@@ -1528,6 +1541,16 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                   fprintf(stderr, "> Set MMU control: %x\n",
                     newstate);
 
+                  if (newstate & (1<<13))
+                  {
+                    fprintf(stderr, "OMG high vectors\n");
+                    reg->vectorbase = 0xffff0000;
+                  }
+                  else
+                  {
+                    reg->vectorbase = 0x0;
+                  }
+                  
                   if ((oldstate & 1) != (newstate & 1))
                   {
                     uint5 instaddr;
@@ -1584,25 +1607,39 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 }
                 break;
                 
-                case 5: // flush TLB
+              /*  case 5: // flush TLB
                 {
                   fprintf(stderr, "> Flush TLB\n");
                   memory_invalidatetlb(&mem->insttlb);
                   memory_invalidatetlb(&mem->datatlb);
                 }
+                break;*/
+                
+                case 5: // fault status
+                {
+                
+                }
                 break;
                 
-                case 6: // purge TLB
+/*                case 6: // purge TLB
                 {
                   fprintf(stderr, "> Purge TLB\n");
                   memory_invalidatetlb(&mem->insttlb);
                   memory_invalidatetlb(&mem->datatlb);
                 }
+                break;*/
+                
+                case 6:  // fault address
+                {
+                
+                }
                 break;
                 
-                case 7: // flush IDC
+                case 7: // cache control
                 {
 /*                  fprintf(stderr, "> Flush IDC\n");*/
+                  memory_invalidatetlb(&mem->insttlb);
+                  memory_invalidatetlb(&mem->datatlb);
                 }
                 break;
                 
@@ -1617,7 +1654,90 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 0x9:
                 {
-                  fprintf(stderr, "> Read buffer op (SA)\n");
+                  int subop = (inst.crt.cp << 4) | (inst.crt.crm);
+                  fprintf(stderr, "> Read buffer op %x (SA)\n", subop);
+                  switch (subop)
+                  {
+                    case 0x00:  /* flush all */
+                    fprintf(stderr, "Flush all RB\n");
+                    break;
+                    
+                    case 0x10:  /* flush buffer 0 */
+                    fprintf(stderr, "Flush RB 0\n");
+                    break;
+                    
+                    case 0x11:  /* flush buffer 1 */
+                    fprintf(stderr, "Flush RB 1\n");
+                    break;
+                    
+                    case 0x12:  /* flush buffer 2 */
+                    fprintf(stderr, "Flush RB 2\n");
+                    break;
+                    
+                    case 0x13:  /* flush buffer 3 */
+                    fprintf(stderr, "Flush RB 3\n");
+                    break;
+                    
+                    case 0x20:  /* load buffer 0 with one word */
+                    fprintf(stderr, "Load RB0 with one word\n");
+                    break;
+                    
+                    case 0x24:  /* load buffer 0 with four words */
+                    fprintf(stderr, "Load RB0 with four words\n");
+                    break;
+                    
+                    case 0x28:  /* load buffer 0 with eight words */
+                    fprintf(stderr, "Load RB0 with eight words\n");
+                    break;
+                    
+                    case 0x21:  /* load buffer 1 with one word */
+                    fprintf(stderr, "Load RB1 with one word\n");
+                    break;
+                    
+                    case 0x25:  /* load buffer 1 with four words */
+                    fprintf(stderr, "Load RB1 with four words\n");
+                    break;
+                    
+                    case 0x29:  /* load buffer 1 with eight words */
+                    fprintf(stderr, "Load RB1 with eight words\n");
+                    break;
+
+                    case 0x22:  /* load buffer 2 with one word */
+                    fprintf(stderr, "Load RB2 with one word\n");
+                    break;
+                    
+                    case 0x26:  /* load buffer 2 with four words */
+                    fprintf(stderr, "Load RB2 with four words\n");
+                    break;
+                    
+                    case 0x2a:  /* load buffer 2 with eight words */
+                    fprintf(stderr, "Load RB2 with eight words\n");
+                    break;
+
+                    case 0x23:  /* load buffer 3 with one word */
+                    fprintf(stderr, "Load RB3 with one word\n");
+                    break;
+                    
+                    case 0x27:  /* load buffer 3 with four words */
+                    fprintf(stderr, "Load RB3 with four words\n");
+                    break;
+                    
+                    case 0x2b:  /* load buffer 3 with eight words */
+                    fprintf(stderr, "Load RB3 with eight words\n");
+                    break;
+                    
+                    case 0x40:  /* disable user-mode mcr access */
+                    fprintf(stderr, "Disable user-mode mcr access\n");
+                    break;
+                    
+                    case 0x50:  /* enable user-mode mcr access */
+                    fprintf(stderr, "Enable user-mode mcr access\n");
+                    break;
+                    
+                    default:
+                    fprintf(stderr, "Unknown read buffer op\n");
+                    abort();
+                  }
                 }
                 break;
                 

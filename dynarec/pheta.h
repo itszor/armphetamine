@@ -1,13 +1,13 @@
 #ifndef PHETA_H
 #define PHETA_H 1
 
-#include "defs.h"
-#include "list.h"
-#include "decode.h"
-#include "machine.h"
-#include "bset.h"
-#include "pqueue.h"
-#include "clist.h"
+#include "libjtype/defs.h"
+#include "libjtype/list.h"
+#include "core/decode.h"
+#include "core/machine.h"
+#include "libjtype/bset.h"
+#include "libjtype/pqueue.h"
+#include "libjtype/clist.h"
 
 typedef enum {
   ph_CONST,

@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stddef.h>
 
-#include "defs.h"
-#include "memory.h"
+#include "libjtype/defs.h"
+#include "core/memory.h"
 
 #define MEMOFFSET(X) printf("%%define meminfo_"#X" %d\n", \
                        offsetof(meminfo, X));

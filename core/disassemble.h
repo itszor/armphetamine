@@ -1,8 +1,8 @@
 #ifndef DISASSEMBLE_H
 #define DISASSEMBLE_H 1
 
-#include "decode.h"
-#include "machine.h"
+#include "core/decode.h"
+#include "core/machine.h"
 
 extern int diss_dp(machineinfo* machine, instructionformat inst, void* null);
 

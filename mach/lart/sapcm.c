@@ -5,9 +5,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "defs.h"
-#include "sapcm.h"
-#include "memory.h"
+#include "libjtype/defs.h"
+
+#include "mach/lart/sapcm.h"
+#include "core/memory.h"
 
 void sa1100_serial_initialise(meminfo* mem)
 {

@@ -1,8 +1,8 @@
 #ifndef INTCTRL_H
 #define INTCTRL_H 1
 
-#include "defs.h"
-#include "machine.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
 
 struct intctrl_registers {
   uint5 icip;  // IRQ pending

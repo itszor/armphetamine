@@ -1,8 +1,8 @@
 #ifndef DECODE_H
 #define DECODE_H 1
 
-#include "defs.h"
-#include "machine.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
 
 /*
 #ifndef MACHINE_H

@@ -1,7 +1,7 @@
 #ifndef FIFO_H
 #define FIFO_H 1
 
-#include "defs.h"
+#include "libjtype/defs.h"
 
 typedef struct {
   uint3* data;

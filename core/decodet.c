@@ -1,4 +1,4 @@
-#include "decode.h"
+#include "core/decode.h"
 
 void thumb_dispatch(machineinfo* machine, uint4 thumbinst, insttab* action,
                     void* data)

@@ -1,11 +1,11 @@
 #ifndef PALLOC_H
 #define PALLOC_H 1
 
-#include "defs.h"
-#include "pheta.h"
-#include "list.h"
-#include "hash.h"
-#include "memory.h"
+#include "libjtype/defs.h"
+#include "dynarec/pheta.h"
+#include "libjtype/list.h"
+#include "libjtype/hash.h"
+#include "core/memory.h"
 
 typedef enum {
   pal_UNSET,

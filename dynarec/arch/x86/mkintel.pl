@@ -4,8 +4,8 @@
 
 @inteldat = <>;
 
-print "#include \"x86asm.h\"\n";
-print "#include \"rtasm.h\"\n";
+print "#include \"dynarec/arch/x86/x86asm.h\"\n";
+print "#include \"dynarec/arch/x86/rtasm.h\"\n";
 
 foreach (@inteldat)
 {

@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "defs.h"
+#include "libjtype/defs.h"
+#include "libjtype/cnew.h"
 /*#include "iomd.h"*/
-#include "machine.h"
-#include "cnew.h"
-#include "ostimer.h"
-#include "decode.h"
-#include "intctrl.h"
+#include "core/machine.h"
+
+#include "mach/lart/ostimer.h"
+#include "core/decode.h"
+#include "mach/lart/intctrl.h"
 
 ostimer_registers* ostimer_new(void)
 {
@@ -39,6 +40,7 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       break;
 
       case 0x10:
+      fprintf(stderr, "Writing %d to clock\n", data);
       mem->ostimer->clock = data;
       break;
 
@@ -192,7 +194,10 @@ void ostimer_clock(machineinfo* machine)
     return;*/
   }
 
-  intctrl_blank(machine, 26);
+/*  intctrl_blank(machine, 26);
+  intctrl_blank(machine, 27);
+  intctrl_blank(machine, 28);
+  intctrl_blank(machine, 29);*/
 
   for (i=0; i<4; i++)
   {

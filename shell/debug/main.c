@@ -4,16 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cnew.h"
-#include "defs.h"
-#include "machine.h"
-#include "memory.h"
-#include "decode.h"
-#include "block.h"
-#include "execute.h"
-#include "pqueue.h"
+#include "libjtype/cnew.h"
+#include "libjtype/defs.h"
+#include "core/machine.h"
+#include "core/memory.h"
+#include "core/decode.h"
+#include "dynarec/block.h"
+#include "core/execute.h"
+#include "libjtype/pqueue.h"
 #include "debug.h"
-#include "genx86.h"
+#include "dynarec/arch/x86/genx86.h"
 
 #ifdef VIRTUALFRAMEBUFFER
 #include "SDL.h"
