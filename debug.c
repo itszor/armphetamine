@@ -44,13 +44,14 @@ static const debug_cmd commands[] =
   { "#",           debug_COMMENT,     debug_null        },
   { "run",         debug_RUN,         debug_run         },
   { "continue",    debug_CONTINUE,    debug_continue    },
+  { "step",        debug_STEP,        debug_step        },
   { "disassemble", debug_DISASSEMBLE, debug_disassemble },
   { "memory",      debug_MEMORY,      debug_memory      },
   { "registers",   debug_REGISTERS,   debug_registers   },
   { "setreg",      debug_SETREG,      debug_setreg      },
-  { "breakset",    debug_BREAKSET,    debug_breakset    },
-  { "breakclear",  debug_BREAKCLEAR,  debug_breakclear  },
-  { "breaklist",   debug_BREAKLIST,   debug_breaklist   },
+  { "break",       debug_BREAKSET,    debug_breakset    },
+  { "clear",       debug_BREAKCLEAR,  debug_breakclear  },
+  { "list",        debug_BREAKLIST,   debug_breaklist   },
   { "trace",       debug_TRACE,       debug_trace       },
   { "load",        debug_LOAD,        debug_load        },
   { "romload",     debug_ROMLOAD,     debug_romload     },
@@ -194,6 +195,24 @@ void debug_continue(machineinfo* machine, char* cmd)
   machine_start(machine, 1);
 }
 
+void debug_step(machineinfo* machine, char* cmd)
+{
+  registerinfo* reg = machine->reg;
+  meminfo* mem = machine->mem;
+  uint5 pc = reg->cpsr.flag.mode<16 ? (reg->r[15] & ~0xfc000003)-8
+                                    : reg->r[15]-8;
+  instructionformat inst;
+
+  IGNORE(cmd);
+  
+  inst.instruction = memory_readinstword(mem, pc);
+  
+  machine_start(machine, 2);
+  fprintf(stderr, "%.8x : %.8x : ", pc, inst.instruction);
+  dispatch(machine, inst, &diss, (void*)pc);
+  fprintf(stderr, "\n");
+}
+
 void debug_disassemble(machineinfo* machine, char* cmd)
 {
   registerinfo* reg = machine->reg;
@@ -212,12 +231,13 @@ void debug_disassemble(machineinfo* machine, char* cmd)
                                       : reg->r[15]-8;
     fprintf(stderr, "Disassembling around PC (%x)\n", pc);
     start = pc-32;
-    if ((sint5)start < 0) start = 0;
+    /* this is nasty */
+    if (start > 0xffffff00) start = 0;
     end = start+64;
   }
   
-  start &= ~3;
-  end &= ~3;
+  start &= ~3u;
+  end &= ~3u;
   
   fprintf(stderr, "Disassembling from %x to %x\n", start, end);
   

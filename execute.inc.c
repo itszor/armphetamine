@@ -774,11 +774,13 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
   registerinfo* reg = machine->reg;
 /*  meminfo* mem = machine->mem;*/
 
+  /* MRS */
   if (inst.mrs.ident==0 && inst.mrs.ident2==15 && inst.mrs.ident3==2)
   {
     PUT(inst.mrs.rd, inst.mrs.ps ? reg->spsr[reg->spsr_current].value
                                  : reg->cpsr.value);
   }
+  /* MSR (full register) */
   else if (inst.msr.ident==0x29f00 && inst.msr.ident2==2)
   {
     if (inst.msr.pd)
@@ -796,6 +798,7 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       reg->cpsr.flag.mode = temp;  // urgh
     }
   }
+  /* MSR (flags only) */
   else if (inst.msrf.ident==0x28f && inst.msrf.ident2==2 && inst.msrf.ident3==0)
   {
     if (inst.msrf.pd)
@@ -808,6 +811,16 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       reg->cpsr.value &= 0x0fffffff;
       reg->cpsr.value |= val & 0xf0000000;
     }
+  }
+  else
+  {
+    fprintf(stderr, "WARNING: psrt misdecoded\n");
+    fprintf(stderr, "ident=%x ident2=%x ident3=%x\n",
+      inst.msrf.ident, inst.msrf.ident2, inst.msrf.ident3);
+    fprintf(stderr, "%x\n", inst.instruction);
+    dispatch(machine, inst, &diss, (void*)reg->r[15]);
+    fprintf(stderr, "\n");
+/*    abort();*/
   }
 }
 
@@ -1334,12 +1347,14 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           DEC;
           PCTRANSFER;
+          /* just what the hell was this supposed to achieve?
 #ifndef ARM26BIT
           if (inst.bdt.l) // load
           {
             processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
           }
 #endif
+ */
         }
         for (i=14; i>=0; i--)
         {
@@ -1358,12 +1373,14 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           PCTRANSFER;
           DEC;
+          /* just what the hell was this supposed to achieve?
 #ifndef ARM26BIT
           if (inst.bdt.l) // load
           {
             processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
           }
 #endif
+*/
         }
         for (i=14; i>=0; i--)
         {
@@ -1469,6 +1486,9 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
   IGNORE(null);
+
+/*  machine->trace = 1;
+  machine->detracecounter = 10;*/
 
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else

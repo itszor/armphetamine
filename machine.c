@@ -82,8 +82,8 @@ void machine_start(machineinfo* machine, uint5 cont)
         if (!--machine->detracecounter) machine->trace = 0;
       }
     }
-    
-    if (hash_lookup(machine->breakpoints, instaddr) && !cont)
+        
+    if (hash_lookup(machine->breakpoints, instaddr) && cont==0)
     {
       fprintf(stderr, "Breakpoint at %.8x\n", instaddr);
       return;
@@ -114,7 +114,7 @@ void machine_start(machineinfo* machine, uint5 cont)
     }
     
     // stop continuing from a breakpoint
-    if (cont) cont = 0;
+    if (cont==1) cont = 0;
       
 #ifdef IOMDSUPPORT
     if (--machine->cycle<0)
@@ -139,6 +139,12 @@ void machine_start(machineinfo* machine, uint5 cont)
       serialclock = SERIALCLOCKPERIOD;
     }
 #endif
+
+    if (cont==2)  // single-step
+    {
+      fprintf(stderr, "Stepped to %.8x\n", instaddr);
+      break;
+    }
   }
 }
 

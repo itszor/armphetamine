@@ -188,7 +188,6 @@ void sapcm_clock(machineinfo* machine)
   meminfo* mem = machine->mem;
  /* fprintf(stderr, "Clocked serial\n");*/
   mem->sapcm.serial_fifo->uart_status_1 =
-      0
-    | (fifo_empty(mem->sapcm.serial_fifo->in) ? 0 : 2)
+      (fifo_empty(mem->sapcm.serial_fifo->in) ? 0 : 2)
     | (fifo_full(mem->sapcm.serial_fifo->out) ? 0 : 4);
 }

@@ -121,7 +121,8 @@ int diss_dp_imm(machineinfo* machine, instructionformat inst, void* null)
   IGNORE(machine);
   IGNORE(null);
 
-  if (omitsflag[inst.dp.opcode] && !inst.dp.s)
+  if (omitsflag[inst.dp.opcode] && !inst.dp.s
+      && ((inst.instruction & 0x0d028f00)==0x01028f00))
 	{
 	  // PSR flags transfer from immediate operand
 	  fprintf(stderr, "msr%s %s,#%d", txtcc[inst.generic.cond], inst.msrf.pd ?

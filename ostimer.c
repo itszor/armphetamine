@@ -40,7 +40,8 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x14:
-    mem->ostimer->ossr = data;
+    /* clears bits set to one in data */
+    mem->ostimer->ossr &= ~data;
     break;
     
     case 0x18:
@@ -86,7 +87,33 @@ uint5 ostimer_read(meminfo* mem, uint5 address)
 
 void ostimer_clock(machineinfo* machine)
 {
-  machine->mem->ostimer->clock++;
+  ostimer_registers* oti = machine->mem->ostimer;
+  uint5 i, clk;
+
+  clk = ++oti->clock;
+
+  /* watchdog timer */
+  if ((oti->ower & 1)==1 && oti->osmr[3]==clk)
+  {
+    processor_reset(machine);
+    return;
+  }
+
+  for (i=0; i<4; i++)
+  {
+    if (clk==oti->osmr[i])
+    {
+      /* set corresponding bit in status register */
+      oti->ossr |= 1<<i;
+    }
+  }
+  
+  /* any enabled interrupts happen? */
+  if (((oti->oier & oti->ossr) & 0xf)>0)
+  {
+    fprintf(stderr, "Making ostimer interrupt!");
+    processor_irq(machine);
+  }
 }
 
 #endif
