@@ -3,6 +3,8 @@
 CC	= gcc
 CFLAGS	= -g -pipe -Wall -O0 -DQUICKWRITE \
 	  -DVERSION=\"0.2\" -DVIDCSUPPORT -DIOMDSUPPORT
+NASM	= nasm
+
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
 
 LDFLAGS= -g
@@ -13,7 +15,8 @@ OBJ =	allocate.o analyse.o block.o cnew.o codegen.o decode.o disassemble.o \
 	pseudo.o pseudodism.o registers.o riscos.o x86asm.o x86dism.o \
 	rtasm.o rtasm_fns.o flush.o pheta.o phetadism.o processor.o vidc20.o \
 	iomd.o asmalu.o debug.o bset.o asmalutab.o fifo.o mouse.o keyboard.o \
-	genx86.o palloc.o decodet.o executethm.o clist.o relocate.o
+	genx86.o palloc.o decodet.o executethm.o clist.o relocate.o \
+	dynsupport.o
 
 SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	disassemble.c execute26.c execute32.c fakesys.c flush.c generators.c \
@@ -22,7 +25,7 @@ SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	pseudodism.c registers.c riscos.c rtasm.c vidc20.c x86asm.c x86dism.c \
 	rtasm.c flush.c pheta.c phetadism.c vidc20.c iomd.c debug.c bset.c \
 	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c decodet.c \
-	executethm.c clist.c relocate.c
+	executethm.c clist.c relocate.c structsupport.c
 
 LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
 
@@ -36,6 +39,7 @@ clean:
 cleaner:
 	rm -f *.o emulate rtasm_fns.c rtasm_fns.h .depend
 
+dynsupport.asm:	structsupport memory.h
 execute26.c:	execute.inc.c
 execute32.c:	execute.inc.c
 
@@ -87,12 +91,22 @@ rtasm_fns.h:	rtasm_fns.c
 rtasm_check:	rtasm_fns.c
 	gcc rtasm_fns.c -o /dev/null 2> error.log
 
+structsupport:	structsupport.c
+	gcc -O2 $< -o $@
+
+structsupport.inc:	structsupport
+	./structsupport > structsupport.inc
+
+dynsupport.asm:	structsupport.inc
+
 asmalu.o:	gen_dp.pl
 	./gen_dp.pl | as -o asmalu.o
 
 %.o:	%.c
 	$(CC) -c $(INCLUDE) $(CFLAGS) -c $< -o $@
 
+%.o:	%.asm
+	$(NASM) -f elf $< -o $@
 
 .depend:	rtasm_fns.h Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -MM $(SRC) > .depend

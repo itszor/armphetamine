@@ -56,7 +56,7 @@ nativesupport.o: nativesupport.c defs.h registers.h processor.h \
  allocate.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h \
- clist.h cnew.h palloc.h
+ clist.h cnew.h palloc.h phetadism.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h clist.h phetadism.h
@@ -87,7 +87,7 @@ flush.o: flush.c defs.h flush.h machine.h processor.h registers.h \
  codegen.h allocate.h x86asm.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h \
- clist.h cnew.h palloc.h
+ clist.h cnew.h palloc.h phetadism.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h clist.h phetadism.h
@@ -106,7 +106,7 @@ keyboard.o: keyboard.c keyboard.h defs.h
 genx86.o: genx86.c genx86.h defs.h x86asm.h hash.h list.h registers.h \
  processor.h rtasm.h rtasm_fns.h palloc.h pheta.h decode.h machine.h \
  memory.h keyboard.h mouse.h bset.h pqueue.h clist.h x86dism.h \
- pseudo.h codegen.h allocate.h phetadism.h
+ pseudo.h codegen.h allocate.h phetadism.h relocate.h
 palloc.o: palloc.c palloc.h defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h clist.h cnew.h x86asm.h
@@ -117,3 +117,4 @@ executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
  decode.h fakesys.h
 clist.o: clist.c cnew.h defs.h clist.h list.h
 relocate.o: relocate.c relocate.h defs.h list.h cnew.h
+structsupport.o: structsupport.c memory.h defs.h keyboard.h mouse.h
