@@ -453,7 +453,7 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
         chunk->alloc[range->reg].type = pal_IREG;
         chunk->alloc[range->reg].info.ireg.num = 
           chunk->alloc[delrange->reg].info.ireg.num;
- 
+
         if (chunk->alloc[delrange->reg].type!=pal_SPLIT)
         {
           palloc_splitalloc* split;
