@@ -18,6 +18,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->bank3 = cnewarray(int, BANK3RAM/4);
   mem->rom0 = cnewarray(int, 4*1024*1024/4);
   mem->rom1 = 0; // cnewarray(int, 16*1024*1024/4);
+  mem->vram = cnewarray(int, VRAM/4);
   mem->writetag = 0;
   mem->currentmode = 0;
   mem->memoryfault = 0;
@@ -196,16 +197,50 @@ uint5 memory_readbyterom1(meminfo* mem, uint5 physaddress)
   return ((uint3*)mem->rom1)[physaddress & 0xffffff];
 }
 
+void memory_writebytevram(meminfo* mem, uint5 physaddress, uint5 data)
+{
+  if ((physaddress &= 0xffffff) < VRAM)
+    ((uint3*)mem->vram)[physaddress] = data;
+}
+
+void memory_writevram(meminfo* mem, uint5 physaddress, uint5 data)
+{
+  if ((physaddress &= 0xffffff) < VRAM)
+    mem->vram[physaddress >> 2] = data;
+}
+
+uint5 memory_readbytevram(meminfo* mem, uint5 physaddress)
+{
+  if ((physaddress &= 0xffffff) < VRAM)
+    return ((uint3*)mem->vram)[physaddress];
+  else
+    return 0;
+}
+
+uint5 memory_readvram(meminfo* mem, uint5 physaddress)
+{
+  if ((physaddress &= 0xffffff) < VRAM)
+    return mem->vram[physaddress >> 2];
+  else
+    return 0;
+}
+
 void memory_writefault(meminfo* mem, uint5 physaddress, uint5 data)
 {
-//  fprintf(stderr, "I'm writing faultily\n");
+  extern const char* modename_st[];
+  fprintf(stderr, "Write fault at %x. Mode=%s\n", physaddress, 
+    modename_st[mem->currentmode]);
   mem->memoryfault = 1;
+ /* exit(1);*/
 }
 
 uint5 memory_readfault(meminfo* mem, uint5 physaddress)
 {
-//  fprintf(stderr, "I'm reading faultily\n");
+  extern const char* modename_st[];
+  fprintf(stderr, "Read fault at %x. Mode=%s\n", physaddress, 
+    modename_st[mem->currentmode]);
   mem->memoryfault = 1;
+ /* exit(1);*/
   return 0;
 }
 
@@ -215,7 +250,7 @@ void memory_nullwrite(meminfo* mem, uint5 physaddress, uint5 data)
 
 uint5 memory_nullread(meminfo* mem, uint5 physaddress)
 {
-  return 0;
+  return 0x0c0ffee0;
 }
 
 void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 writeperm,
@@ -226,25 +261,31 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 writeperm,
     case 0x00: // ROM bank 0
     tlb->readbyte = readperm ? memory_readbyterom0 : memory_readfault;
     tlb->readword = readperm ? memory_readrom0 : memory_readfault;
-    tlb->writebyte = tlb->writeword = memory_writefault;
+    tlb->writebyte = tlb->writeword =
+      writeperm ? memory_nullwrite : memory_writefault;
     break;
 
     case 0x01: // ROM bank 1
     tlb->readbyte = readperm ? memory_readbyterom1 : memory_readfault;
     tlb->readword = readperm ? memory_readrom1 : memory_readfault;
-    tlb->writebyte = tlb->writeword = memory_writefault;
+    tlb->writebyte = tlb->writeword =
+      writeperm ? memory_nullwrite : memory_writefault;
     break;
 
     case 0x02: // VRAM
+    tlb->readbyte = readperm ? memory_readbytevram : memory_readfault;
+    tlb->readword = readperm ? memory_readvram : memory_readfault;
+    tlb->writebyte = writeperm ? memory_writebytevram : memory_writefault;
+    tlb->writeword = writeperm ? memory_writevram : memory_writefault;
     break;
 
     case 0x03: // module I/O space
     switch ((physaddress >> 20) & 0xf)
     {
       case 0x2:  // iomd registers
-      tlb->readbyte = readperm ? iomd_readbyte : memory_readfault;
+      tlb->readbyte = readperm ? iomd_readword : memory_readfault;
       tlb->readword = readperm ? iomd_readword : memory_readfault;
-      tlb->writebyte = writeperm ? iomd_writebyte : memory_writefault;
+      tlb->writebyte = writeperm ? iomd_writeword : memory_writefault;
       tlb->writeword = writeperm ? iomd_writeword : memory_writefault;
       break;
       
@@ -336,25 +377,25 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   uint3 isuser = (mem->currentmode==0);
   // bits go: aprsvd
   const static uint3 apfault[] = {
-    1, 1, 1, 1,
-    1, 1, 1, 0,
+    0, 0, 0, 0,
     1, 0, 1, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 0,
+    
+    0, 0, 1, 1,
+    0, 0, 1, 1,
+    0, 0, 1, 1,
+    0, 0, 0, 0,
+    
+    1, 0, 1, 1,
+    1, 0, 1, 1,
+    1, 0, 1, 1,
+    0, 0, 0, 0,
+    
     1, 1, 1, 1,
-    
-    1, 1, 0, 0,
-    1, 1, 0, 0,
-    1, 1, 0, 0,
-    1, 1, 0, 0,
-    
-    1, 0, 0, 0,
-    1, 0, 0, 0,
-    1, 0, 0, 0,
-    1, 0, 0, 0,
-    
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    1, 1, 1, 1
+    1, 1, 1, 1,
+    1, 1, 1, 1,
+    0, 0, 0, 0
   };
 
   if (!(mem->mmucontrol & 1)) {
@@ -374,7 +415,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     mem->translationbase | (tableindex << 2));
   domain = (firstleveldescriptor >> 5) & 0xf;
 
-  switch (firstleveldescriptor)
+  switch (firstleveldescriptor & 3)
   {
     case 0:  // fault
     case 3:
@@ -533,7 +574,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
         memory_physicalmap(tlb, firstleveldescriptor, 1, 1);
       }
 
-      sectionindex = virtualaddress & 0xfffff000;
+      sectionindex = virtualaddress & 0x000fffff;
       physaddress = (firstleveldescriptor & 0xfff00000) | sectionindex;
       tlb->mask = 0xfff00000;
       tlb->physical = physaddress & 0xfff00000;

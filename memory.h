@@ -2,6 +2,8 @@
 #define MEMORY_H 1
 
 #include "defs.h"
+#include "keyboard.h"
+#include "mouse.h"
 
 #ifdef VIDCSUPPORT
 #include <SDL/SDL.h>
@@ -33,6 +35,7 @@ struct meminfo {
   uint5* memory;
   uint5* rom0;
   uint5* rom1;
+  uint5* vram;
   uint5* bank0;
   uint5* bank1;
   uint5* bank2;
@@ -79,6 +82,8 @@ struct meminfo {
     irq_info fiq;
     irq_info sounddma;
     uint3 clkctl;
+    keyboard_info kbd;
+    mouse_info mouse;
   } io;
 #endif
 
@@ -93,6 +98,7 @@ typedef struct meminfo meminfo;
 #define BANK1RAM (4096*1024)
 #define BANK2RAM (4096*1024)
 #define BANK3RAM (4096*1024)
+#define VRAM (2048*1024)
 
 extern meminfo* memory_initialise(uint5 bytes);
 extern void memory_invalidatetlb(tlbentry* tlb);

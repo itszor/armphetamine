@@ -730,8 +730,10 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     }
     else
     {
-      reg->cpsr.value = GET(inst.msr.rm);
-      processor_mode(machine, reg->cpsr.flag.mode);
+      psrinfo newpsr;
+      newpsr.value = GET(inst.msr.rm);
+      processor_mode(machine, newpsr.flag.mode);
+      reg->cpsr.value = newpsr.value;
     }
   }
   else if (inst.msrf.ident==0x28f && inst.msrf.ident2==2 && inst.msrf.ident3==0)
@@ -906,6 +908,13 @@ void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
       RPUT(inst.sdt.rn, (uint5)base);
     }
 
+    if (mem->memoryfault)
+    {
+      processor_dataabort(machine);
+      mem->memoryfault = 0;
+      return;
+    }
+
     // pipelining correction  
     if (inst.sdt.l && inst.sdt.rd==15)
       reg->r[15]+=8;
@@ -1030,6 +1039,13 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     if (!inst.bdt.l) memory_postwrite(mem, base);
   #endif
 
+    if (mem->memoryfault)
+    {
+      processor_dataabort(machine);
+      mem->memoryfault = 0;
+      return;
+    }
+
     // pipeline correction, or just next instruction
     if (inst.bdt.l && (inst.bdt.reglist & (1<<15)))
       reg->r[15]+=8;
@@ -1142,12 +1158,12 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                     instructionformat inst;
                     int i;
                     INCPC;
-                    // we need to execute the next like three instructions
+                    // we need to execute the next like two instructions
                     // because the virtual memory system has some latency
                     // when switching on and off. These little things just
                     // kill you honestly.
                     fprintf(stderr, "Virtual memory state changed!\n");
-                    for (i=0; i<3; i++)
+                    for (i=0; i<2; i++)
                     {
                       instaddr = PCADDR-8;
                       inst.instruction = memory_readinstword(mem, instaddr);
@@ -1157,7 +1173,9 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                       fprintf(stderr, "\n");
                       dispatch(machine, inst, machine->exectab, 0);
                     }
-                    machine->trace = 1;
+/*                    machine->trace = 1;*/
+                    mem->mmucontrol = newstate;
+                    return;
                   }
                   mem->mmucontrol = newstate;
                 }

@@ -13,9 +13,12 @@ void processor_initialise(void)
 
 const char* modename_st[] =
 {
-  "USR26", "FIQ26", "IRQ26", "SVC26", "?", "?", "?", "?",
-  "?", "?", "?", "?", "?", "?", "?", "?",
-  "USR32", "FIQ32", "IRQ32", "SVC32", "ABT32", "UND32"
+  "USR26", "FIQ26", "IRQ26", "SVC26",
+  "UNK4", "UNK5", "UNK6", "UNK7", "UNK8", "UNK9",  "UNK10", "UNK11",
+  "UNK12", "UNK13", "UNK14", "UNK15",
+  "USR32", "FIQ32", "IRQ32", "SVC32", "ABT32", "UND32",
+  "UNK22", "UNK23", "UNK24", "UNK25", "UNK26", "UNK27", "UNK28", "UNK29", 
+  "UNK30", "UNK31"
 };
 
 // Switch the current processor mode
@@ -158,7 +161,7 @@ void processor_irq(machineinfo* machine)
 void processor_prefetchabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, 0x17);
+  processor_mode(machine, 0x14);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt = 2;  // disable irq
   reg->r[15] = 0x0C+8;
@@ -167,7 +170,7 @@ void processor_prefetchabort(machineinfo* machine)
 void processor_dataabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, 0x17);
+  processor_mode(machine, 0x14);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 2;  // disable irq
   reg->r[15] = 0x10+8;
@@ -185,7 +188,7 @@ void processor_swi(machineinfo* machine)
 void processor_und(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, 0x1b);
+  processor_mode(machine, 0x15);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt = 2;  // disable irq
   reg->r[15] = 0x04+8;

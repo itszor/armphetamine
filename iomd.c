@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "defs.h"
 #include "iomd.h"
+#include "keyboard.h"
+#include "mouse.h"
 
 void iomd_writebyte(meminfo* mem, uint5 address, uint5 data)
 {
@@ -20,9 +23,11 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x04:  // Keyboard data
+    mem->io.kbd.busy = 1;
     break;
     
     case 0x08:  // Keyboard control
+    if (data==8) mem->io.kbd.busy = 0;
     break;
     
     case 0x0c:  // I/O port control
@@ -157,9 +162,11 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0xa8:  // Mouse data
+    mem->io.mouse.busy = 1;
     break;
     
     case 0xac:  // Mouse control
+    if (data==8) mem->io.mouse.busy = 0;
     break;
     
     case 0xc4:  // I/O timing control
@@ -274,6 +281,7 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x08:  // Keyboard control
+    if (!mem->io.kbd.busy) return 128; else return 0;
     break;
     
     case 0x0c:  // I/O port control
@@ -396,6 +404,7 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0xac:  // Mouse control
+    if (!mem->io.mouse.busy) return 128; else return 0;
     break;
     
     case 0xc4:  // I/O timing control

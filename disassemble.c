@@ -36,7 +36,7 @@ void diss_dp(machineinfo* machine, instructionformat inst, void* null)
 		}
 		else
 		{
-		  if (inst.msr.ident2==0x39f)
+		  if ((inst.msr.ident>>8)==0x29f)
 			{
 			  // register contents to whole PSR
 				fprintf(stderr, "msr%s %s,r%d", txtcc[inst.generic.cond], inst.msr.pd ?

@@ -35,6 +35,9 @@ void machine_start(machineinfo* machine)
   {
     uint5 instaddr = PCADDR-8;
     instructionformat inst;
+    
+    if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
+    
     inst.instruction = memory_readinstword(mem, instaddr);
     
     if (machine->trace)
