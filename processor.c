@@ -24,7 +24,7 @@ const char* modename_st[] =
 };
 
 // Switch the current processor mode
-void processor_mode(machineinfo* machine, uint5 newmode, uint5 copycpsr)
+void processor_mode(machineinfo* machine, uint5 newmode)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
@@ -68,11 +68,11 @@ void processor_mode(machineinfo* machine, uint5 newmode, uint5 copycpsr)
     }
   }
 
-  if ((newmode&15)>0 && copycpsr)
+  if ((newmode&15)>0)
   {
     fprintf(stderr, "Storing cpsr %.8x to spsr[%d]\n", reg->cpsr,
       newmode&15);
-    reg->spsr[newmode&15] = reg->cpsr;
+    if (newmode != omode) reg->spsr[newmode&15] = reg->cpsr;
   }
 
   switch (omode)
@@ -223,7 +223,7 @@ void processor_mode(machineinfo* machine, uint5 newmode, uint5 copycpsr)
 void processor_fiq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_FIQ32, 1);
+  processor_mode(machine, pm_FIQ32);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 3;  // disable fiq, irq
   reg->r[15] = 0x1C+8;
@@ -232,7 +232,7 @@ void processor_fiq(machineinfo* machine)
 void processor_irq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_IRQ32, 1);
+  processor_mode(machine, pm_IRQ32);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x18+8;
@@ -241,7 +241,7 @@ void processor_irq(machineinfo* machine)
 void processor_prefetchabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_ABT32, 1);
+  processor_mode(machine, pm_ABT32);
   reg->r[14] = reg->r[15]-4;    /* +/- 4 */
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x0C+8;
@@ -250,7 +250,7 @@ void processor_prefetchabort(machineinfo* machine)
 void processor_dataabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_ABT32, 1);
+  processor_mode(machine, pm_ABT32);
   reg->r[14] = reg->r[15];  /* +/- 4 */
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x10+8;
@@ -259,7 +259,7 @@ void processor_dataabort(machineinfo* machine)
 void processor_swi(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_SVC32, 1);
+  processor_mode(machine, pm_SVC32);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x08+8;
@@ -268,7 +268,7 @@ void processor_swi(machineinfo* machine)
 void processor_und(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_UND32, 1);
+  processor_mode(machine, pm_UND32);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x04+8;
@@ -277,7 +277,7 @@ void processor_und(machineinfo* machine)
 void processor_reset(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_SVC32, 1);
+  processor_mode(machine, pm_SVC32);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 3;  // disable fiq+irq
   reg->r[15] = 0x00+8;

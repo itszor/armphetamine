@@ -797,14 +797,16 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
   else if ((inst.msrf.ident&0x20f)==0x20f
            && inst.msrf.ident2==2 && inst.msrf.ident3==0)
   {
-    uint5 field = (inst.msrf.ident&0x80)?0xff000000:0
-                | (inst.msrf.ident&0x40)?0x00ff0000:0
-                | (inst.msrf.ident&0x20)?0x0000ff00:0
-                | (inst.msrf.ident&0x10)?0x000000ff:0;
+    uint5 field = ((inst.msrf.ident&0x80)?0xff000000:0)
+                | ((inst.msrf.ident&0x40)?0x00ff0000:0)
+                | ((inst.msrf.ident&0x20)?0x0000ff00:0)
+                | ((inst.msrf.ident&0x10)?0x000000ff:0);
     if (inst.msrf.pd)
     {
       reg->spsr[reg->spsr_current].value &= ~field;
       reg->spsr[reg->spsr_current].value |= val & field;
+      fprintf(stderr, "Set spsr[%d] to %.8x, field=%.8x\n", reg->spsr_current,
+        reg->spsr[reg->spsr_current].value, field);
     }
     else
     {
@@ -814,7 +816,7 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       /* control fields updated? */
       if (field & 0xff)
       {
-        processor_mode(machine, val & 0x1f, 1);
+        processor_mode(machine, val & 0x1f);
 
         if (!(reg->cpsr.flag.interrupt & 0x2))
         {

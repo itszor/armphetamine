@@ -80,7 +80,7 @@
                                      ~0xfc000003)
 #  define PCSETADFL(X) do { \
             reg->r[15] = (reg->r[15] & reg->pcmask) | ((X) & ~reg->pcmask); \
-            processor_mode(machine, reg->r[15] & 0x3, 1); \
+            processor_mode(machine, reg->r[15] & 0x3); \
           } while (0);
 
 #else
@@ -90,7 +90,7 @@
 #  define PCSETADFL(X) do { \
             psrinfo spsr = reg->spsr[reg->spsr_current]; \
             reg->r[15] = (X); \
-            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode, 1); \
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
             reg->cpsr = spsr; \
             if (reg->cpsr.flag.interrupt & 0x2) \
               fprintf(stderr, "-- IRQ Disabled (pcsetadfl)\n"); \
@@ -114,7 +114,7 @@
                           if (inst.dp.s && reg->spsr_current!=0) { \
                             psrinfo spsr = reg->spsr[reg->spsr_current]; \
                             processor_mode(machine, \
-                              reg->spsr[reg->spsr_current].flag.mode, 1); \
+                              reg->spsr[reg->spsr_current].flag.mode); \
                             reg->cpsr = spsr; \
                             if (reg->cpsr.flag.interrupt & 0x2) \
                             { \
