@@ -1601,6 +1601,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   sint5 dest = -1;
   sint5 op1 = -1;
   const uint5 needop1mask = 0x5fff;
+  uint5 setflags = (inst.dp.s && inst.dp.rd!=15);
   
   IGNORE(machine);
   
@@ -1611,7 +1612,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   {
     case dp_AND:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_AND, op1, op2);
@@ -1626,7 +1627,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
 
     case dp_EOR:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_EOR, op1, op2);
@@ -1641,7 +1642,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
 
     case dp_SUB:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_SUB, op1, op2);
@@ -1656,7 +1657,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
 
     case dp_RSB:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_SUB, op2, op1);
@@ -1671,7 +1672,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
 
     case dp_ADD:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_ADD, op1, op2);
@@ -1687,7 +1688,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     case dp_ADC:
     {
       pheta_emit(chunk, ph_FENSURE, ph_C);
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_ADC, op1, op2);
@@ -1703,7 +1704,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     case dp_SBC:
     {
       pheta_emit(chunk, ph_FENSURE, ph_C);
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_SBC, op1, op2);
@@ -1719,7 +1720,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     case dp_RSC:
     {
       pheta_emit(chunk, ph_FENSURE, ph_C);
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_SBC, op2, op1);
@@ -1734,7 +1735,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_TST:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         pheta_emit(chunk, ph_TST, op1, op2);
@@ -1747,7 +1748,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_TEQ:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         pheta_emit(chunk, ph_TEQ, op1, op2);
@@ -1760,7 +1761,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_CMP:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         pheta_emit(chunk, ph_CMP, op1, op2);
@@ -1773,7 +1774,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_CMN:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_C | ph_V | ph_N | ph_Z);
         pheta_emit(chunk, ph_CMN, op1, op2);
@@ -1786,7 +1787,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_ORR:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_OR, op1, op2);
@@ -1801,7 +1802,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_MOV:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_MOV, op2);
@@ -1817,7 +1818,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     case dp_BIC:
     {
       op2 = pheta_emit(chunk, ph_NOT, op2);
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_AND, op1, op2);
@@ -1832,7 +1833,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     
     case dp_MVN:
     {
-      if (inst.dp.s)
+      if (setflags)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
         dest = pheta_emit(chunk, ph_NOT, op2);
