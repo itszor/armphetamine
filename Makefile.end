@@ -73,7 +73,8 @@ $(CORE)/asmalu.o:	$(CORE)/asmalu.s
 	$(NASM) -f elf $< -o $@
 
 %.d:	%.c $(TEMPFILES)
-	$(CC) $(INCLUDE) -MM $< > $@
+	echo $< $* $@
+	$(APBASEDIR)/depend.sh `dirname $*` $(INCLUDE) $* > $@
 
 %.d:	%.asm
 	$(NASM) -M $< > $@

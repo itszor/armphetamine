@@ -712,7 +712,15 @@ void pheta_dotprint(pheta_chunk* chunk, char* outfile)
  /*   fprintf(f, "  node: {\n");
     fprintf(f, "  }\n");*/
 
-    fprintf(f, "  n%p [shape=record, label=\"{<entry>", blk);
+    if (blk->srcstart != -1)
+    {
+      fprintf(f, "  n%p [shape=record, label=\"{<entry>", blk);
+    }
+    else
+    {
+      fprintf(f, "  n%p [shape=record, label=\"{{<src>src: %.8x}|<entry>", blk,
+        blk->srcstart);
+    }
 
     for (inst=blk->base->next, i=0; inst->data; inst=inst->next, i++)
     {
