@@ -14,6 +14,7 @@
 #  include "sapcm.h"
 #  include "ostimer.h"
 #  include "intctrl.h"
+#  include "mexreg.h"
 #endif
 
 const mem_writebank mem_wfault =
@@ -197,6 +198,20 @@ const mem_writebank mem_ostimer_write =
   ostimer_write
 };
 
+const mem_readbank mem_mexreg_read =
+{
+  sa1100_mexreg_read,
+  sa1100_mexreg_read,
+  sa1100_mexreg_read
+};
+
+const mem_writebank mem_mexreg_write =
+{
+  sa1100_mexreg_write,
+  sa1100_mexreg_write,
+  sa1100_mexreg_write
+};
+
 #endif  /* EMULART */
 
 meminfo* memory_initialise(uint5 bytes)
@@ -237,6 +252,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->sapcm.serial_fifo->out = fifo_create(8);
   mem->ostimer = ostimer_new();
   mem->intctrl = intctrl_new();
+  mem->mex = mexreg_new();
 #endif
   
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");
@@ -309,13 +325,6 @@ void memory_invalidatetlb(tlbentry* tlb)
 {
   tlb->modestamp = -1;  // there isn't a mode -1
 }
-
-/* This wasn't sensible
-void memory_setmapping(meminfo* mem, uint5 from, uint5 to)
-{
-  // blah
-}
-*/
 
 #ifdef VIRTUALFRAMEBUFFER
 // screen might need updating (efficiency, efficiency...)
@@ -501,7 +510,7 @@ void memory_writefault(meminfo* mem, uint5 physaddress, uint5 data)
   
   fprintf(stderr, "Write fault when trying to write %.8x to %.8x. Mode=%s\n", 
     data, physaddress, modename_st[mem->currentmode]);
-  mem->trace = 1;
+ /* ((machineinfo*)mem->parent)->trace = 1;*/
   mem->memoryfault = 1;
  /* exit(1);*/
 }
@@ -513,8 +522,8 @@ uint5 memory_readfault(meminfo* mem, uint5 physaddress)
     modename_st[mem->currentmode]);
   mem->memoryfault = 1;
 /*  ((machineinfo*)mem->parent)->trace = 1;*/
- /* exit(1);*/
-  return 0x0c0ffee0;
+  exit(1);
+  return 0xdeadbeef;
 }
 
 void memory_nullwrite(meminfo* mem, uint5 physaddress, uint5 data)
@@ -528,7 +537,9 @@ uint5 memory_nullread(meminfo* mem, uint5 physaddress)
 {
   IGNORE(mem);
   IGNORE(physaddress);
-  return 0x0c0ffee0;
+  fprintf(stderr, "Null read at %x.\n", physaddress);
+  exit(1);
+  return 0x0;
 }
 
 #ifdef EMULART
@@ -559,8 +570,8 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     break;
     
     case 0xa0: // memory control registers
-    tlb->read = readperm ? mem_rnull : mem_rfault;
-    tlb->write = writeperm ? mem_wnull : mem_wfault;
+    tlb->read = readperm ? mem_mexreg_read : mem_rfault;
+    tlb->write = writeperm ? mem_mexreg_write : mem_wfault;
     break;
 
     case 0xb0: // SA1100 LCD registers

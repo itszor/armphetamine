@@ -109,6 +109,7 @@ struct meminfo {
   } sapcm;
   struct ostimer_registers* ostimer;
   struct intctrl_registers* intctrl;
+  struct mex_registers* mex;
 #endif
 
   uint3 currentmode;

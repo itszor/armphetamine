@@ -810,8 +810,8 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     }
     else
     {
-      uint5 interrupt = 0;
-      uint5 before = reg->cpsr.flag.interrupt & 0x2;
+/*      uint5 interrupt = 0;
+      uint5 before = reg->cpsr.flag.interrupt & 0x2;*/
 
       /* control fields updated? */
       if (field & 0xff)
@@ -1550,7 +1550,13 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
               switch (inst.crt.crn)  // coproc register number
               {
                 // identify self as an SA110?
+                #ifdef EMULART
+                // SA1100 for Lart emulation
+                // Stepping 15 arbitrarily ;-)
+                case 0: PCFLAGPUT(inst.crt.rd, 0x4401A11f); break;
+                #else
                 case 0: PCFLAGPUT(inst.crt.rd, 0x4401a100); break;
+                #endif
                 // is the following line right?
                 case 1: PCFLAGPUT(inst.crt.rd, mem->mmucontrol);
                 fprintf(stderr, "> Copy mmucontrol to r%d\n", inst.crt.rd);
