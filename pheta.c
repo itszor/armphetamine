@@ -674,7 +674,7 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
         // flag stuff only for ARM state affecting variant
         need |= (needflag & have);
         needflag &= ~need;
-        if (needpred != -1)
+        if (needpred != -1 && needpred<16)
         {
           if ((ccflags[needpred] & have) == ccflags[needpred])
           {
@@ -694,7 +694,11 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
       }
       break;
 
-/*      case ph_NFCOMMIT:  -- handle seperately */
+      case ph_NFCOMMIT: /* -- handle seperately */
+      {
+        if (needpred>=16) needpred = -1;
+      }
+      break;
 
       case ph_FENSURE:
       {

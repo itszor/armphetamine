@@ -1594,7 +1594,7 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
           uint5 j;
           for (j=0; j<14; j++)
           {
-            if (pred & (1<<j))
+            if (pred & (1<<(j&15)))
             {
               off.info.value = offsetof(registerinfo, npredbuf[j]);
               genx86_out(nat, predset[j], &off, &nul, &nul, map);
