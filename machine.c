@@ -57,8 +57,8 @@ void machine_start(machineinfo* machine, uint5 cont)
     uint5 instaddr;
     instructionformat inst;
 
- /*   memory_invalidatetlb(&mem->datatlb);
-    memory_invalidatetlb(&mem->insttlb);*/
+    memory_invalidatetlb(&mem->datatlb);
+    memory_invalidatetlb(&mem->insttlb);
 
 #ifdef RECOMPILE
     do {

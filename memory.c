@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "defs.h"
 #include "cnew.h"
@@ -12,6 +13,7 @@
 #ifdef EMULART
 #  include "sapcm.h"
 #  include "ostimer.h"
+#  include "intctrl.h"
 #endif
 
 const mem_writebank mem_wfault =
@@ -497,8 +499,9 @@ void memory_writefault(meminfo* mem, uint5 physaddress, uint5 data)
   
   IGNORE(data);
   
-  fprintf(stderr, "Write fault at %x. Mode=%s\n", physaddress, 
-    modename_st[mem->currentmode]);
+  fprintf(stderr, "Write fault when trying to write %.8x to %.8x. Mode=%s\n", 
+    data, physaddress, modename_st[mem->currentmode]);
+  mem->trace = 1;
   mem->memoryfault = 1;
  /* exit(1);*/
 }
@@ -748,8 +751,8 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
   if ((mem->mmucontrol & 2) && (virtualaddress & 3)) {
   /* !!! ok, this is disabled 'cos it triggers on bytes, which is stupid */
- /*   fprintf(stderr, "Alignment fault!\n");
-    mem->memoryfault = 1;*/
+    fprintf(stderr, "Alignment fault!\n");
+    mem->memoryfault = 1;
   }
 
   tableindex = virtualaddress >> 20;
@@ -926,6 +929,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     }
     break;
   }
+  assert(!"Page translation failed");
   return -1;  // shouldn't happen!
 }
 
