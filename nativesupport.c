@@ -26,6 +26,11 @@ void nativesupport_invoke2(machineinfo* machine, nativeblockinfo* code)
     : "cx", "dx", "si", "di", "memory");
   
   fprintf(stderr, "<-- leaving native code\n");
+
+  FLAG(c) = reg->cflag;
+  FLAG(v) = reg->vflag;
+  FLAG(n) = reg->nflag;
+  FLAG(z) = reg->zflag;
 }
 
 #ifdef I386
