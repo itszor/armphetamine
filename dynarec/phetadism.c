@@ -101,9 +101,9 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
     {
       uint5 mask = instr->data.flag.need;
 
-      fprintf(f, "%-10s{", opname[opcode]);
+      fprintf(f, "%-10s[", opname[opcode]);
       writeflags(f, mask);
-      fprintf(f, "}");
+      fprintf(f, "]");
 
 /*        if (mask & ph_C) strcat(flags, (first=0, "c"));
       if (mask & ph_V) strcat(flags, first ? (first=0, "v") : ",v");
@@ -121,11 +121,11 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
       uint5 need = instr->data.flag.need;
       uint5 pred = instr->data.flag.pred;
 
-      fprintf(f, "%-10s{", opname[opcode]);
+      fprintf(f, "%-10s[", opname[opcode]);
       writeflags(f, have);
-      fprintf(f, "}, {");
+      fprintf(f, "], [");
       writeflags(f, need);
-      fprintf(f, "}, {");
+      fprintf(f, "], [");
       for (j=0; j<16; j++)
       {
         if (pred & (1<<j))
@@ -134,7 +134,7 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
           first = 0;
         }
       }
-      fprintf(f, "}");
+      fprintf(f, "]");
     }
     break;
 

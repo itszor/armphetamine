@@ -2,7 +2,9 @@
 
 # Take a couple of x86 definition files and output some C code?
 
-$input = "dynarec/arch/x86/intel.dat";
+$input = "/dev/stdin";
+
+# "intel.dat";
 
 open(input);
 @inteldat = <input>;

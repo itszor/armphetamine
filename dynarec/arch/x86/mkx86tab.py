@@ -20,8 +20,8 @@ def expandflags(pat):
   
   return xpat
 
-infile=open('dynarec/arch/x86/genx86tabsrc.dat', 'r')
-outfile=open('dynarec/arch/x86/genx86_tab.c', 'w')
+infile=open('genx86tabsrc.dat', 'r')
+outfile=open('genx86_tab.c', 'w')
 
 lines = infile.readlines()
 

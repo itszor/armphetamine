@@ -669,31 +669,24 @@ void pheta_predecessor(pheta_chunk* chunk)
   }
 }
 
-void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
+void pheta_dotprint(pheta_chunk* chunk, char* outfile)
 {
   FILE* f = fopen(outfile, "w");
   jt_list* scan;
   
-  fprintf(f, "graph: {\n");
-  fprintf(f, "  splines: yes\n");
-  fprintf(f, "  layoutalgorithm: dfs finetuning: yes\n");
-  fprintf(f, "  display_edge_labels: yes\n");
+  fprintf(f, "digraph code {\n");
   
-  fprintf(f, "  node: {\n");
-  fprintf(f, "    title: \"start\"\n");
-  fprintf(f, "    shape: ellipse\n");
-  fprintf(f, "  }\n");
+  fprintf(f, "  color = red\n");
   
-  fprintf(f, "  edge: {\n");
-  fprintf(f, "    thickness: 4\n");
-  fprintf(f, "    sourcename: \"start\"\n");
-  fprintf(f, "    targetname: \"%p\"\n", chunk->root);
-  fprintf(f, "  }\n");
-
-  fprintf(f, "  node: {\n");
-  fprintf(f, "    title: \"end\"\n");
-  fprintf(f, "    shape: ellipse\n");
-  fprintf(f, "  }\n");
+  fprintf(f, "  node [\n");
+  fprintf(f, "    shape = record\n");
+  fprintf(f, "  ]\n");
+  
+  fprintf(f, "  edge [\n");
+  fprintf(f, "     minlen = 1\n");
+  fprintf(f, "  ]\n");
+  
+  fprintf(f, "  start -> n%p:entry;\n", chunk->root);
 
   for (scan=chunk->blocks; scan; scan=scan->prev)
   {
@@ -706,33 +699,22 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
  /*   fprintf(f, "  node: {\n");
     fprintf(f, "  }\n");*/
 
-    fprintf(f, "  graph: {\n");
-    fprintf(f, "    title: \"%p\"\n", blk);
-    fprintf(f, "    status: folded\n");
+    fprintf(f, "  n%p [shape=record, label=\"{<entry>", blk);
 
     for (inst=blk->base->next, i=0; inst->data; inst=inst->next, i++)
     {
       pheta_instr* instr = inst->data;
-      fprintf(f, "  node: {\n");
-      fprintf(f, "    title: \"%p:%.4x:", blk, i);
+      fprintf(f, "%.4d: ", i);
       phetadism_instruction(f, instr);
-      fprintf(f, "\"\n  }\n");
+      fprintf(f, "\\l");
 
-      if (i>0)
-      {
-        fprintf(f, "  edge: {\n");
-        fprintf(f, "    thickness: 4\n");
-        fprintf(f, "    sourcename: \"%p:%.4x:", blk, i-1);
-        phetadism_instruction(f, prev);
-        fprintf(f, "\"\n    targetname: \"%p:%.4x:", blk, i);
-        phetadism_instruction(f, instr);
-        fprintf(f, "\"\n  }\n");
-      }
-
-      prev = instr;
+     // prev = instr;
     }
+    
+    fprintf(f, "|{<cond> %s%s|<true> true|<false> false}}\"];\n", 
+      (blk->predicate&16)?"n":"", txtcc[blk->predicate&15]);
 
-    fprintf(f, "  node: {\n");
+/*    fprintf(f, "  node: {\n");
     fprintf(f, "    title: \"%p:%s%s\"\n", blk,
       (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
     fprintf(f, "    shape: rhomboid\n");
@@ -749,39 +731,24 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
       fprintf(f, "  }\n");
     }
 
-    fprintf(f, "  }\n");
+    fprintf(f, "  }\n");*/
 
     if (blk->trueblk)
     {
-      fprintf(f, "  edge: {\n");
-      fprintf(f, "    thickness: 4\n");
-      fprintf(f, "    sourcename: \"%p\"\n", blk);
-      fprintf(f, "    targetname: \"%p\"\n", blk->trueblk);
-      if (blk->falseblk) fprintf(f, "    label: \"true\"\n");
-      fprintf(f, "  }\n");
+      fprintf(f, "  n%p:true -> n%p:entry;\n", blk, blk->trueblk);
     }
 
     if (blk->falseblk)
     {
-      fprintf(f, "  edge: {\n");
-      fprintf(f, "    thickness: 4\n");
-      fprintf(f, "    sourcename: \"%p\"\n", blk);
-      fprintf(f, "    targetname: \"%p\"\n", blk->falseblk);
-      fprintf(f, "    label: \"false\"\n");
-      fprintf(f, "    color: red\n");
-      fprintf(f, "  }\n");
+      fprintf(f, "  n%p:false -> n%p:entry;\n", blk, blk->falseblk);
     }
 
     if (!blk->trueblk && !blk->falseblk)
     {
-      fprintf(f, "  edge: {\n");
-      fprintf(f, "    thickness: 4\n");
-      fprintf(f, "    sourcename: \"%p\"\n", blk);
-      fprintf(f, "    targetname: \"end\"\n");
-      fprintf(f, "  }\n");
+      fprintf(f, "  n%p:true -> end;\n", blk);
     }
 
-    if (blk->parent)
+  /*  if (blk->parent)
     {
       fprintf(f, "  backedge: {\n");
       fprintf(f, "    thickness: 4\n");
@@ -790,7 +757,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
       fprintf(f, "    label: \"parent\"\n");
       fprintf(f, "    color: blue\n");
       fprintf(f, "  }\n");
-    }
+    }*/
     
  /*   for (pred=blk->predecessor->next; pred->data; pred=pred->next)
     {

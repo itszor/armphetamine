@@ -22,7 +22,7 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   fprintf(stderr, "Constant allocating\n");
   palloc_constant(mychunk);
 /*  fprintf(stderr, "Outputting gdl prior to branch optimisation\n");
-  pheta_gdlprint(mychunk, "controlgraphpre.gdl");*/
+  pheta_dotprint(mychunk, "controlgraph.dot");*/
   fprintf(stderr, "Transitive branch optimising\n");
   pheta_optimise_transitive_branch(mychunk);
   pheta_cull_unused_nodes(mychunk);
@@ -41,7 +41,7 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   phetadism_chunk(mychunk);
   fprintf(stderr, "Outputting daVinci\n");
   pheta_davinciprint(mychunk, "controlgraph.daVinci");
-  pheta_gdlprint(mychunk, "controlgraph.gdl");
+  pheta_dotprint(mychunk, "controlgraph.dot");
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
