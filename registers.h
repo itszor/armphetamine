@@ -23,7 +23,7 @@ typedef struct {
   uint5 pcmask;
   // only used by mode switch code (not written yet...)
   uint5 usr[7];		  // saved 'usr' registers
-  uint5 fiq[7];		  // cuitsaved 'fiq' registers
+  uint5 fiq[7];		  // saved 'fiq' registers
   uint5 irq[2];		  // saved 'irq' registers
   uint5 svc[2];		  // saved 'svc' registers
   uint5 abt[2];		  // saved 'abt' registers
