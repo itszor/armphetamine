@@ -290,6 +290,11 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   uint5 shifttype = (temp>>5)&3, amount;
   // islogic affects the way the carry flag is set
   int islogic = logic & (1<<inst.dp.opcode);
+#ifdef ARM26BIT
+  uint5 set_flags = inst.dp.s;
+#else
+  uint5 set_flags = inst.dp.s && inst.dp.rd!=15;
+#endif
 
   IGNORE(null);
   #ifdef ARM26BIT
@@ -316,7 +321,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       case 0:  // logical left/no shift
       {
         op2 = amount>31 ? 0 : rm<<amount;
-        if (islogic && amount && inst.dp.s)
+        if (islogic && amount && set_flags)
         {
           FLAG(c) = amount>31 ? 0 : rm & (1U<<(32-amount)) ? 1 : 0;
         }
@@ -326,7 +331,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       case 1:  // logical right
       {
         op2 = amount>31 ? 0 : rm>>amount;
-        if (islogic && amount && inst.dp.s)
+        if (islogic && amount && set_flags)
         {
           FLAG(c) = amount>32 ? 0 : rm & (1U<<(amount-1)) ? 1 : 0;
         }
@@ -337,7 +342,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       {
         op2 = amount>31 ? (rm&TOPBIT ? 0xffffffff : 0)
                         : (uint5)((sint5)rm>>amount);
-        if (islogic && amount && inst.dp.s)
+        if (islogic && amount && set_flags)
         {
           FLAG(c) = amount>32 ? (rm>>31) : rm & (1U<<(amount-1)) ? 1 : 0;
         }
@@ -348,7 +353,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       {
         amount &= 31;
         op2 = ROR(rm, amount);
-        if (islogic && inst.dp.s)
+        if (islogic && set_flags)
         {
           if (!amount) amount=32;
           FLAG(c) = (rm & (1U<<(amount-1))) ? 1 : 0;
@@ -365,7 +370,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       case 0:  // logical left/no shift
       {
         op2 = amount ? rm<<amount : rm;
-        if (islogic && amount && inst.dp.s)
+        if (islogic && amount && set_flags)
         {
           FLAG(c) = rm & (1U<<(32-amount)) ? 1 : 0;
         }
@@ -375,7 +380,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       case 1:  // logical right
       {
         op2 = amount ? rm>>amount : 0;
-        if (islogic && inst.dp.s)
+        if (islogic && set_flags)
         {
           if (!amount) amount=32;
           FLAG(c) = rm & (1U<<(amount-1)) ? 1 : 0;
@@ -387,7 +392,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       {
         op2 = amount ? (uint5)((sint5)rm>>amount) :
               (rm&TOPBIT ? 0xffffffff : 0);
-        if (islogic && inst.dp.s)
+        if (islogic && set_flags)
         {
           if (!amount) amount=32;
           FLAG(c) = rm & (1U<<(amount-1)) ? 1 : 0;
@@ -400,12 +405,12 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
         if (amount==0)  // rrx
         {
           op2 = (rm>>1) | (FLAG(c)<<31);
-          if (islogic && inst.dp.s) FLAG(c) = rm & 1;  // also if !logic?
+          if (islogic && set_flags) FLAG(c) = rm & 1;  // also if !logic?
         }
         else
         {
           op2 = ROR(rm, amount);
-          if (islogic && inst.dp.s)
+          if (islogic && set_flags)
           {
             if (!amount) amount=32;
             FLAG(c) = (rm & (1U<<(amount-1))) ? 1 : 0;
@@ -432,48 +437,48 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     case dp_SUB:
     {
       rd = op1 - op2;
-      if (inst.dp.s) { SUBFLAGS(op1,op2); }
+      if (set_flags) { SUBFLAGS(op1,op2); }
     }
     break;
 
     case dp_RSB:
     {
       rd = op2 - op1;
-      if (inst.dp.s) { SUBFLAGS(op2,op1); }
+      if (set_flags) { SUBFLAGS(op2,op1); }
     }
     break;
 
     case dp_ADD:
     {
       rd = op1 + op2;
-      if (inst.dp.s) { ADDFLAGS(op1,op2); }
+      if (set_flags) { ADDFLAGS(op1,op2); }
     }
     break;
 
     case dp_ADC:
     {
       rd = op1 + op2 + FLAG(c);
-      if (inst.dp.s) { ADDFLAGS(op1,op2); }
+      if (set_flags) { ADDFLAGS(op1,op2); }
     }
     break;
 
     case dp_SBC:
     {
       rd = op1 - op2 - !FLAG(c);
-      if (inst.dp.s) { SUBFLAGS(op1,op2); }
+      if (set_flags) { SUBFLAGS(op1,op2); }
     }
     break;
 
     case dp_RSC:
     {
       rd = op2 - op1 - !FLAG(c);
-      if (inst.dp.s) { SUBFLAGS(op2,op1); }
+      if (set_flags) { SUBFLAGS(op2,op1); }
     }
     break;
 
     case dp_TST:
     {
-      if (inst.dp.s)
+      if (set_flags)
       {
         rd = op1 & op2;
         if (inst.dp.rd==15)  // tstp? is there even a tstp?
@@ -498,7 +503,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
 
     case dp_TEQ:
     {
-      if (inst.dp.s)
+      if (set_flags)
       {
         rd = op1 ^ op2;
         if (inst.dp.rd==15)  // teqp
@@ -523,7 +528,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
 
     case dp_CMP:
     {
-      if (inst.dp.s)
+      if (set_flags)
       {
         rd = op1 - op2;
         SUBFLAGS(op1,op2);  // always affect flags
@@ -537,7 +542,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
 
     case dp_CMN:
     {
-      if (inst.dp.s)
+      if (set_flags)
       {
         rd = op1 + op2;
         ADDFLAGS(op1,op2);  // always affect flags
@@ -574,7 +579,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     break;
   }
   // deal with Z and N flags
-  if (inst.dp.s) { ZNFLAGS; }
+  if (set_flags) { ZNFLAGS; }
 
   if (affectrd & (1<<inst.dp.opcode))
   {
@@ -586,7 +591,7 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       if (inst.dp.s && reg->spsr_current != 0)
       {
         psrinfo oldspsr = reg->spsr[reg->spsr_current];
-        processor_mode(machine, oldspsr.flag.mode);
+        processor_mode(machine, reg->cpsr.flag.mode, oldspsr.flag.mode);
         reg->cpsr = oldspsr;
       }
     }
@@ -610,6 +615,12 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   uint5 rd = 0, amount = (temp>>8)*2;
   // mask for rd-affecting instructions
   const uint5 affectrd = 0xf0ff;
+#ifdef ARM26BIT
+  uint5 set_flags = inst.dp.s;
+#else
+  uint5 set_flags = inst.dp.s && inst.dp.rd!=15;
+#endif
+  
 
   IGNORE(null);
 #ifdef ARM26BIT
@@ -620,7 +631,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
 
   op2 = ROR(temp&255, amount);
   // why isn't this more clear in the data sheet? grr...
-  if (inst.dp.s && amount) FLAG(c) = (temp & (1U<<(amount-1))) ? 1 : 0;
+  if (set_flags && amount) FLAG(c) = (temp & (1U<<(amount-1))) ? 1 : 0;
 
   switch (inst.dp.opcode)
   {
@@ -639,42 +650,42 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     case dp_SUB:
     {
       rd = op1 - op2;
-      if (inst.dp.s) { SUBFLAGS(op1,op2); }
+      if (set_flags) { SUBFLAGS(op1,op2); }
     }
     break;
 
     case dp_RSB:
     {
       rd = op2 - op1;
-      if (inst.dp.s) { SUBFLAGS(op2,op1); }
+      if (set_flags) { SUBFLAGS(op2,op1); }
     }
     break;
 
     case dp_ADD:
     {
       rd = op1 + op2;
-      if (inst.dp.s) { ADDFLAGS(op1,op2); }
+      if (set_flags) { ADDFLAGS(op1,op2); }
     }
     break;
 
     case dp_ADC:
     {
       rd = op1 + op2 + FLAG(c);
-      if (inst.dp.s) { ADDFLAGS(op1,op2); }
+      if (set_flags) { ADDFLAGS(op1,op2); }
     }
     break;
 
     case dp_SBC:
     {
       rd = op1 - op2 - !FLAG(c);
-      if (inst.dp.s) { SUBFLAGS(op1,op2); }
+      if (set_flags) { SUBFLAGS(op1,op2); }
     }
     break;
 
     case dp_RSC:
     {
       rd = op2 - op1 - !FLAG(c);
-      if (inst.dp.s) { SUBFLAGS(op2,op1); }
+      if (set_flags) { SUBFLAGS(op2,op1); }
     }
     break;
 
@@ -730,7 +741,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
 
     case dp_CMP:
     {
-      if (inst.dp.s)
+      if (set_flags)
       {
         rd = op1 - op2;
         SUBFLAGS(op1,op2);
@@ -744,7 +755,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
 
     case dp_CMN:
     {
-      if (inst.dp.s)
+      if (set_flags)
       {
         rd = op1 + op2;
         ADDFLAGS(op1,op2);
@@ -781,7 +792,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     break;
   }
   // deal with Z and N flags
-  if (inst.dp.s) { ZNFLAGS; }
+  if (set_flags) { ZNFLAGS; }
 
   if (affectrd & (1<<inst.dp.opcode))
   {
@@ -793,7 +804,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
       if (inst.dp.s && reg->spsr_current != 0)
       {
         psrinfo oldspsr = reg->spsr[reg->spsr_current];
-        processor_mode(machine, oldspsr.flag.mode);
+        processor_mode(machine, reg->cpsr.flag.mode, oldspsr.flag.mode);
         reg->cpsr = oldspsr;
       }
     }
@@ -845,7 +856,6 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       if (field & 0xff)
       {
         int oldmode = reg->cpsr.flag.mode;
-        psrinfo oldcpsr = reg->cpsr;
 
 /*        if (!(reg->cpsr.flag.interrupt & 0x2))
         {
@@ -863,9 +873,9 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
         if (reg->cpsr.flag.mode != oldmode)
         {
           int newmode = reg->cpsr.flag.mode;
-          reg->cpsr.flag.mode = oldmode;
+          /*reg->cpsr.flag.mode = oldmode;*/
       /*    reg->spsr[oldmode&15] = oldcpsr;*/
-          processor_mode(machine, newmode);
+          processor_mode(machine, oldmode, newmode);
           abort();
         }
       /*  INCPC;
@@ -1010,6 +1020,8 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
     uint5 base = GET(inst.sdt.rn), addr, alignaddr;
     uint5 byteoffset;
     sint5 offset = 0;
+    int t_variant = !inst.sdt.p && inst.sdt.w;
+    int memmode_temp;
 
     if (inst.sdt.i)
     {
@@ -1059,6 +1071,17 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
     alignaddr = addr & ~3;
     byteoffset = addr & 3;
 
+    /* the T variant works as if we are in non-priveleged mode for
+       this transfer, ie that's what the memory system is told.
+    */
+    if (t_variant)
+    {
+/*      fprintf(stderr, "Warning: str T variant not tested much\n");*/
+      memmode_temp = mem->currentmode;
+      /* temporarily force memory system into USER mode */
+      mem->currentmode = pm_USR32;
+    }
+
     if (inst.sdt.l)  // load
     {
       if (inst.sdt.b)
@@ -1093,6 +1116,7 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
       #else
       uint5 src = RGET(inst.sdt.rd);
       #endif
+            
       if (inst.sdt.b)
       {
         // uint3* caddr = (uint3*) addr;
@@ -1104,9 +1128,15 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
         // *alignaddr = src;
         memory_writeword(mem, alignaddr, src);
       }
+
       #ifdef VIRTUALFRAMEBUFFER
       memory_postwrite(mem, base);
       #endif
+    }
+
+    if (t_variant)
+    {
+      mem->currentmode = memmode_temp;
     }
 
     if (!inst.sdt.p)  // post-index addressing
@@ -1419,7 +1449,7 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
      /* fprintf(stderr, "Causing mode switch to: %d\n", 
         reg->spsr[reg->spsr_current].flag.mode);*/
 
-      processor_mode(machine, oldspsr.flag.mode);
+      processor_mode(machine, reg->cpsr.flag.mode, oldspsr.flag.mode);
       reg->cpsr = oldspsr;
     //  reg->cpsr = reg->spsr[oldmode&15];
 /*      machine->trace = 1;*/
@@ -1452,7 +1482,7 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-/*  static int fire = 7;*/
+  static int fire = 0;
   IGNORE(null);
 
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
@@ -1461,6 +1491,14 @@ int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
 /*    registerinfo* reg = machine->reg;
     uint5 mumble;
     tlbentry null;*/
+
+    ++fire;
+    fprintf(stderr, "SWI call: %d\n", fire);
+
+ /*   if (fire==8)
+    {
+      machine->trace = 1;
+    }*/
 
   #ifdef FAKESWI
     fake_syscall(machine, inst.swi.number);

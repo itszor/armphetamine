@@ -10,7 +10,7 @@ LARTOBJS :=	$(OBJBASE)/fifo.o $(OBJBASE)/intctrl.o $(OBJBASE)/mexreg.o \
 INCLUDE :=	-I. -I$(APBASEDIR) -I$(APBASEDIR)/libjtype \
 		-I/usr/include -I/usr/local/include -I/usr/include/readline
 
-CFLAGS :=        -g -O0 -mcpu=i686 -march=i686 -pipe -W -Wall \
+CFLAGS :=        -g -O6 -mcpu=i686 -march=i686 -pipe -W -Wall \
 		-DVERSION=\"$(VERSION)\" -DEMULART
 
 OBJ :=	        $(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) \

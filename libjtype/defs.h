@@ -1,7 +1,7 @@
 #ifndef JT_DEFS_H
 #define JT_DEFS_H 1
 
-// the compiler should optimise this to a real ROR, if it's right...
+/* the compiler should optimise this to a real ROR, if it's right... */
 #define ROR(X,R) (((X)>>(R)) | ((X)<<(32-(R))))
 
 #define ROL(X,R) (((X)<<(R)) | ((X)>>(32-(R))))
@@ -18,11 +18,7 @@
 #  define FALSE 0
 #endif
 
-#ifndef NULL
-#  define NULL (void*)0
-#endif
-
-// these may need changing for different compilers/platforms
+/* these may need changing for different compilers/platforms */
 typedef unsigned long long uint6;
 typedef signed long long sint6;
 typedef unsigned int uint5;

@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "cnew.h"
 #include "buffer.h"
 
@@ -35,7 +37,11 @@ uint5 jt_buffer_append(jt_buffer* buf, void* data, uint5 len)
 void jt_buffer_extend(jt_buffer* buf, uint5 len)
 {
   uint5 oldlen = buf->length;
-  if (len < buf->size) return;
+  if (len < buf->size)
+  {
+    buf->length = len;
+    return;
+  }
   
   buf->buffer = realloc(buf->buffer, buf->size = len);
   

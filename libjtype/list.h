@@ -39,4 +39,6 @@ extern jt_list* jt_list_end(jt_list* head);
 extern jt_list* jt_list_search(jt_list* head, jt_listsearch_fn srch,
                                void* data);
 
+extern jt_list* jt_list_reverse(jt_list*);
+
 #endif

@@ -488,7 +488,7 @@ void debug_romload(machineinfo* machine, char* cmd)
   uint3* m;
   uint3* rombase;
   FILE* f;
-  uint5 addr, i;
+  uint5 addr, i, got;
   
   strsep(&cmd, " \t");
   if (!cmd)
@@ -527,7 +527,11 @@ void debug_romload(machineinfo* machine, char* cmd)
     fprintf(stderr, "Bad filename '%s'\n", filename);
     return;
   }
-  fread(m, fileinfo.st_size, 1, f);
+  got = fread(m, 1, fileinfo.st_size, f);
+  if (got != fileinfo.st_size)
+  {
+    fprintf(stderr, "WARNING: Only read %d bytes of ROM image\n", got);
+  }
   fclose(f);
   
   fprintf(stderr, "Base addr %x\n", addr);

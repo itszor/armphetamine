@@ -104,3 +104,27 @@ jt_list* jt_list_search(jt_list* head, jt_listsearch_fn srch, void* data)
 
   return 0;
 }
+
+jt_list* jt_list_reverse(jt_list* in)
+{
+  jt_list* walk;
+  jt_list* new_end = 0;
+
+  /* reverse of empty list is empty list */
+  if (!in) return 0;
+
+  for (walk=in; walk;)
+  {
+    jt_list* prev = walk->prev;
+    jt_list* next = walk->next;
+    walk->prev = next;
+    walk->next = prev;
+    /* before overwriting walk with end-of-list marker, remember
+       the last element
+    */
+    if (!prev) new_end = walk;
+    walk = prev;
+  }
+  
+  return new_end;
+}

@@ -14,6 +14,7 @@
 #endif
 
 #define USETLB 1
+/*#undef USETLB*/
 
 const mem_writebank mem_wfault =
 {
@@ -450,7 +451,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
             uint3 ap2 = (secondleveldescriptor >> 8) & 3;
             uint3 ap3 = (secondleveldescriptor >> 10) & 3;
             uint5 fltbase = (ap<<4) | (rsbits<<2);
-
+                        
             if (ap0==ap1 && ap1==ap2 && ap2==ap3) fullpage = 1;
 
             if (!isuser) fltbase += 2;

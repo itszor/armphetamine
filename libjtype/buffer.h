@@ -9,6 +9,9 @@ typedef struct {
   uint5 size;
 } jt_buffer;
 
+#define buffer_IDX(B,T,N) \
+  &(((T*)(B)->buffer)[(N)])
+
 extern jt_buffer* jt_buffer_new(uint5 init);
 
 extern void jt_buffer_delete(jt_buffer* buf);

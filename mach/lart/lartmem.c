@@ -18,6 +18,13 @@ const mem_readbank mem_rrom0 =
   memory_readrom0
 };
 
+const mem_readbank mem_rzero =
+{
+  memory_readzero,
+  memory_readzero,
+  memory_readzero
+};
+
 const mem_writebank mem_wrom0 =
 {
   memory_writerom0,
@@ -219,6 +226,7 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     break;
 
     case 0xc2 ... 0xc7:
+    fprintf(stderr, "Access physical memory at 0xc2..0xc7\n");
     break;
 
     case 0xc8: // DRAM bank 2 (8Mb)
@@ -231,7 +239,13 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     tlb->write = writeperm ? mem_wbank3 : mem_wfault;
     break;
 
-    case 0xca ... 0xe0:
+    case 0xca ... 0xdf:
+    fprintf(stderr, "Access physical memory at 0xca..0xdf\n");
+    break;
+
+    case 0xe0 ... 0xe7:  /* 16mb * 8 */
+    tlb->read = readperm ? mem_rzero : mem_rfault;
+    tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
 
     default:
@@ -302,11 +316,17 @@ BANKEDREADER(byte,1,uint3,0)
 BANKEDREADER(byte,2,uint3,0)
 BANKEDREADER(byte,3,uint3,0)
 
+uint5 memory_readzero(meminfo* mem, uint5 physaddress)
+{
+  return 0;
+}
+
 uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
 {
   switch (mem->flashmode)
   {
     case READ_ARRAY:
+    fprintf(stderr, "Read flash word %.8x\n", physaddress);
     return mem->rom0[(physaddress & 0xffffff) >> 2];
 
     case READ_ID_CODES:

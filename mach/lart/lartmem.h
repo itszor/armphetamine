@@ -3,6 +3,8 @@
 
 #include "memory.h"
 
+extern const mem_readbank mem_rzero;
+
 extern const mem_readbank mem_rrom0;
 extern const mem_readbank mem_rrom1;
 extern const mem_readbank mem_rfault;
@@ -18,6 +20,8 @@ extern const mem_writebank mem_wbank0;
 extern const mem_writebank mem_wbank1;
 extern const mem_writebank mem_wbank2;
 extern const mem_writebank mem_wbank3;
+
+uint5 memory_readzero(meminfo* mem, uint5 addr);
 
 void memory_writebytebank0(meminfo* mem, uint5 addr, uint5 data);
 void memory_writehalfbank0(meminfo* mem, uint5 addr, uint5 data);

@@ -120,16 +120,15 @@ void processor_reg_restorenew(machineinfo* machine, uint5 mode)
 }
 
 // Switch the current processor mode
-void processor_mode(machineinfo* machine, uint5 newmode)
+void processor_mode(machineinfo* machine, uint5 omode, uint5 newmode)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
-  uint5 omode = reg->cpsr.flag.mode, i;
-  uint5 reducemode = omode>=16 && newmode<16;
-  uint5 increasemode = omode<16 && newmode>=16;
-  uint5 instaddr = PCADDR-8;
-  instructionformat inst;
   psrinfo spsr = reg->spsr[reg->spsr_current];
+
+#if 0
+  instructionformat inst;
+  uint5 instaddr = PCADDR-8;
 
   if (newmode<16)
   {
@@ -163,6 +162,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
       }
     }
   }
+#endif
 
   assert(newmode>=16);
   
@@ -180,6 +180,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
 /*  if (newmode==24) machine->trace = 1;*/
 
 #ifdef PROBABLY_BROKEN
+  /* I think this is up to the OS/interrupt handler, not us */
   if (reducemode)
   {
     // absolutely no idea if this is right
@@ -199,38 +200,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
                     | ((reg->r[15]>>20) & 0xc0);
   }
 #endif
-  
-/*  if (increasemode)
-  {
-    reg->cpsr.value = 
-  }*/
-
-/*  const int rmodebase[] = {7, 7, 2, 2, 2, 2};
-  uint5 omode = reg->cpsr.flag.mode&15;
-  int i;
-  
-  if (reg->cpsr.flag.mode != newmode)
-  {
-    uint5 nmode = newmode & 0xf;
-    int sw = MIN(rmodebase[omode], rmodebase[nmode]);
-
-    // store CPSR in SPSR_<oldmode>
-    if (omode>0) reg->spsr[omode-1] = reg->cpsr;
-    
-    // switch out current mode's register bank
-    for (i=0; i<sw; i++)
-      reg->rbank[omode][i] = reg->r[i+(15-rmodebase[omode])];
-
-    // retrieve CPSR from SPSR_<newmode>
-    if (nmode>0) reg->cpsr = reg->spsr[nmode-1];
-
-    // switch in new mode's register bank
-    for (i=0; i<sw; i++)
-      reg->r[i+(15-rmodebase[nmode])] = reg->rbank[nmode][i];
-
-    // do the mode switch
-    reg->cpsr.flag.mode = newmode;
-  }*/
 }
 
 /* Next intruction to be executed here is pc-8 */
@@ -239,7 +208,9 @@ void processor_fiq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   reg->spsr[pm_FIQ32&15] = reg->cpsr;
-  processor_mode(machine, pm_FIQ32);
+  fprintf(stderr, "FIQ\n");
+  abort();
+  processor_mode(machine, reg->cpsr.flag.mode, pm_FIQ32);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt = 3;  // disable fiq, irq
   reg->r[15] = reg->vectorbase+0x1C+8;
@@ -249,7 +220,8 @@ void processor_irq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   reg->spsr[pm_IRQ32&15] = reg->cpsr;
-  processor_mode(machine, pm_IRQ32);
+/*  fprintf(stderr, "IRQ\n");*/
+  processor_mode(machine, reg->cpsr.flag.mode, pm_IRQ32);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x18+8;
@@ -259,7 +231,9 @@ void processor_prefetchabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   reg->spsr[pm_ABT32&15] = reg->cpsr;
-  processor_mode(machine, pm_ABT32);
+  fprintf(stderr, "Prefetch Abort\n");
+  abort();
+  processor_mode(machine, reg->cpsr.flag.mode, pm_ABT32);
   reg->r[14] = reg->r[15]-4;    /* +/- 4 */
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x0C+8;
@@ -270,7 +244,8 @@ void processor_dataabort(machineinfo* machine)
   registerinfo* reg = machine->reg;
   reg->spsr[pm_ABT32&15] = reg->cpsr;
   fprintf(stderr, "Oh cheese, a data abort\n");
-  processor_mode(machine, pm_ABT32);
+  abort();
+  processor_mode(machine, reg->cpsr.flag.mode, pm_ABT32);
   reg->r[14] = reg->r[15];  /* +/- 4 */
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x10+8;
@@ -282,7 +257,7 @@ void processor_swi(machineinfo* machine)
   instructionformat inst;
   reg->spsr[pm_SVC32&15] = reg->cpsr;
   fprintf(stderr, "SWI! (vectorbase=%.8x)\n", reg->vectorbase);
-  processor_mode(machine, pm_SVC32);
+  processor_mode(machine, reg->cpsr.flag.mode, pm_SVC32);
   reg->r[14] = reg->r[15]-4;
   fprintf(stderr, "insn: ");
   inst.instruction = memory_readinstword(machine->mem, reg->r[15]-8);
@@ -297,7 +272,7 @@ void processor_und(machineinfo* machine)
   registerinfo* reg = machine->reg;
   fprintf(stderr, "Teh undefined instruction trap!\n");
   reg->spsr[pm_UND32&15] = reg->cpsr;
-  processor_mode(machine, pm_UND32);
+  processor_mode(machine, reg->cpsr.flag.mode, pm_UND32);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x04+8;
@@ -307,7 +282,8 @@ void processor_reset(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   reg->spsr[pm_SVC32&15] = reg->cpsr;
-  processor_mode(machine, pm_SVC32);
+  fprintf(stderr, "Reset!\n");
+  processor_mode(machine, reg->cpsr.flag.mode, pm_SVC32);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 3;  // disable fiq+irq
   reg->r[15] = reg->vectorbase+0x00+8;

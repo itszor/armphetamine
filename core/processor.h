@@ -77,7 +77,7 @@ struct machineinfo;
 
 extern void processor_reg_savecurrent(struct machineinfo*, uint5);
 extern void processor_reg_restorenew(struct machineinfo*, uint5);
-extern void processor_mode(struct machineinfo*, uint5);
+extern void processor_mode(struct machineinfo*, uint5 omode, uint5 nmode);
 extern void processor_fiq(struct machineinfo*);
 extern void processor_irq(struct machineinfo*);
 extern void processor_prefetchabort(struct machineinfo*);

@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "map.h"
 
 jt_map* jt_map_newnode(char* name, void* value)

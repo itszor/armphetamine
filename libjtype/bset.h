@@ -13,7 +13,7 @@ typedef struct {
 #define jt_bset_TEST(B,N) ((B)->bits[(N)>>5] & (1<<((N)&31)))
 
 // ok, this is an odd one out
-extern uint5 jt_bset_setbits32(uint5 word);
+extern uint5 jt_bset_setbits_uint5(uint5 word);
 
 extern jt_bset* jt_bset_new(uint5 length);
 
