@@ -570,10 +570,9 @@ void pheta_scc_visit(pheta_basicblock* blk)
   for (walk=blk->predecessor->next; walk->data; walk=walk->next)
   {
     pheta_basicblock* parent = walk->data;
-    parent->scsubgraph = blk;
     if (parent->marker==col_WHITE)
     {
-      fprintf(stderr, "Recursing\n");
+      parent->scsubgraph = blk;
       pheta_scc_visit(parent);
     }
   }
@@ -739,7 +738,7 @@ void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno)
 {
   chunk->currentblock->lbuf[regno] = tempno;
   chunk->currentblock->dirtybuf[regno] = 1;
-  pheta_emit(chunk, ph_ASSOC, regno, tempno);
+/*  pheta_emit(chunk, ph_ASSOC, regno, tempno);*/
 }
 
 void pheta_lsync(pheta_chunk* chunk)

@@ -26,6 +26,7 @@ void x86dism_block(nativeblockinfo* nat)
   {
     wait(0);
     remove(template);
+    fprintf(stderr, "\n");
     return;
   }
 	
