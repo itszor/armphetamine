@@ -10,55 +10,14 @@ profile_state* profile_initialise(void)
   profile_state* pstate = cnew(profile_state);
   
   pstate->start = -1;
-  pstate->length = 0;
   pstate->currenttrans = 0;
   
   return pstate;
 }
 
-void profile_feedaddr(meminfo* mem, profile_state* pstate, uint5 addr)
+void profile_feedseqaddr(meminfo* mem, profile_state* pstate, uint5 addr)
 {
-  if (pstate->start == -1u)
-  {
-    /* current block state has been invalidated. Either we need to
-     * reinstate a previous block & increase its usage count, or
-     * start a new block afresh.
-     */
-    transmap_entry* entryataddr = transmap_getentry(mem, addr);
-
-    if (entryataddr)
-    {
-      /* re-enable this as current block */
-      pstate->currenttrans = entryataddr;
-      pstate->start = addr;
-
-      if (++pstate->currenttrans->usecount > RECOMPILE_THRESHOLD)
-      {
-        /* do the funky shit */
-        fprintf(stderr, "BLING! Found block, start %.8x, end %.8x\n",
-          pstate->start, pstate->currenttrans->length);
-        exit(0);
-      }
-    }
-    else
-    {
-      pstate->start = addr;
-      pstate->length = 4;
-      pstate->currenttrans = transmap_new();
-      transmap_addentry(mem, addr, pstate->currenttrans);
-    }
-  }
-  else if ((pstate->start & 0xfffff000) != ((pstate->start+addr) & 0xfffff000))
-  {
-    // have we crossed a 4kbyte boundary?
-    fprintf(stderr, "Crossed 4k boundary\n");
-/*    assert(addr > pstate->start);
-    pstate->currenttrans->length = 4096 - (pstate->start & 0xfff);*/
-    /* invalidate current block & recur */
-    pstate->start = -1;
-    profile_feedaddr(mem, pstate, addr);
-  }
-  else
+  if (pstate->start != -1u)
   {
     if (addr >= pstate->start + pstate->currenttrans->length)
     {
@@ -70,13 +29,52 @@ void profile_feedaddr(meminfo* mem, profile_state* pstate, uint5 addr)
     else if (addr>=pstate->start &&
              addr < pstate->start + pstate->currenttrans->length)
     {
-      /* that's OK */
+      /* that's OK, we're still inside the same block */
+      return;
     }
     else
     {
-      /* outside block, invalidate & recur */
+      /* outside block, invalidate. This shouldn't happen */
       pstate->start = -1;
-      profile_feedaddr(mem, pstate, addr);
+      assert(!"Non-sequential address?");
     }
+  }
+}
+
+void profile_feednseqaddr(meminfo* mem, profile_state* pstate, uint5 addr)
+{
+  /* We're starting at a new leader address. Either we need to
+   * reinstate a previous block & increase its usage count, or
+   * start a new block afresh.
+   */
+  transmap_entry* entryataddr = transmap_getentry(mem, addr);
+
+  if (entryataddr)
+  {
+    /* re-enable this as current block */
+    pstate->currenttrans = entryataddr;
+    pstate->start = addr;
+
+    if (entryataddr->code)
+    {
+      /* run recompiled code */
+      fprintf(mem->trace, "Running code for %.8x\n", pstate->start);
+    }
+    else if (++pstate->currenttrans->usecount > RECOMPILE_THRESHOLD)
+    {
+      /* do the funky shit */
+      fprintf(mem->trace, "BLING! Found block, start %.8x, length %.8x\n",
+        pstate->start, pstate->currenttrans->length);
+      fflush(mem->trace);
+      entryataddr->code = (char*)0x100;
+    }
+  }
+  else
+  {
+    /* make this the new leader address */
+    pstate->start = addr;
+    pstate->currenttrans = transmap_new();
+    /* patch us into the transmap */
+    transmap_addentry(mem, addr, pstate->currenttrans);
   }
 }

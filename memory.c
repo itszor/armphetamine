@@ -256,6 +256,8 @@ meminfo* memory_initialise(uint5 bytes)
   
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");
 
+  mem->trace = fopen("trace.out", "w");
+
   return mem;
 }
 

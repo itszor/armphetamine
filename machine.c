@@ -20,6 +20,7 @@ machineinfo* machine_create(uint5 memory)
   machine->breakpoints = hash_new(16);
   machine->trace = 0;
   machine->pstate = profile_initialise();
+    
 	return machine;
 }
 
@@ -29,6 +30,7 @@ void machine_start(machineinfo* machine)
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
   const uint5 cycperio = 100;
+  uint5 feednewpc = 0;
 #ifdef EMULART
   sint5 serialclock = SERIALCLOCKPERIOD;
 #endif
@@ -41,6 +43,12 @@ void machine_start(machineinfo* machine)
     instructionformat inst;
     
     if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
+    
+    if (feednewpc)
+    {
+      profile_feednseqaddr(mem, machine->pstate, instaddr);
+      feednewpc = 0;
+    }
     
     inst.instruction = memory_readinstword(mem, instaddr);
     
@@ -62,7 +70,9 @@ void machine_start(machineinfo* machine)
       if (retcode==1)
       {
         /* Uses instruction ptr in state before execute has mangled it */
-        profile_feedaddr(mem, machine->pstate, instaddr);
+        profile_feedseqaddr(mem, machine->pstate, instaddr);
+        /* make sure next instruction loaded (re-)enables a profile block */
+        feednewpc = 1;
       }
     }
       

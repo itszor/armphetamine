@@ -10,6 +10,8 @@
 #include <SDL/SDL.h>
 #endif
 
+#include <stdio.h>
+
 struct meminfo;
 
 typedef void (*writefn)(struct meminfo* mem, uint5 physaddr, uint5 data);
@@ -112,6 +114,8 @@ struct meminfo {
   uint3 currentmode;
   uint3 memoryfault;
   void* parent;
+  
+  FILE* trace;
 };
 
 typedef struct meminfo meminfo;

@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int testfunc(void)
+int testfunc(int q)
 {
   int i, j;
 
@@ -9,7 +9,7 @@ int testfunc(void)
     j += 10000/i;
   }
   
-  return j;
+  return j * q;
 }
 
 int done(void) {}

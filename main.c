@@ -44,57 +44,6 @@
 //#define LOWER 0x119c
 //#define UPPER 0x11fc
 
-typedef struct {
-  char** ps_argvstr;
-	int ps_nargvstr;
-	char** ps_envstr;
-	int ps_nenvstr;
-} netbsd_ps_strings;
-
-// copy important fields from one machine to another
-void dupstate(machineinfo* from, machineinfo* to)
-{
-  memcpy(to->reg, from->reg, sizeof(registerinfo));
-  memcpy(to->mem->memory, from->mem->memory, 4*1024*1024);
-}
-
-void cmpstate(machineinfo* x, machineinfo* y)
-{
-  uint5 i;
-  
-  for (i=0; i<16; i++)
-  {
-    if (x->reg->r[i] != y->reg->r[i])
-    {
-      fprintf(stderr, "Register %d different (%x != %x)\n", i, x->reg->r[i],
-        y->reg->r[i]);
-    }
-  }
-  
-  #define FLAGCHECK(q) if (x->reg->q##flag != y->reg->q##flag) { \
-    fprintf(stderr, "Flag " #q " different (%d != %d)\n", x->reg->q##flag, \
-    y->reg->q##flag); \
-  }
-  
-  FLAGCHECK(c) FLAGCHECK(v) FLAGCHECK(n) FLAGCHECK(z)
-  
-  for (i=0; i<1024*1024; i++)
-  {
-    if (x->mem->memory[i] != y->mem->memory[i])
-    {
-      fprintf(stderr, "Memory contents different at %x (%x != %x)\n", i*4,
-        x->mem->memory[i], y->mem->memory[i]);
-    }
-  }
-}
-
-machineinfo* mcopy;
-
-void interpretblock(machineinfo* machine, uint5 base, blockinfo* blk)
-{
-  uint5 pc;
-}
-
 int main(void)
 {
 	machineinfo* machine;
