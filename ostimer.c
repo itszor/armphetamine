@@ -9,6 +9,7 @@
 #include "machine.h"
 #include "cnew.h"
 #include "ostimer.h"
+#include "decode.h"
 
 #ifdef EMULART
 
@@ -87,15 +88,20 @@ uint5 ostimer_read(meminfo* mem, uint5 address)
 
 void ostimer_clock(machineinfo* machine)
 {
+  registerinfo* reg = machine->reg;
+  uint5 pc = reg->cpsr.flag.mode<16 ? (reg->r[15] & ~0xfc000003)-8
+                                    : reg->r[15]-8;
+  instructionformat inst;
   ostimer_registers* oti = machine->mem->ostimer;
   uint5 i, clk;
 
-  clk = ++oti->clock;
+  clk = oti->clock++;
 
   /* watchdog timer */
   if ((oti->ower & 1)==1 && oti->osmr[3]==clk)
   {
-    processor_reset(machine);
+    fprintf(stderr, "Watchdog timer, whoops\n");
+   /* processor_reset(machine);*/
     return;
   }
 
@@ -109,9 +115,14 @@ void ostimer_clock(machineinfo* machine)
   }
   
   /* any enabled interrupts happen? */
-  if (((oti->oier & oti->ossr) & 0xf)>0)
+  if (((oti->oier & oti->ossr) & 0xf)>0 && !(reg->cpsr.flag.interrupt&0x2))
   {
-    fprintf(stderr, "Making ostimer interrupt!");
+    fprintf(stderr, "Making ostimer interrupt!\n");
+ /*   fprintf(stderr, "%.8x : %.8x : ", pc, inst.instruction);
+    dispatch(machine, inst, &diss, (void*)pc);
+    fprintf(stderr, "\n");
+    machine->trace = 1;*/
+    
     processor_irq(machine);
   }
 }

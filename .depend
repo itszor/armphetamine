@@ -119,4 +119,4 @@ recompile.o: recompile.c recompile.h defs.h x86asm.h hash.h list.h \
 sapcm.o: sapcm.c defs.h sapcm.h memory.h keyboard.h mouse.h hash.h \
  list.h machine.h processor.h registers.h fifo.h
 ostimer.o: ostimer.c defs.h iomd.h memory.h keyboard.h mouse.h hash.h \
- list.h machine.h processor.h registers.h cnew.h ostimer.h
+ list.h machine.h processor.h registers.h cnew.h ostimer.h decode.h

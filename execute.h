@@ -85,9 +85,10 @@
 #  define PCSETADDR(X) reg->r[15] = (X)
 // also do (somethingorother) with CPSR...
 #  define PCSETADFL(X) do { \
+            uint5 spsr = reg->spsr[reg->spsr_current].value; \
             reg->r[15] = (X); \
-            reg->cpsr = reg->spsr[reg->spsr_current]; \
             processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
+            reg->cpsr.value = spsr; \
           } while (0);
 #endif
 
@@ -97,7 +98,16 @@
                         else RPUT((C), V)
 //#  error "Guess who broke 26-bit mode?"
 #else
-#  define STOREREG(C,V) PUT((C), V)
+#  define STOREREG(C,V) if ((C)==15) { \
+                          uint5 spsr = reg->spsr[reg->spsr_current].value; \
+                          RPUT((C), V); \
+                          if (inst.dp.s && reg->spsr_current!=0) { \
+                            processor_mode(machine, \
+                              reg->spsr[reg->spsr_current].flag.mode); \
+                            reg->cpsr.value = spsr; \
+                          } \
+                        } \
+                        else RPUT((C), V)
 #endif
 
 #define PRINTOPS 1

@@ -35,22 +35,23 @@ int diss_dp(machineinfo* machine, instructionformat inst, void* null)
 		{
 		  // mrs rather than msr
 			fprintf(stderr, "mrs%s r%d,%s", txtcc[inst.generic.cond], inst.mrs.rd,
-			  inst.mrs.ps ? "SPSR" : "CPSR");
+			  inst.mrs.ps ? "spsr" : "cpsr");
 		}
 		else
 		{
-		  if ((inst.msr.ident>>8)==0x29f)
+		  if (((inst.msr.ident>>8)&0x20f)==0x20f)
 			{
 			  // register contents to whole PSR
-				fprintf(stderr, "msr%s %s,r%d", txtcc[inst.generic.cond], inst.msr.pd ?
-				  "SPSR_all" : "CPSR_all", inst.msr.rm);
+				fprintf(stderr, "msr%s %s%s%s%s%s,r%d", txtcc[inst.generic.cond], 
+          inst.msr.pd ? "spsr_" : "cpsr_",
+          (inst.msrf.ident&0x80)?"f":"", (inst.msrf.ident&0x40)?"s":"",
+          (inst.msrf.ident&0x20)?"x":"", (inst.msrf.ident&0x10)?"c":"",
+          inst.msr.rm);
 			}
 			else
 			{
-			  // register contents to flags of PSR
-				uint5 rm = inst.msrf.operand & 15;
-				fprintf(stderr, "msr%s %s,r%d", txtcc[inst.generic.cond], inst.msrf.pd ?
-				  "SPSR_flags" : "CPSR_flags", rm);
+        fprintf(stderr, "Bad MSR, panic, panic\n");
+        abort();
 			}
 		}
 	}
@@ -125,8 +126,11 @@ int diss_dp_imm(machineinfo* machine, instructionformat inst, void* null)
       && ((inst.instruction & 0x0d028f00)==0x01028f00))
 	{
 	  // PSR flags transfer from immediate operand
-	  fprintf(stderr, "msr%s %s,#%d", txtcc[inst.generic.cond], inst.msrf.pd ?
-		  "SPSR_flags" : "CPSR_flags", imm);
+	  fprintf(stderr, "msr%s %s%s%s%s%s,#%d", txtcc[inst.generic.cond], 
+      inst.msrf.pd ? "spsr_" : "cpsr_",
+      (inst.msrf.ident&0x80)?"f":"", (inst.msrf.ident&0x40)?"s":"",
+      (inst.msrf.ident&0x20)?"x":"", (inst.msrf.ident&0x10)?"c":"",
+      imm);
 	}
 	else
 	{

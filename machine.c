@@ -40,7 +40,7 @@ void machine_start(machineinfo* machine, uint5 cont)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
-  const uint5 cycperio = 100;
+  const uint5 cycperio = 100;  /* was 100 */
 #ifdef RECOMPILE
   uint5 feednewpc = 1;
 #endif
@@ -98,6 +98,9 @@ void machine_start(machineinfo* machine, uint5 cont)
         {
           fprintf(stderr, "r%d=%.8x ", x, reg->r[x]);
         }
+        fprintf(stderr, "cpsr=%.8x spsr[%d]=%.8x ",
+          reg->cpsr.value, reg->spsr_current, 
+          reg->spsr[reg->spsr_current].value);
         fprintf(stderr, "%c%c%c%c\n", LOCALFLAG(c)?'C':'c', 
                 LOCALFLAG(v)?'V':'v', LOCALFLAG(n)?'N':'n', 
                 LOCALFLAG(z)?'Z':'z');

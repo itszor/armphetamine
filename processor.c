@@ -34,30 +34,33 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   uint5 instaddr = PCADDR-8;
   instructionformat inst;
 
-  fprintf(stderr, "Switching mode from %s to %s\n",
-    modename_st[reg->cpsr.flag.mode], modename_st[newmode]);
-
-  if (instaddr<0xffffff00)
+  if (0 /*omode!=newmode*/)
   {
-    int i;
-    if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
+    fprintf(stderr, "Switching mode from %s to %s\n",
+      modename_st[reg->cpsr.flag.mode], modename_st[newmode]);
 
-    fprintf(stderr, "Disassembling around %.8x\n", instaddr);
-
-    for (i=-32; i<32; i+=4)
+    if (instaddr<0xffffff00)
     {
-      inst.instruction = memory_readinstword(mem, instaddr+i);
+      int i;
+      if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
 
-    /*
-      if (newmode==pm_USR26)
+      fprintf(stderr, "Disassembling around %.8x\n", instaddr);
+
+      for (i=-32; i<32; i+=4)
       {
-        machine->trace = 1;
-        machine->detracecounter = 6;
-      }*/
+        inst.instruction = memory_readinstword(mem, instaddr+i);
 
-      fprintf(stderr, "+ %.8x : %.8x : ", instaddr+i, inst.instruction);
-      dispatch(machine, inst, &diss, (void*)(instaddr+i));
-      fprintf(stderr, "\n");
+      /*
+        if (newmode==pm_USR26)
+        {
+          machine->trace = 1;
+          machine->detracecounter = 6;
+        }*/
+
+        fprintf(stderr, "+ %.8x : %.8x : ", instaddr+i, inst.instruction);
+        dispatch(machine, inst, &diss, (void*)(instaddr+i));
+        fprintf(stderr, "\n");
+      }
     }
   }
 
@@ -220,7 +223,7 @@ void processor_fiq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_FIQ32);
-  reg->r[14] = reg->r[15]-4;
+  reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 3;  // disable fiq, irq
   reg->r[15] = 0x1C+8;
 }
@@ -229,7 +232,7 @@ void processor_irq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_IRQ32);
-  reg->r[14] = reg->r[15]-4;
+  reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 2;  // disable irq
   reg->r[15] = 0x18+8;
 }
@@ -238,7 +241,7 @@ void processor_prefetchabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_ABT32);
-  reg->r[14] = reg->r[15]-4;
+  reg->r[14] = reg->r[15]-4;    /* +/- 4 */
   reg->cpsr.flag.interrupt = 2;  // disable irq
   reg->r[15] = 0x0C+8;
 }
@@ -247,7 +250,7 @@ void processor_dataabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_ABT32);
-  reg->r[14] = reg->r[15];
+  reg->r[14] = reg->r[15];  /* +/- 4 */
   reg->cpsr.flag.interrupt = 2;  // disable irq
   reg->r[15] = 0x10+8;
 }

@@ -600,6 +600,7 @@ uint5 memory_readphysicalword(meminfo* mem, uint5 physaddress)
     case 0xc9: return mem->bank3[(physaddress & 0xffffff) >> 2];
   }
   fprintf(stderr, "Bad physical word read by MMU at %.8x\n", physaddress);
+  abort();
 
   return 0;
 }

@@ -403,14 +403,12 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     case dp_AND:
     {
       rd = op1 & op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_EOR:
     {
       rd = op1 ^ op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -418,7 +416,6 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 - op2;
       if (inst.dp.s) { SUBFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -426,7 +423,6 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd = op2 - op1;
       if (inst.dp.s) { SUBFLAGS(op2,op1); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -434,7 +430,6 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 + op2;
       if (inst.dp.s) { ADDFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -442,7 +437,6 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 + op2 + FLAG(c);
       if (inst.dp.s) { ADDFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -450,7 +444,6 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 - op2 - !FLAG(c);
       if (inst.dp.s) { SUBFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -458,7 +451,6 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd = op2 - op1 - !FLAG(c);
       if (inst.dp.s) { SUBFLAGS(op2,op1); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -531,44 +523,46 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     case dp_ORR:
     {
       rd = op1 | op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_MOV:
     {
       rd = op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_BIC:
     {
       rd = op1 & ~op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_MVN:
     {
       rd = ~op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
   }
   // deal with Z and N flags
   if (inst.dp.s) { ZNFLAGS; }
 
-  if (inst.dp.rd==15 && (affectrd & (1<<inst.dp.opcode)))
+  if (affectrd & (1<<inst.dp.opcode))
   {
-    reg->r[15]+=INSTSIZE*2;
-    return 1;
+    uint5 pcset = 0;
+    if (inst.dp.rd==15)
+    {
+      rd += INSTSIZE*2;
+      pcset = 1;
+    }
+    
+    STOREREG(inst.dp.rd, rd);
+    
+    if (pcset) return 1;
   }
-  else
-  {
-    INCPC;
-    return 0;
-  }
+
+  INCPC;
+  return 0;
 }
 
 int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
@@ -598,14 +592,12 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     case dp_AND:
     {
       rd = op1 & op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_EOR:
     {
       rd = op1 ^ op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -613,7 +605,6 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 - op2;
       if (inst.dp.s) { SUBFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -621,7 +612,6 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd = op2 - op1;
       if (inst.dp.s) { SUBFLAGS(op2,op1); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -629,7 +619,6 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 + op2;
       if (inst.dp.s) { ADDFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -637,7 +626,6 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 + op2 + FLAG(c);
       if (inst.dp.s) { ADDFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -645,7 +633,6 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd = op1 - op2 - !FLAG(c);
       if (inst.dp.s) { SUBFLAGS(op1,op2); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -653,7 +640,6 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd = op2 - op1 - !FLAG(c);
       if (inst.dp.s) { SUBFLAGS(op2,op1); }
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
@@ -726,44 +712,46 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     case dp_ORR:
     {
       rd = op1 | op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_MOV:
     {
       rd = op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_BIC:
     {
       rd = op1 & ~op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
 
     case dp_MVN:
     {
       rd = ~op2;
-      STOREREG(inst.dp.rd, rd);
     }
     break;
   }
   // deal with Z and N flags
   if (inst.dp.s) { ZNFLAGS; }
 
-  if (inst.dp.rd==15 && (affectrd & (1<<inst.dp.opcode)))
+  if (affectrd & (1<<inst.dp.opcode))
   {
-    reg->r[15]+=INSTSIZE*2;
-    return 1;
+    uint5 pcset = 0;
+    if (inst.dp.rd==15)
+    {
+      rd += INSTSIZE*2;
+      pcset = 1;
+    }
+    
+    STOREREG(inst.dp.rd, rd);
+    
+    if (pcset) return 1;
   }
-  else
-  {
-    INCPC;
-    return 0;
-  }
+
+  INCPC;
+  return 0;
 }
 
 #endif
@@ -781,7 +769,7 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
                                  : reg->cpsr.value);
   }
   /* MSR (full register) */
-  else if (inst.msr.ident==0x29f00 && inst.msr.ident2==2)
+ /* else if (inst.msr.ident==0x29f00 && inst.msr.ident2==2)
   {
     if (inst.msr.pd)
     {
@@ -797,19 +785,29 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       reg->cpsr.value = newpsr.value;
       reg->cpsr.flag.mode = temp;  // urgh
     }
-  }
-  /* MSR (flags only) */
-  else if (inst.msrf.ident==0x28f && inst.msrf.ident2==2 && inst.msrf.ident3==0)
+  }*/
+  /* MSR (field) */
+  else if ((inst.msrf.ident&0x20f)==0x20f
+           && inst.msrf.ident2==2 && inst.msrf.ident3==0)
   {
+    uint5 field = (inst.msrf.ident&0x80)?0xff000000:0
+                | (inst.msrf.ident&0x40)?0x00ff0000:0
+                | (inst.msrf.ident&0x20)?0x0000ff00:0
+                | (inst.msrf.ident&0x10)?0x000000ff:0;
     if (inst.msrf.pd)
     {
-      reg->spsr[reg->spsr_current].value &= 0x0fffffff;
-      reg->spsr[reg->spsr_current].value |= val & 0xf0000000;
+      reg->spsr[reg->spsr_current].value &= ~field;
+      reg->spsr[reg->spsr_current].value |= val & field;
     }
     else
     {
-      reg->cpsr.value &= 0x0fffffff;
-      reg->cpsr.value |= val & 0xf0000000;
+      reg->cpsr.value &= ~field;
+      reg->cpsr.value |= val & field;
+      /* control fields updated? */
+      if (field & 0xff)
+      {
+        processor_mode(machine, val & 0x1f);
+      }
     }
   }
   else
@@ -1180,23 +1178,23 @@ static void savecurrent(machineinfo* machine, uint5 mode)
     
     case pm_IRQ26:
     case pm_IRQ32:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->irq[i-13] = reg->r[i];
     break;
     
     case pm_SVC26:
     case pm_SVC32:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->svc[i-13] = reg->r[i];
     break;
     
     case pm_ABT32:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->abt[i-13] = reg->r[i];
     break;
     
     case pm_UND32:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->und[i-13] = reg->r[i];
     break;
   }
@@ -1216,7 +1214,7 @@ static void restorenew(machineinfo* machine, uint5 mode)
     
     case pm_FIQ26:
     case pm_FIQ32:
-    for (i=8; i<=14; i++) reg->r[i] = reg->irq[i-8];
+    for (i=8; i<=14; i++) reg->r[i] = reg->fiq[i-8];
     break;
     
     case pm_IRQ26:
@@ -1310,12 +1308,6 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           INC;
           PCTRANSFER;
-#ifndef ARM26BIT
-          if (inst.bdt.l) // load
-          {
-            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
-          }
-#endif
         }
       }
       else  // postincrement
@@ -1347,14 +1339,6 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           DEC;
           PCTRANSFER;
-          /* just what the hell was this supposed to achieve?
-#ifndef ARM26BIT
-          if (inst.bdt.l) // load
-          {
-            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
-          }
-#endif
- */
         }
         for (i=14; i>=0; i--)
         {
@@ -1373,14 +1357,6 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           PCTRANSFER;
           DEC;
-          /* just what the hell was this supposed to achieve?
-#ifndef ARM26BIT
-          if (inst.bdt.l) // load
-          {
-            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
-          }
-#endif
-*/
         }
         for (i=14; i>=0; i--)
         {
@@ -1418,6 +1394,12 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
       restorenew(machine, originalmode);
     }
 //#endif
+
+    if (inst.bdt.s && inst.bdt.l && (inst.bdt.reglist & (1<<15)))
+    {
+      fprintf(stderr, "Unimplemented mode change in LDM!\n");
+      abort();
+    }
 
     // pipeline correction, or just next instruction
     if (inst.bdt.l && (inst.bdt.reglist & (1<<15)))
@@ -1495,11 +1477,11 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
   {
     registerinfo* reg = machine->reg;
     meminfo* mem = machine->mem;
-    uint5 pcaddr = PCADDR-8;
+/*    uint5 pcaddr = PCADDR-8;
 
     fprintf(stderr, "%.8x : %.8x : ", pcaddr, inst.instruction);
     dispatch(machine, inst, &diss, (void*)pcaddr);
-    fprintf(stderr, "\n");
+    fprintf(stderr, "\n");*/
 
     if ((mem->currentmode & 15) == pm_USR26)
     {
@@ -1587,8 +1569,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
 /*                    machine->trace = 1;*/
                     fprintf(stderr, "[virtual memory %s]\n",
                       (newstate&1) ? "on" : "off");
-                    machine->trace = 1;
-                    machine->detracecounter = 4;
+              /*      machine->trace = 1;
+                    machine->detracecounter = 4;*/
                     mem->mmucontrol = newstate;
                     // otherwise the following data/instructions will get
                     // a cached value!
@@ -1612,6 +1594,10 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                   fprintf(stderr, "> Set domain access control: %x\n",
                     srcreg);
                   mem->domainaccesscontrol = srcreg;
+                  memory_invalidatetlb(&mem->insttlb);
+                  memory_invalidatetlb(&mem->datatlb);
+  /*                machine->trace = 1;
+                  machine->detracecounter = 0;*/
                 }
                 break;
                 
@@ -1629,7 +1615,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 7: // flush IDC
                 {
-                  fprintf(stderr, "> Flush IDC\n");
+/*                  fprintf(stderr, "> Flush IDC\n");*/
                 }
                 break;
                 
@@ -1642,7 +1628,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xd: case 0xe:
-                fprintf(stderr, "> Throwing undefined instruction\n");
+                fprintf(stderr, "> Throwing undefined instruction (not)\n");
 /*                processor_und(machine);
                 return 1;*/
                 break;
