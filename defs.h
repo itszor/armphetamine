@@ -8,6 +8,14 @@
 #  define IGNORE(X) ((X)=(X))
 #endif
 
+#ifndef TRUE
+#  define TRUE 1
+#endif
+
+#ifndef FALSE
+#  define FALSE 0
+#endif
+
 // these may need changing for different compilers/platforms
 typedef unsigned int uint5;
 typedef signed int sint5;

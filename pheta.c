@@ -43,9 +43,7 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->length = length;
   p->tempno = 0;
   p->predno = 1;
-  p->force = -1;
   p->currentblock = 0;
-  p->stacksize = 0;
   p->assoc = 0;
     
   return p;
@@ -238,6 +236,7 @@ static void emitbyte(pheta_basicblock* block, uint5* written, uint3 byte)
 // for more than one ph2 instruction. This is the nicest solution I
 // can think of for doing this, but it's *horrible* nonetheless.
 // !!! (not used any more)
+/*
 void pheta_forceoutput(pheta_chunk* chunk, uint5 reg)
 {
   chunk->force = reg;
@@ -248,6 +247,7 @@ void pheta_unforceoutput(pheta_chunk* chunk)
 {
   chunk->force = -1;
 }
+*/
 
 uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
 {

@@ -7,6 +7,7 @@
 #include "rtasm_fns.h"
 #include "palloc.h"
 #include "list.h"
+#include "memory.h"
 
 typedef enum {
   ab_SHL,
@@ -63,7 +64,10 @@ typedef enum {
   ab_JMP,
   ab_CALL,
   ab_JECXZ,
-  ab_BT
+  ab_BT,
+  ab_CMC,
+  ab_STC,
+  ab_CLC
 } genx86_ab86;
 
 /*
@@ -201,6 +205,7 @@ extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                        palloc_info* src1, palloc_info* src2, list* x);
 extern nativeblockinfo* genx86_translate(pheta_chunk* chunk);
 extern uint5 genx86_translate_opcode(genx86_buffer* buf,
-  pheta_chunk* chunk, pheta_instr* instr);
+  pheta_chunk* chunk, pheta_basicblock* blk, pheta_instr* instr,
+  meminfo* mem);
 
 #endif

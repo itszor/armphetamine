@@ -5,6 +5,7 @@
 #include "pheta.h"
 #include "list.h"
 #include "hash.h"
+#include "memory.h"
 
 typedef enum {
   pal_UNSET,
@@ -61,8 +62,10 @@ extern void palloc_deletespans(pheta_chunk* chunk);
 extern void palloc_clearmarkers(pheta_chunk* chunk);
 extern uint5 palloc_close(pheta_chunk* chunk, uint5 reg);
 extern uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
-                                     uint5 startline);
-extern void palloc_linearscan(pheta_chunk* chunk);
+                                     uint5 startline, meminfo* mem);
+extern void palloc_linearscan(pheta_chunk* chunk, meminfo* mem);
+
+extern uint5 palloc_free_ireg(pheta_chunk*, pheta_basicblock*, uint5);
 
 extern uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                               uint5 startline);

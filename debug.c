@@ -544,13 +544,13 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   pheta_dfs(mychunk);
   fprintf(stderr, "Commit shuffling\n");
   palloc_shufflecommit(mychunk);
-  phetadism_chunk(mychunk);
   fprintf(stderr, "Getting predecessors\n");
   pheta_predecessor(mychunk);
   fprintf(stderr, "Finding strongly-connected components\n");
   pheta_scc(mychunk);
   fprintf(stderr, "Fixing up flags & predicates\n");
   pheta_fixup_flags(mychunk);
+  phetadism_chunk(mychunk);
   fprintf(stderr, "Outputting gdl\n");
   pheta_gdlprint(mychunk, "controlgraph.gdl");
   fprintf(stderr, "Finding live ranges\n");
@@ -568,7 +568,7 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
 /*  fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);*/
 
-  palloc_linearscan(mychunk);
+  palloc_linearscan(mychunk, machine->mem);
   pqueue_delete(mychunk->active);
   fprintf(stderr, "Inserting register load/store code\n");
   genx86_insert_spill_code(mychunk);

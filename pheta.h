@@ -150,11 +150,9 @@ typedef struct {
   list* blocks;
   uint5 tempno;
   uint5 predno;
-  uint5 force;
   uint5 virtualaddress;  // this is a horrible place for this
   uint5 start;
   uint5 length;
-  uint5 stacksize;
   hashtable* leaders;
   pheta_basicblock* root;
   pheta_basicblock* currentblock;
@@ -162,7 +160,6 @@ typedef struct {
   struct palloc_liverange** reversetable;
   uint3 reguse[ph_IREG];
   uint5 regno;
-  uint5* rename;
   pqueue* active;
   list* assoc;
 } pheta_chunk;

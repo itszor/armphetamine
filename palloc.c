@@ -15,6 +15,7 @@ void palloc_init(pheta_chunk* chunk)
   {
     chunk->alloc[i].type = pal_UNSET;
     chunk->alloc[i].slot = 0;
+    chunk->alloc[i].arm_affiliation = -1;
   }
 /*  chunk->alloc[i].referenced_by = hash_new(8);*/
 }
@@ -136,7 +137,9 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       {
         uint5 dest = instr->data.op.dest;
         uint5 src = instr->data.op.src1;
-        if (chunk->alloc[dest].type==pal_UNSET)
+        if (chunk->alloc[dest].type==pal_UNSET &&
+            chunk->alloc[src].type!=pal_CONST &&
+            chunk->alloc[src].type!=pal_CONSTB)
         {
           chunk->alloc[dest].type = pal_ALIAS;
           chunk->alloc[dest].info.value = src;
@@ -144,7 +147,7 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       }
       break;
 
-/* this won't help, whoops
+/* this won't help, whoops (no valid destination register?)
       case ph_CMN:
       case ph_TEQ:
       // purposefully do nothing since there are no x86 equivalents so
@@ -165,10 +168,10 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
           if (srcspan->startline+srcspan->length <= thisline)
           {
             uint5 srctype = chunk->alloc[srcr[0]].type;
-            fprintf(stderr, "Can alias %d to %d\n", destr[0], srcspan->reg);
             if (chunk->alloc[destr[0]].type == pal_UNSET &&
                 srctype!=pal_CONST && srctype!=pal_CONSTB)
             {
+              fprintf(stderr, "Can alias %d to %d\n", destr[0], srcspan->reg);
               chunk->alloc[destr[0]].type = pal_ALIAS;
               chunk->alloc[destr[0]].info.value = srcr[0];
             }
@@ -389,7 +392,7 @@ void palloc_deletespans(pheta_chunk* chunk)
 }
 
 uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
-                              uint5 startline)
+                              uint5 startline, meminfo* mem)
 {
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
                            "ESP", "EBP", "ESI", "EDI"};
@@ -413,7 +416,7 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       pheta_instr* instr = scan->data;
 
       fprintf(stderr, "Generating inst %d\n", line);
-      genx86_translate_opcode(blk->gxbuffer, chunk, instr);
+      genx86_translate_opcode(blk->gxbuffer, chunk, blk, instr, mem);
     }
 
     if (chunk->alloc[range->reg].type==pal_UNSET)
@@ -518,7 +521,7 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
     pheta_instr* instr = scan->data;
 
     fprintf(stderr, "Generating inst %d\n", line);
-    genx86_translate_opcode(blk->gxbuffer, chunk, instr);
+    genx86_translate_opcode(blk->gxbuffer, chunk, blk, instr, mem);
   }
 
   blk->marker = 1;
@@ -527,18 +530,18 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
   if (blk->trueblk && !blk->trueblk->marker)
   {
-    startline = palloc_linearscan_inner(chunk, blk->trueblk, startline);
+    startline = palloc_linearscan_inner(chunk, blk->trueblk, startline, mem);
   }
   
   if (blk->falseblk && !blk->falseblk->marker)
   {
-    startline = palloc_linearscan_inner(chunk, blk->falseblk, startline);
+    startline = palloc_linearscan_inner(chunk, blk->falseblk, startline, mem);
   }
   
   return startline;
 }
 
-void palloc_linearscan(pheta_chunk* chunk)
+void palloc_linearscan(pheta_chunk* chunk, meminfo* mem)
 {
   chunk->reguse[0] = chunk->reguse[1] = chunk->reguse[2] =
   chunk->reguse[3] = chunk->reguse[6] = chunk->reguse[7] = 0;
@@ -556,7 +559,48 @@ void palloc_linearscan(pheta_chunk* chunk)
     chunk->rename[i] = i;
   }*/
   
-  palloc_linearscan_inner(chunk, chunk->root, 0);
+  palloc_linearscan_inner(chunk, chunk->root, 0, mem);
+}
+
+/* Attempts to free a physical register so it can be used as
+ * a scratch register by something else. Returns TRUE if
+ * successful, FALSE if not.
+ */
+uint5 palloc_free_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg)
+{
+  uint5 i;
+  sint5 found = -1;
+
+  assert(chunk->reguse[reg] != 2);
+
+  if (chunk->reguse[reg]==0) return TRUE;
+  
+  for (i=0; i<ph_IREG; i++)
+  {
+    if (chunk->reguse[i]==0)
+    {
+      found = i;
+      break;
+    }
+  }
+  
+  if (found == -1) return FALSE;
+  
+  for (i=0; i<blk->live->length; i++)
+  {
+    pqueueitem* item = blk->live->item[i];
+    palloc_liverange* activerange = item->data;
+    if (chunk->alloc[activerange->reg].type==pal_IREG &&
+        chunk->alloc[activerange->reg].info.ireg.num==reg)
+    {
+      chunk->alloc[activerange->reg].info.ireg.num = found;
+    }
+  }
+  
+  chunk->reguse[reg] = 0;
+  chunk->reguse[found] = 1;
+  
+  return TRUE;
 }
 
 void palloc_printspans(pheta_chunk* chunk)
