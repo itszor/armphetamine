@@ -8,6 +8,11 @@
 #include "execute.h"
 #include "profile.h"
 
+#ifdef EMULART
+#  include "sapcm.h"
+#  include "ostimer.h"
+#endif
+
 machineinfo* machine_create(uint5 memory)
 {
 	machineinfo* machine = cnew(machineinfo);
@@ -31,7 +36,9 @@ void machine_start(machineinfo* machine)
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
   const uint5 cycperio = 100;
+#ifdef RECOMPILE
   uint5 feednewpc = 1;
+#endif
 #ifdef EMULART
   sint5 serialclock = SERIALCLOCKPERIOD;
 #endif
@@ -62,9 +69,16 @@ void machine_start(machineinfo* machine)
     
     if (machine->trace)
     {
+      uint5 x;
       fprintf(stderr, "%.8x : %.8x : ", instaddr, inst.instruction);
       dispatch(machine, inst, &diss, (void*)instaddr);
       fprintf(stderr, "\n");
+      for (x=0; x<15; x++)
+      {
+        fprintf(stderr, "r%d=%.8x ", x, reg->r[x]);
+      }
+      fprintf(stderr, "%c%c%c%c\n", FLAG(c)?'C':'c', FLAG(v)?'V':'v',
+              FLAG(n)?'N':'n', FLAG(z)?'Z':'z');
     }
     
     if (hash_lookup(machine->breakpoints, instaddr))

@@ -2,6 +2,7 @@
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "defs.h"
 #include "machine.h"
@@ -11,6 +12,7 @@
 #include "execute.h"
 #include "fakesys.h"
 #include "decode.h"
+#include "debug.h"
 
 /* nzcv eq ne cs cc mi pl vs vc hi ls ge lt gt le al nv
  * 1111 1  0  1  0  1  0  1  0  0  1  1  0  1  0  1  0
@@ -846,7 +848,6 @@ int EXECUTEFN(exec_mull)(machineinfo* machine, instructionformat inst,
     
     if (inst.mull.u)  // signed
     {
-      uint6 result;
       if (inst.mull.a)  // accumulate
       {
         result = (uint6)((uint6)RGET(inst.mull.rdlo)
@@ -1034,7 +1035,8 @@ int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
     meminfo* mem = machine->mem;
     uint5 base = GET(inst.sdth.rn);
     uint5 offset;
-    uint5 data;
+
+    IGNORE(null);
         
     if (inst.sdth.imm)  // it used to be such a pretty baby
     {
@@ -1457,7 +1459,6 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
     {
       case 15:  // MMU control
       {
-        fprintf(stderr, "--> MMU control\n");
         if (inst.crt.l)  // coprocessor -> ARM (MRC)
         {
           switch (inst.crt.cpopc)
@@ -1487,7 +1488,6 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
         }
         else  // ARM -> coprocessor (MCR)
         {
-          fprintf(stderr, "----> MCR\n");
           switch (inst.crt.cpopc)
           {
             case 0:
@@ -1498,7 +1498,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 {
                   uint5 oldstate = mem->mmucontrol;
                   uint5 newstate = RGET(inst.crt.rd);
-                  fprintf(stderr, "------> Set MMU control: %x\n",
+                  fprintf(stderr, "> Set MMU control: %x\n",
                     newstate);
 
                   if (((oldstate ^ newstate) & 1) == 1)
@@ -1532,7 +1532,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 2:
                 {
-                  fprintf(stderr, "------> Set translation base: %x\n",
+                  fprintf(stderr, "> Set translation base: %x\n",
                     RGET(inst.crt.rd));
                   mem->translationbase = RGET(inst.crt.rd);
                 }
@@ -1540,7 +1540,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 3:
                 {
-                  fprintf(stderr, "------> Set domain access control: %x\n",
+                  fprintf(stderr, "> Set domain access control: %x\n",
                     RGET(inst.crt.rd));
                   mem->domainaccesscontrol = RGET(inst.crt.rd);
                 }
@@ -1548,39 +1548,39 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 5: // flush TLB
                 {
-                  fprintf(stderr, "------> Flush TLB\n");
+                  fprintf(stderr, "> Flush TLB\n");
                 }
                 break;
                 
                 case 6: // purge TLB
                 {
-                  fprintf(stderr, "------> Purge TLB\n");
+                  fprintf(stderr, "> Purge TLB\n");
                 }
                 break;
                 
                 case 7: // flush IDC
                 {
-                  fprintf(stderr, "------> Flush IDC\n");
+                  fprintf(stderr, "> Flush IDC\n");
                 }
                 break;
                 
                 case 0x8:
                 {
-                  fprintf(stderr, "------> TLB operation (SA)\n");
+                  fprintf(stderr, "> TLB operation (SA)\n");
 /*                  machine->trace = 1;*/
                 }
                 break;
                 
                 case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xd: case 0xe:
-                fprintf(stderr, "------> Throwing undefined instruction\n");
+                fprintf(stderr, "> Throwing undefined instruction\n");
 /*                processor_und(machine);
                 return 1;*/
                 break;
                 
                 case 0xf:
                 {
-                  fprintf(stderr, "------> Test, Clock, Idle ctrl (SA)\n");
+                  fprintf(stderr, "> Test, Clock, Idle ctrl (SA)\n");
                 }
                 break;
               }
@@ -1588,7 +1588,10 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
             break;
             
             default:
-            fprintf(stderr, "Unknown MCR OPc type\n");
+            {
+              fprintf(stderr, "Unknown MCR OPc type\n");
+              abort();
+            }
           }
         }
       }

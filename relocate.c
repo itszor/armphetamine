@@ -38,6 +38,9 @@ void relocate_fix(list** to, void* base)
           *(uint3*)((uint3*)base+rec->offset) = rec->value -
             (uint5)base - rec->offset - 1;
           break;
+          
+          default:
+          break;
         }
       }
       break;
@@ -54,6 +57,9 @@ void relocate_fix(list** to, void* base)
           *(uint4*)((uint3*)base+rec->offset) = rec->value -
             (uint5)base - rec->offset - 2;
           break;
+          
+          default:
+          break;
         }
       }
       break;
@@ -69,6 +75,9 @@ void relocate_fix(list** to, void* base)
           case reloc_RELATIVE:
           *(uint5*)((uint3*)base+rec->offset) = rec->value -
             (uint5)base - rec->offset - 4;
+          break;
+          
+          default:
           break;
         }
       }

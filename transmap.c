@@ -43,9 +43,12 @@ transmap_entry* transmap_getentry(meminfo* mem, uint5 physaddr)
 
 void transmap_invalidatepage(meminfo* mem, uint5 page)
 {
+  IGNORE(mem);
+  IGNORE(page);
 }
 
 void transmap_invalidateall(meminfo* mem)
 {
+  IGNORE(mem);
 }
 

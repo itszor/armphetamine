@@ -26,9 +26,9 @@ void x86dism_partblock(nativeblockinfo* nat, uint5 start, uint5 length)
 	fwrite(nat->base+start, sizeof(char), length-start, temp);
 	fclose(temp);
   
-  sprintf(startaddrstring, "0x%x", nat->base+start);
+  sprintf(startaddrstring, "%p", nat->base+start);
 
-	fprintf(stderr, "Disassembling x86 code at %x...\n", nat->base);
+	fprintf(stderr, "Disassembling x86 code at %p...\n", nat->base);
 	
 	if (fork())
   {

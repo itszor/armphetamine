@@ -242,4 +242,8 @@ extern uint5 genx86_translate_opcode(genx86_buffer* buf,
 
 extern nativeblockinfo* genx86_flatten_code(pheta_chunk*);
 
+extern void genx86_insert_spill_code(pheta_chunk* chunk);
+
+extern void genx86_complete_alloc(pheta_chunk* chunk);
+
 #endif

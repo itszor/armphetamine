@@ -39,7 +39,7 @@ void debug_shell(machineinfo* machine)
   }
 }
 
-const static debug_cmd commands[] =
+static const debug_cmd commands[] =
 {
   { "#",           debug_COMMENT,     debug_null        },
   { "run",         debug_RUN,         debug_run         },
@@ -162,7 +162,8 @@ int debug_hexargs(char* cmd, ...)
 
 void debug_null(machineinfo* machine, char* cmd)
 {
-
+  IGNORE(machine);
+  IGNORE(cmd);
 }
 
 void debug_run(machineinfo* machine, char* cmd)
@@ -173,7 +174,7 @@ void debug_run(machineinfo* machine, char* cmd)
   strsep(&cmd, " \t");
   start = debug_getnum(cmd);
 
-  if (start!=-1)
+  if (start != -1u)
   {
     fprintf(stderr, "Running from %x\n", start);
     PCSETADDR(start+8);
@@ -195,9 +196,9 @@ void debug_disassemble(machineinfo* machine, char* cmd)
   strsep(&cmd, " \t");
   end = debug_getnum(cmd);
   
-  if (end==-1 && start!=-1) end = start+32;
+  if (end==-1u && start!=-1u) end = start+32;
   
-  if (start==-1)
+  if (start==-1u)
   {
     fprintf(stderr, "Please specify a start address or range\n");
     return;
@@ -223,14 +224,16 @@ void debug_memory(machineinfo* machine, char* cmd)
 {
   uint5 start, end;
 
+  IGNORE(machine);
+
   strsep(&cmd, " \t");
   start = debug_getnum(cmd);
   strsep(&cmd, " \t");
   end = debug_getnum(cmd);
 
-  if (end==-1 && start!=-1) end = start+32;
+  if (end==-1u && start!=-1u) end = start+32;
 
-  if (start==-1)
+  if (start==-1u)
   {
     fprintf(stderr, "Please specify a start address or range\n");
     return;
@@ -246,6 +249,8 @@ void debug_registers(machineinfo* machine, char* cmd)
   int i;
   registerinfo* reg = machine->reg;
   extern const char* modename_st[];
+ 
+  IGNORE(cmd);
   
   for (i=0; i<16; i++)
   {
@@ -295,7 +300,7 @@ void debug_breakset(machineinfo* machine, char* cmd)
   strsep(&cmd, " \t");
   addr = debug_getnum(cmd);
 
-  if (addr == -1)
+  if (addr == -1u)
   {
     fprintf(stderr, "Give an address\n");
     return;
@@ -312,7 +317,7 @@ void debug_breakclear(machineinfo* machine, char* cmd)
   strsep(&cmd, " \t");
   addr = debug_getnum(cmd);
   
-  if (addr == -1)
+  if (addr == -1u)
   {
     fprintf(stderr, "Give an address\n");
     return;
@@ -334,6 +339,8 @@ void debug_breaklist(machineinfo* machine, char* cmd)
   hashtable* hash = machine->breakpoints;
   list* w;
   uint5 i, num=0;
+ 
+  IGNORE(cmd);
   
   fprintf(stderr, "Breakpoints at:\n");
   
@@ -412,7 +419,7 @@ void debug_load(machineinfo* machine, char* cmd)
   fread(m, fileinfo.st_size, 1, f);
   fclose(f);
 
-  for (i=0; i<fileinfo.st_size; i++)
+  for (i=0; i<(uint5)fileinfo.st_size; i++)
     memory_writebyte(machine->mem, addr+i, m[i]);
   
   free(m);
@@ -466,9 +473,9 @@ void debug_romload(machineinfo* machine, char* cmd)
   fread(m, fileinfo.st_size, 1, f);
   fclose(f);
   
-  fprintf(stderr, "Base addr %p\n", addr);
+  fprintf(stderr, "Base addr %x\n", addr);
 
-  for (i=0; i<fileinfo.st_size; i++)
+  for (i=0; i<(uint5)fileinfo.st_size; i++)
     rombase[i] = m[i];
   
   free(m);
@@ -521,9 +528,7 @@ void debug_virtual(machineinfo* machine, char* cmd)
 
 void debug_phetatrans(machineinfo* machine, char* cmd)
 {
-  pheta_chunk* mychunk;
-  nativeblockinfo* nat;
-  uint5 start=0, end=0, line=0;
+  uint5 start=0, end=0;
   strsep(&cmd, " \t");
   if (!cmd)
   {
@@ -546,12 +551,18 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
 
 void debug_quit(machineinfo* machine, char* cmd)
 {
+  IGNORE(machine);
+  IGNORE(cmd);
   exit(0);
 }
 
 void debug_help(machineinfo* machine, char* cmd)
 {
   int i;
+  
+  IGNORE(machine);
+  IGNORE(cmd);
+  
   fprintf(stderr, "Commands available:\n");
   for (i=0; i<debug_COMMANDS; i++)
   {

@@ -15,6 +15,8 @@ struct profile_state {
 
 typedef struct profile_state profile_state;
 
+extern profile_state* profile_initialise(void);
+
 extern void profile_feedseqaddr(profile_state* pstate, uint5 addr);
 
 extern uint5 profile_feednseqaddr(machineinfo* mem, profile_state* pstate,

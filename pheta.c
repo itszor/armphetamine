@@ -1164,7 +1164,8 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   if ((e = hash_lookup(chunk->leaders, line)))
   {
     if (!e->data)
-      e->data = pheta_newbasicblock(chunk, line==-1 ? -1 : chunk->start+line*4);
+      e->data = pheta_newbasicblock(chunk, line==-1u ? -1u : 
+        chunk->start+line*4);
     else
       pheta_lsync(chunk);
 
@@ -1172,7 +1173,7 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   }
   else
   {
-    return pheta_newbasicblock(chunk, line==-1 ? -1 : chunk->start+line*4);
+    return pheta_newbasicblock(chunk, line==-1u ? -1u : chunk->start+line*4);
   }
 }
 
@@ -1944,7 +1945,7 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   {
     uint5 pctemp;
     pheta_basicblock* previous = chunk->currentblock;
-    hashentry* nottaken;
+    pheta_basicblock* nottaken;
     pheta_basicblock* exitchunk = pheta_newbasicblock(chunk, -1);
     pheta_lsync(chunk);
     // deal with xjmp later
@@ -1954,7 +1955,7 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
     exit(0);*/
     pheta_emit(chunk, ph_UKJMP, pctemp);
     nottaken = pheta_getbasicblock(chunk, next);
-    pheta_link(previous, inst.bra.cond, exitchunk, nottaken->data);
+    pheta_link(previous, inst.bra.cond, exitchunk, nottaken);
   }
   return 0;
 }
@@ -2005,7 +2006,10 @@ int pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_mull(machineinfo* machine, instructionformat inst, void* chunk)
 {
-  fprintf(stderr, "Long mul not implemented in recompiler\n");
+  IGNORE(machine);
+  IGNORE(inst);
+  IGNORE(chunk);
+  fprintf(stderr, "Long mul not yet implemented in recompiler\n");
   abort();
   return 0;
 }
@@ -2178,6 +2182,9 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_sdth(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
+  IGNORE(chunk);
   fprintf(stderr, "sdth not implemented\n");
   exit(1);
 }

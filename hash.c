@@ -26,7 +26,7 @@ hashtable* hash_new(uint5 size)
 
 hashentry* hash_insert(hashtable* hash, uint5 key)
 {
-  hashentry* entry;
+  hashentry* entry = 0;
 	uint5 loc = HASHFN(key, hash->size);
 	list* item, *theitem=0;
 	
@@ -58,7 +58,7 @@ hashentry* hash_insert(hashtable* hash, uint5 key)
 void* hash_remove(hashtable* hash, uint5 key)
 {
   uint5 loc = HASHFN(key, hash->size);
-  list* item, *theitem=0;
+  list* item;
 	void* hashentrydata=0;
 	
 	for (item=hash->table[loc]; item;)
@@ -90,7 +90,6 @@ void hash_delete(hashtable* hash, uint5 key, hashdestructor_fn destructor)
 // destroy an entire hash table, plus all its contents
 void hash_nuke(hashtable* hash, hashdestructor_fn destructor)
 {
-  list* w;
 	uint5 i;
 	
 	for (i=0; i<hash->size; i++)

@@ -146,6 +146,7 @@
 #define KP_0		0x65
 #define KP_DOT		0x66
 
+#ifdef CODE_WHICH_IS_NOT_WRITTEN_YET
 static unsigned char keycode_translate[256] =
 {
 /* 00 */  K_NONE, K_F9  , K_NONE, K_F5  , K_F3  , K_F1  , K_F2  , K_F12 ,
@@ -180,3 +181,4 @@ static unsigned char keycode_translate[256] =
 	  K_NONE, K_NONE, K_NONE, K_NONE, K_NONE, K_NONE, K_NONE, K_NONE
 };
 
+#endif

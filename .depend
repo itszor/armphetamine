@@ -8,10 +8,10 @@ disassemble.o: disassemble.c defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h decode.h
 execute26.o: execute26.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
- decode.h fakesys.h
+ decode.h fakesys.h debug.h
 execute32.o: execute32.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
- decode.h fakesys.h
+ decode.h fakesys.h debug.h
 fakesys.o: fakesys.c defs.h machine.h processor.h registers.h memory.h \
  keyboard.h mouse.h hash.h list.h decode.h execute.h fakesys.h \
  riscos.h
@@ -54,7 +54,8 @@ pseudodism.o: pseudodism.c defs.h machine.h processor.h registers.h \
  allocate.h x86asm.h clist.h pseudodism.h
 registers.o: registers.c cnew.h defs.h registers.h processor.h
 riscos.o: riscos.c defs.h cnew.h riscos.h memory.h keyboard.h mouse.h \
- hash.h list.h registers.h processor.h machine.h execute.h decode.h
+ hash.h list.h registers.h processor.h machine.h execute.h decode.h \
+ flush.h
 rtasm.o: rtasm.c defs.h cnew.h x86asm.h hash.h list.h registers.h \
  processor.h clist.h rtasm.h rtasm_fns.h
 vidc20.o: vidc20.c defs.h vidc20.h memory.h keyboard.h mouse.h hash.h \
@@ -98,7 +99,7 @@ decodet.o: decodet.c decode.h defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h
 executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
- decode.h fakesys.h
+ decode.h fakesys.h debug.h
 clist.o: clist.c cnew.h defs.h clist.h list.h
 relocate.o: relocate.c relocate.h defs.h list.h cnew.h
 structsupport.o: structsupport.c defs.h memory.h keyboard.h mouse.h \

@@ -184,7 +184,7 @@ foreach (@inteldat)
       if (m/^[0-9A-F][0-9A-F]$/) {
         $opcode = $opcode . "\trtasm_putbyte(nat, 0x$_);\n";
       }
-      elsif (m/^[0-9A-F][0-9A-F]\+r[dw]/) {
+      elsif (m/^[0-9A-F][0-9A-F]\+r[bdw]/) {
         $opcode = $opcode . "\trtasm_putbyte(nat, 0x".substr($_,0,2)."+reg);\n";
       }
       elsif (m/^[0-9A-F][0-9A-F]\+i/) {

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include "defs.h"
 #include "registers.h"
@@ -32,7 +33,7 @@ void nativesupport_invoke2(machineinfo* machine, uint3* code)
   FLAG(z) = reg->zflag;
 }
 
-#ifdef I386
+#ifdef DEADCODE
 
 // glue code used to execute native code fragments
 void nativesupport_invoke(machineinfo* machine, nativeblockinfo* code)
@@ -87,6 +88,9 @@ void nativesupport_invoke(machineinfo* machine, nativeblockinfo* code)
 #else
 void nativesupport_invoke(machineinfo* machine, nativeblockinfo* code)
 {
+  IGNORE(machine);
+  IGNORE(code);
+  assert(!"Please don't call this function");
 }
 #endif
 

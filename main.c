@@ -47,12 +47,8 @@
 int main(void)
 {
 	machineinfo* machine;
-	uint5 i;
 	meminfo* mem;
 	registerinfo* reg;
-  uint5 cycle = 0, max = 1500;
-  FILE* startaddr;
-  FILE* rom;
 #ifdef CTRACE
   FILE* trc = fopen("trace.dat", "w");
 #endif
@@ -256,8 +252,8 @@ int main(void)
 
 	while (1)
 	{
-    uint5 instaddr = PCADDR-8, x, rnum;
-#ifdef RECOMPILE
+    uint5 instaddr = PCADDR-8;
+#ifdef RECOMPILE2
     if (!block_gather(machine, instaddr))
     {
 #endif
@@ -283,7 +279,7 @@ int main(void)
       fprintf(stderr, "%c%c%c%c\n", FLAG(c)?'C':'c', FLAG(v)?'V':'v',
               FLAG(n)?'N':'n', FLAG(z)?'Z':'z');
   #endif
-#ifdef RECOMPILE
+#ifdef RECOMPILE2
     }
 #endif
   }

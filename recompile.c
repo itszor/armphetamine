@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "recompile.h"
 #include "pheta.h"
+#include "phetadism.h"
 #include "machine.h"
 #include "palloc.h"
 #include "genx86.h"

@@ -70,7 +70,7 @@ void sa1100_serial_write(meminfo* mem, uint5 physaddress, uint5 data)
 
         case 0x14:
         mem->sapcm.serial_fifo->uart_data = data;
-        fprintf(stderr, "%c", data, data);
+        fprintf(stderr, "%c", data);
         break;
 
         case 0x1c:

@@ -15,10 +15,10 @@
 #include "genx86_tab.h"
 #include "dynsupport.h"
 
-static const char* allocname[] = {
+/* static const char* allocname[] = {
   "unset", "constb", "const", "rfile", "ireg",
   "stack", "alias", "split"
-};
+};*/
 
 static const char* abname[] = {
   "shl", "shr", "sar", "ror", "rol", "rcr", "rcl", "and", "or", "xor", "add", 
@@ -64,6 +64,8 @@ static const char* otype[] = { "empty", "partial", "immediate", "register",
 static void genx86_asm_r32_r32_3(nativeblockinfo* nat, genx86_op* inst,
   uint5 opcode, uint5 ops, uint5 reg0, uint5 reg1)
 {
+  IGNORE(ops);
+  
   switch SIZEDTYPE(inst->op[2]->type, inst->op[2]->width)
   {
     case SIZEDTYPE(gotype_REGISTER, gowidth_DWORD):
@@ -647,6 +649,8 @@ void genx86_translatealloc(pheta_chunk* chunk, genx86_operand* dest,
 genx86_operand* genx86_findoperand(pheta_chunk* chunk, palloc_info* src)
 {
   genx86_operand* operand = 0;
+
+  IGNORE(chunk);
   
   if (src->type != pal_UNSET)
   {
@@ -669,6 +673,8 @@ void genx86_append(pheta_chunk* chunk, genx86_buffer* buf, uint5 opcode,
   genx86_op* inst = cnew(genx86_op);
   clist* newinst;
 
+  IGNORE(chunk);
+
   inst->op[0] = dest;
   inst->op[1] = src1;
   inst->op[2] = src2;
@@ -689,6 +695,9 @@ void genx86_insert(pheta_chunk* chunk, genx86_buffer* buf, clist* posn,
 {
   clist* newinst = clist_append(posn);
   genx86_op* newop = cnew(genx86_op);
+ 
+  IGNORE(chunk);
+  IGNORE(buf);
   
   newop->operator = opcode;
   newop->op[0] = dest;
@@ -700,9 +709,9 @@ void genx86_insert(pheta_chunk* chunk, genx86_buffer* buf, clist* posn,
 
 uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
 {
-  static const char* patypename[] =
+/*  static const char* patypename[] =
     { "unset", "constb", "const", "rfile", "ireg", "stack",
-      "alias", "spilled" };
+      "alias", "spilled" }; */
   if (a->type != b->type) return 0;
 
   switch (a->type)
@@ -735,6 +744,9 @@ uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
     case gotype_ADDRESS:
     return 0;
     break;
+    
+    default:
+    return 0;
   }
   
   return 1;
@@ -804,11 +816,11 @@ genx86_buffer* genx86_newbuffer()
   return buf;
 }
 
+#ifdef DEAD
 nativeblockinfo* genx86_translate(pheta_chunk* chunk)
 {
   nativeblockinfo* nat = rtasm_new();
   genx86_buffer* buf = genx86_newbuffer();
-  uint5 startline = 0;
   
 //  genx86_translate_inner(buf, chunk, chunk->root, &startline);
   
@@ -816,6 +828,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk)
   
   return nat;
 }
+#endif
 
 // insert code to recover register state after exception
 void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
@@ -947,11 +960,7 @@ void genx86_call_function(genx86_buffer* buf, pheta_chunk* chunk, void* func)
 uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
   pheta_basicblock* blk, pheta_instr* instr, meminfo* mem)
 {
-  clist* buffer = buf->buffer;
-  uint5 i;
-  list* map = 0;
-  clist* walk;
-  sint5 patchfalseblk = -1;
+/*  sint5 patchfalseblk = -1;*/
   static const uint5 predset[] =
   {
     ab_SETE, ab_SETNE, ab_SETB, ab_SETAE,
@@ -959,6 +968,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     ab_SETA, ab_SETBE, ab_SETGE, ab_SETL,
     ab_SETG, ab_SETLE
   };
+  
+  IGNORE(blk);
   
   switch (instr->opcode)
   {
@@ -1011,7 +1022,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
                   genx86_makeregister8(chunk, LO8BITREG(breg));
                 genx86_operand* bh =
                   genx86_makeregister8(chunk, HI8BITREG(breg));
-                genx86_operand* off, *num;
+                genx86_operand* off;
                 genx86_operand* destop = genx86_findoperand(chunk, dest);
                 
                 fprintf(stderr, "Got registers %s and %s for 8-bit "\
@@ -1794,7 +1805,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-      genx86_operand* src = genx86_findoperand(chunk, src1);
+/*      genx86_operand* src = genx86_findoperand(chunk, src1);*/
       genx86_operand* c8 = genx86_makeconstant(chunk, 8);
       genx86_operand* pcd = genx86_makebaseoffset(chunk, 15*4, gowidth_DWORD);
       genx86_operand* addres;
@@ -1952,6 +1963,8 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
   uint5 unconditional;
   list* scanreloc;
 
+  IGNORE(last);  // maybe remove completely?
+
   fprintf(stderr, "Flatten %p\n", blk);
 
   blk->natoffset = nat->length;
@@ -1975,7 +1988,7 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
     if ((e = hash_lookup(blk->gxbuffer->reloc, (uint5)scancode)))
     {
       reloc_record* rel = e->data;
-      uint5 offset, value;
+      uint5 offset = 0;
 
       switch (rel->size)
       {
@@ -2004,6 +2017,12 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
         case reloc_PLACEHOLDER:
         {
           rel->value = offset;
+        }
+        break;
+        
+        case reloc_ABSOLUTE:
+        {
+          assert(!"Something unimplemented");
         }
         break;
       }

@@ -360,10 +360,10 @@ AF             |SCAS
 0F AE /sf      |SFENCE         # IA is horrible.
 0F 01 /0       |SGDT m
 0F 01 /1       |SIDT m
-0F A4          |SHLD r/m32,r32,imm8
-0F A5          |SHLD r/m32,r32,CL
-0F AC          |SHRD r/m32,r32,imm8
-0F AD          |SHRD r/m32,r32,CL
+0F A4 /r ib    |SHLD r/m32,r32,imm8
+0F A5 /r       |SHLD r/m32,r32,CL
+0F AC /r ib    |SHRD r/m32,r32,imm8
+0F AD /r       |SHRD r/m32,r32,CL
 0F 00 /0       |SLDT r/m32
 0F 01 /4       |SMSW r32/m16
 F9             |STC

@@ -202,6 +202,8 @@ meminfo* memory_initialise(uint5 bytes)
   meminfo* mem = cnew(meminfo);
   uint5 i;
 
+  IGNORE(bytes);
+
 /*  mem->memory = cnewarray(uint5, bytes/4);*/
   mem->bank0 = cnewarray(uint5, BANK0RAM/4);
   mem->bank1 = cnewarray(uint5, BANK1RAM/4);
@@ -328,6 +330,8 @@ void memory_postwrite(meminfo* mem, uint5* virtualaddress)
 #else
 void memory_postwrite(meminfo* mem, uint5* virtualaddress)
 {
+  IGNORE(mem);
+  IGNORE(virtualaddress);
 }
 #endif
 
@@ -410,49 +414,88 @@ uint5 memory_readbyterom1(meminfo* mem, uint5 physaddress)
 
 void memory_writebytevram(meminfo* mem, uint5 physaddress, uint5 data)
 {
+#if VRAM>0
   if ((physaddress &= 0xffffff) < VRAM)
     ((uint3*)mem->vram)[physaddress] = data;
+#else
+  IGNORE(mem);
+  IGNORE(physaddress);
+  IGNORE(data);
+#endif
 }
 
 void memory_writehalfvram(meminfo* mem, uint5 physaddress, uint5 data)
 {
+#if VRAM>0
   if ((physaddress &= 0xffffff) < VRAM)
     ((uint4*)mem->vram)[physaddress >> 1] = data;
+#else
+  IGNORE(mem);
+  IGNORE(physaddress);
+  IGNORE(data);
+#endif
 }
 
 void memory_writevram(meminfo* mem, uint5 physaddress, uint5 data)
 {
+#if VRAM>0
   if ((physaddress &= 0xffffff) < VRAM)
     mem->vram[physaddress >> 2] = data;
+#else
+  IGNORE(mem);
+  IGNORE(physaddress);
+  IGNORE(data);
+#endif
 }
 
 uint5 memory_readbytevram(meminfo* mem, uint5 physaddress)
 {
+#if VRAM>0
   if ((physaddress &= 0xffffff) < VRAM)
     return ((uint3*)mem->vram)[physaddress];
   else
     return 0;
+#else
+  IGNORE(mem);
+  IGNORE(physaddress);
+  return 0;
+#endif
 }
 
 uint5 memory_readhalfvram(meminfo* mem, uint5 physaddress)
 {
+#if VRAM>0
   if ((physaddress &= 0xffffff) < VRAM)
     return ((uint4*)mem->vram)[physaddress >> 1];
   else
     return 0;
+#else
+  IGNORE(mem);
+  IGNORE(physaddress);
+  return 0;
+#endif
 }
 
 uint5 memory_readvram(meminfo* mem, uint5 physaddress)
 {
+#if VRAM>0
   if ((physaddress &= 0xffffff) < VRAM)
     return mem->vram[physaddress >> 2];
   else
     return 0;
+#else
+  IGNORE(mem);
+  IGNORE(physaddress);
+  return 0;
+#endif
 }
 
 void memory_writefault(meminfo* mem, uint5 physaddress, uint5 data)
 {
   extern const char* modename_st[];
+  
+  IGNORE(data);
+  
   fprintf(stderr, "Write fault at %x. Mode=%s\n", physaddress, 
     modename_st[mem->currentmode]);
   mem->memoryfault = 1;
@@ -472,10 +515,15 @@ uint5 memory_readfault(meminfo* mem, uint5 physaddress)
 
 void memory_nullwrite(meminfo* mem, uint5 physaddress, uint5 data)
 {
+  IGNORE(mem);
+  IGNORE(physaddress);
+  IGNORE(data);
 }
 
 uint5 memory_nullread(meminfo* mem, uint5 physaddress)
 {
+  IGNORE(mem);
+  IGNORE(physaddress);
   return 0x0c0ffee0;
 }
 
@@ -1001,7 +1049,7 @@ uint5 memory_readshalf(meminfo* mem, uint5 virtualaddress)
   return data;
 }
 
-void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint3 data)
+void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
   if (mem->datatlb.modestamp != mem->currentmode ||
@@ -1017,7 +1065,7 @@ void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint3 data)
   mem->datatlb.write.byte(mem, physaddress, data);
 }
 
-void memory_writehalf(meminfo* mem, uint5 virtualaddress, uint3 data)
+void memory_writehalf(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
   if (mem->datatlb.modestamp != mem->currentmode ||

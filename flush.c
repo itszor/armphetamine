@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "defs.h"
 #include "flush.h"
 #include "block.h"
@@ -13,7 +15,8 @@ static void flush_releaseblock(void* data)
 
 void flush_all(machineinfo* machine)
 {
-#ifdef RECOMPILE
+  IGNORE(machine);
+#ifdef RECOMPILE2
   hash_nuke(machine->blocks, flush_releaseblock);
   machine->live = 0;
   // oops, we just nuked this

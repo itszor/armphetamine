@@ -5,6 +5,7 @@
 #include "transmap.h"
 #include "cnew.h"
 #include "nativesupport.h"
+#include "recompile.h"
 
 profile_state* profile_initialise(void)
 {
@@ -91,7 +92,7 @@ uint5 profile_feednseqaddr(machineinfo* machine, profile_state* pstate,
         pstate->start = -1;
         return 1;
       }
-      assert(pstate->start != -1);
+      assert(pstate->start != -1u);
     }
   }
   else

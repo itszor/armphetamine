@@ -36,4 +36,8 @@ typedef struct {
 
 extern registerinfo* registers_new(void);
 
+extern void registers_clone(registerinfo* dest, registerinfo* src);
+
+extern void registers_diff(registerinfo* a, registerinfo* b);
+
 #endif

@@ -10,11 +10,13 @@
 #include <readline.h>
 #include <history.h>
 #include <assert.h>
+#include <string.h>
 
 #include "defs.h"
 #include "cnew.h"
 #include "riscos.h"
 #include "execute.h"
+#include "flush.h"
 
 // This file borrows heavily from Edwin Dorre's armemu for DOS
 
@@ -26,6 +28,8 @@ uint5 nativehack = 0;
 
 void riscos_escapehandler(int x)
 {
+  IGNORE(x);
+
   riscosstate->escape = 1;
 }
 
@@ -155,10 +159,7 @@ void riscos_readline(osstateinfo* os, meminfo* mem, registerinfo* reg)
   uint5 buf = reg->r[0] & 0x3fffffffU;
 //  uint3* buffer = (uint3*)memory_lookup(mem, (uint5*)buf);
   uint3* rdbuf;
-  uint3 lo = reg->r[2], hi = reg->r[3], echo = reg->r[4];
-  uint3 enteronly = buf	& 0x80000000U ? 1 : 0;
-  uint3 obscure = buf & 0x40000000U ? 1 : 0;
-  uint5 done = 0, ptr = 0, i;
+  uint5 ptr = 0, i;
 
   if (os->escape)
   {
@@ -215,6 +216,8 @@ void riscos_readline(osstateinfo* os, meminfo* mem, registerinfo* reg)
 
 uint5 riscos_inkey(uint5 lo, uint5 hi)
 {
+  IGNORE(hi);
+  IGNORE(lo);
   return getchar();
 }
 
@@ -222,10 +225,10 @@ uint5 riscos_inkey(uint5 lo, uint5 hi)
 int STATE__running;
 #define FALSE 0
 
-void getstring(meminfo* mem, int src, char* buffer)
+void getstring(meminfo* mem, int src, uint3* buffer)
 {
-  int out;
-  while (buffer[out++] = memory_readbyte(mem, src++));
+  int out = 0;
+  while ((buffer[out++] = memory_readbyte(mem, src++)));
 }
 
 void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
@@ -281,7 +284,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
         else
         {
           reg->r[1] = riscos_inkey(reg->r[1], reg->r[2]);
-          reg->r[2] = reg->r[1]==-1 ? 255 : 0;
+          reg->r[2] = reg->r[1]==-1u ? 255 : 0;
         }
       }
       else
@@ -397,7 +400,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
     case OS_Write0:
     {
       uint5 addr = reg->r[0], ch;
-      while (ch = memory_readbyte(mem, addr++))
+      while ((ch = memory_readbyte(mem, addr++)))
         riscos_vdu(os, ch);
     }
     break;
@@ -406,7 +409,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
     case OS_WriteS:
     {
       uint5 addr = GET(15)-4, ch, len = 0;
-      while (ch = memory_readbyte(mem, addr++))
+      while ((ch = memory_readbyte(mem, addr++)))
       {
         riscos_vdu(os, ch);
         len++;
@@ -448,7 +451,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
     {
       static char buffer[8];
       int i;
-      snprintf(&buffer[0], reg->r[2], "%08lX", reg->r[0]);
+      snprintf(&buffer[0], reg->r[2], "%.8X", reg->r[0]);
       for (i=0; i<8; i++) buffer[i] = memory_readbyte(mem, reg->r[1]+i);
     }
     break;
@@ -456,7 +459,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
     case OS_CLI:
     {
       uint5 i=0;
-      uint3 ch, buf[256];
+      uint3 buf[256];
   //    fprintf(stderr, "CLI called with:\n");
 
       while ((buf[i] = memory_readbyte(mem, reg->r[0]+i))>=32);
@@ -470,8 +473,8 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
       {
         int* start, *end;
         fprintf(stderr, "Attempting translation...\n");
-        sscanf(&buf[9], "%x %x", &start, &end);
-        fprintf(stderr, "start=%x end=%x\n", start, end);
+        sscanf(&buf[9], "%p %p", &start, &end);
+        fprintf(stderr, "start=%p end=%p\n", start, end);
         break;
       }
 
@@ -508,7 +511,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
           else
           {
             char* m = malloc(reg->r[5]-reg->r[4]);
-            int i;
+            uint5 i;
             for (i=reg->r[4];
                  i<=reg->r[5];
                  m[i-reg->r[4]] = memory_readbyte(mem, i));
@@ -568,7 +571,7 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
     case BASICTrans_Message:
     {
       char* msg;
-      int i;
+      uint5 i;
       fprintf(stderr, "Attempting BASICTrans_Message, pc=%x\n", reg->r[15]);
       fprintf(stderr, "r3=%d\n", reg->r[3]);
       switch (reg->r[0])
