@@ -1,6 +1,6 @@
 #! /usr/bin/perl
 
-$file = "rtasm_fns.c";
+$file = "dynarec/arch/x86/rtasm_fns.c";
 open(file);
 @lines = <file>;
 close(file);

@@ -10,10 +10,17 @@
 #include "registers.h"
 #include "processor.h"
 #include "execute.h"
+
+#ifdef ROHLE
 #include "fakesys.h"
+#endif
+
 #include "decode.h"
 #include "debug.h"
+
+#ifdef EMULART
 #include "intctrl.h"
+#endif
 
 /* nzcv eq ne cs cc mi pl vs vc hi ls ge lt gt le al nv
  * 1111 1  0  1  0  1  0  1  0  0  1  1  0  1  0  1  0

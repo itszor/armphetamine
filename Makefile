@@ -1,28 +1,88 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DEMULART
 #CFLAGS	= -g -DVERSION=\"0.4\" -DEMULART
 NASM	= nasm
 AS	= as
 
-INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
-
 LDFLAGS= -g 
 
-OBJ =	cnew.o decode.o disassemble.o \
-	execute26.o execute32.o fakesys.o hash.o list.o \
-	loadaout.o machine.o main.o memory.o nativesupport.o pqueue.o \
-	registers.o riscos.o x86dism.o asmalu.o \
-	rtasm.o rtasm_fns.o flush.o pheta.o phetadism.o processor.o vidc20.o \
-	iomd.o debug.o bset.o asmalutab.o fifo.o mouse.o keyboard.o \
-	genx86.o palloc.o decodet.o executethm.o clist.o relocate.o \
-	dynsupport.o genx86_tab.o transmap.o profile.o recompile.o sapcm.o \
-	ostimer.o intctrl.o mexreg.o
+LJT =           libjtype
 
-STRUCTOBJ =	structsupport.o
+LJTOBJS =       $(LJT)/bset.o $(LJT)/clist.o $(LJT)/list.o \
+                $(LJT)/hash.o $(LJT)/cnew.o $(LJT)/pqueue.o
 
-TEMPFILES	= genx86_tab.c rtasm_fns.c rtasm_fns.h
+CORE =          core
+
+COREOBJS =      $(CORE)/decode.o $(CORE)/decodet.o $(CORE)/disassemble.o \
+                $(CORE)/execute26.o $(CORE)/execute32.o $(CORE)/executethm.o \
+                $(CORE)/machine.o $(CORE)/memory.o $(CORE)/processor.o \
+                $(CORE)/registers.o
+
+DYNAREC =       dynarec
+
+DROBJS =        $(DYNAREC)/block.o $(DYNAREC)/flush.o $(DYNAREC)/palloc.o \
+                $(DYNAREC)/pheta.o $(DYNAREC)/phetadism.o $(DYNAREC)/profile.o \
+                $(DYNAREC)/recompile.o $(DYNAREC)/relocate.o $(DYNAREC)/transmap.o
+
+DRX86 =         $(DYNAREC)/arch/x86
+
+DRX86OBJS =     $(DRX86)/genx86.o $(DRX86)/genx86_tab.o \
+                $(DRX86)/nativesupport.o $(DRX86)/rtasm.o \
+                $(DRX86)/x86dism.o
+
+LART =          mach/lart
+
+LARTOBJS =      $(LART)/fifo.o $(LART)/intctrl.o $(LART)/mexreg.o \
+                $(LART)/ostimer.o $(LART)/ostimer.o $(LART)/sapcm.o \
+                $(LART)/lartmem.o
+
+ROHLE =         mach/rohle
+
+ROHLEOBJS =     $(ROHLE)/fakesys.o $(ROHLE)/riscos.o
+
+RISCPC =        mach/riscpc
+
+RISCPCOBJS =    $(RISCPC)/iomd.o $(RISCPC)/keyboard.o $(RISCPC)/mouse.o \
+                $(RISCPC)/vidc20.o
+
+DEBUG =         shell/debug
+
+DEBUGOBJS =     $(DEBUG)/debug.o $(DEBUG)/main.o
+
+OBJ =	$(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) $(DEBUGOBJS)
+
+LARTINCLUDE =   -I/usr/include -I/usr/local/include -I/usr/include/readline -I. \
+                -Ilibjtype -Icore -Ishell/debug -Imach/lart -Idynarec \
+                -Idynarec/arch/x86
+
+LARTCFLAGS =    -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DEMULART
+
+ROHLEINCLUDE =  -I/usr/include -I/usr/local/include -I/usr/include/readline -I. \
+                -Ilibjtype -Icore -Ishell/debug -Imach/rohle -Idynarec \
+                -Idynarec/arch/x86
+
+ROHLECFLAGS =   -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DROHLE
+
+RISCPCCFLAGS =  -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DRISCPCEMU
+
+RISCPCINCLUDE = -I/usr/include -I/usr/local/include -I/usr/include/readline -I. \
+                -Ilibjtype -Icore -Ishell/debug -Imach/riscpc -Idynarec \
+                -Idynarec/arch/x86
+
+# Change these for different machine!
+CFLAGS =        $(LARTCFLAGS)
+
+INCLUDE =       $(LARTINCLUDE)
+
+TARGET =        virtualart
+#TARGET =       rohle
+#TARGET =       riscpcemu
+
+STRUCTOBJ =	$(DRX86)/structsupport.o
+
+TEMPFILES =     $(DRX86)/genx86_tab.c $(DRX86)/rtasm_fns.c \
+                $(DRX86)/rtasm_fns.h
 
 TESTS =	divide simple armtest
 
@@ -30,7 +90,8 @@ LIBS = -lm -lreadline -lhistory -lncurses -lutil
 
 .PHONY: clean cleaner package webpkg romdump lartrun
 
-all:	emulate simple divide armtest
+# virtualart rohle riscpcemu
+all:	virtualart 
 
 clean:
 	rm -f *.o emulate $(TESTS)
@@ -38,10 +99,10 @@ clean:
 cleaner:
 	rm -f *.o *.d emulate $(TESTS) $(TEMPFILES) rtasm_fns.h
 
-lartrun:	emulate
-	./emulate "script lartup.txt"
+lartrun:	virtualart
+	./virtualart "script lartup.txt"
 
-emulate: $(OBJ)
+virtualart: $(OBJ)
 	$(CC) -o emulate $(OBJ) $(LDFLAGS) $(LIBS) 
 
 simple.o:	simple.arm.s
@@ -75,42 +136,29 @@ romdump:
 #	rsh jtb20.quns.cam.ac.uk "gcc -O2 test.c -o object"
 #	cp /net/jtb20.quns.cam.ac.uk/home/jules/object .
 
-#gen_dp:	gen_dp.c
-#	$(CC) -O6 gen_dp.c -o gen_dp
+$(DRX86)/rtasm.h:       $(DRX86)/rtasm_fns.h
 
-#emit2.h:	emit2_fns.h
-#rtasm.h:	rtasm_fns.h
-#rtasm.c:	rtasm_fns.h
-#rtasm_fns.c:	mkintel.pl intel.dat
+$(DRX86)/rtasm_fns.c:	$(DRX86)/mkintel.pl $(DRX86)/intel.dat
+	$(DRX86)/mkintel.pl > rtasm_fns.c
 
-#emit2.c:	emit2.magic
-#	touch emit2.magic
+$(DRX86)/rtasm_fns.h:	$(DRX86)/rtasm_fns.c $(DRX86)/rtasm_mkheader.pl
+	$(DRX86)/rtasm_mkheader.pl > $(DRX86)/rtasm_fns.h
 
-#emit2_fns.h:	emit2.magic
-#	gcc -DE2HEADER $(INCLUDE) -E emit2.c | grep "void p86_"|grep -v "void p86_gen"|sed s/\{.*\}//g |sed "s/void/extern void/g" > emit2_fns.h
-#	rm -f emit2.magic
+$(DRX86)/genx86_tab.c:	$(DRX86)/genx86tabsrc.dat $(DRX86)/mkx86tab.py
+	$(DRX86)/mkx86tab.py
 
-rtasm_fns.c:	mkintel.pl
-	./mkintel.pl > rtasm_fns.c
-
-rtasm_fns.h:	rtasm_fns.c
-	./rtasm_mkheader.pl > rtasm_fns.h
-
-genx86_tab.c:	genx86tabsrc.dat mkx86tab.py
-	./mkx86tab.py
-
-structsupport:	$(STRUCTOBJ)
+$(DRX86)/structsupport:	$(STRUCTOBJ)
 	gcc -O2 $< -o $@
 
-structsupport.inc:	structsupport
-	./structsupport > structsupport.inc
+$(DRX86)/structsupport.inc:	$(DRX86)/structsupport
+	$(DRX86)/structsupport > structsupport.inc
 
-dynsupport.asm:	structsupport.inc
+$(DRX86)/dynsupport.asm:	$(DRX86)/structsupport.inc
 
-asmalu.s:	gen_dp.pl
-	./gen_dp.pl > $@
+$(CORE)/asmalu.s:	$(CORE)/gen_dp.pl
+	$(CORE)/gen_dp.pl > $@
 
-asmalu.o:	asmalu.s
+$(CORE)/asmalu.o:	$(CORE)/asmalu.s
 	$(AS) $< -o $@
 
 %.o:	%.c
@@ -119,7 +167,7 @@ asmalu.o:	asmalu.s
 %.o:	%.asm
 	$(NASM) -f elf $< -o $@
 
-%.d:	%.c $(TEMPFILES)
+%.d:	%.c
 	$(CC) $(INCLUDE) -MM $< > $@
 
 %.d:	%.asm

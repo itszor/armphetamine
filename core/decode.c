@@ -3,7 +3,6 @@
 #include "decode.h"
 #include "disassemble.h"
 #include "execute.h"
-#include "pseudo.h"
 #include "pheta.h"
 
 // disassembler function table

@@ -109,3 +109,8 @@ branches within blocks.
 
 First real code has been recompiled and executed (the factorial test). No
 updates to news for a while, but you may find something in the CVS comments...
+
+23:44 Oct 27 2002
+=================
+
+Major restructuring. Not yet compiling.
