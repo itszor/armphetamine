@@ -360,12 +360,12 @@ F7 /5          |IMUL r/m32
 0F AF /r       |IMUL r32,r/m32
 6B /r ib       |IMUL r16,r/m16,imm8
 6B /r ib       |IMUL r32,r/m32,imm8
-6B /r ib       |IMUL r16,imm8
-6B /r ib       |IMUL r32,imm8
+#6B /r ib       |IMUL r16,imm8
+#6B /r ib       |IMUL r32,imm8
 69 /r iw       |IMUL r16,r/m16,imm16
 69 /r id       |IMUL r32,r/m32,imm32
-69 /r iw       |IMUL r16,imm16
-69 /r id       |IMUL r32,imm32
+#69 /r iw       |IMUL r16,imm16
+#69 /r id       |IMUL r32,imm32
 E4 ib          |IN AL,imm8
 E5 ib          |IN AX,imm8
 E5 ib          |IN EAX,imm8
@@ -375,8 +375,8 @@ ED             |IN EAX,DX
 FE /0          |INC r/m8
 FF /0          |INC r/m16
 FF /0          |INC r/m32
-40+ rw         |INC r16
-40+ rd         |INC r32
+40+rw          |INC r16
+40+rd          |INC r32
 6C             |INS m8,DX
 6D             |INS m16,DX
 6D             |INS m32,DX
@@ -516,12 +516,12 @@ A1             |MOV EAX,moffs32
 A2             |MOV moffs8,AL
 A3             |MOV moffs16,AX
 A3             |MOV moffs32,EAX
-B0+ rb         |MOV r8,imm8
-B8+ rw         |MOV r16,imm16
-B8+ rd         |MOV r32,imm32
-C6 /0          |MOV r/m8,imm8
-C7 /0          |MOV r/m16,imm16
-C7 /0          |MOV r/m32,imm32
+B0+rb ib       |MOV r8,imm8
+B8+rw iw       |MOV r16,imm16
+B8+rd id       |MOV r32,imm32
+C6 /0 ib       |MOV r/m8,imm8
+C7 /0 iw       |MOV r/m16,imm16
+C7 /0 id       |MOV r/m32,imm32
 0F 22 /r       |MOV CR0,r32
 0F 22 /r       |MOV CR2,r32
 0F 22 /r       |MOV CR3,r32
@@ -635,8 +635,8 @@ EF             |OUT DX,EAX
 0F D5 /r       |PMULLW mm,mm/m64
 8F /0          |POP m16
 8F /0          |POP m32
-58+ rw         |POP r16
-58+ rd         |POP r32
+58+rw          |POP r16
+58+rd          |POP r32
 1F             |POP DS
 07             |POP ES
 17             |POP SS

@@ -24,7 +24,7 @@ foreach (@inteldat)
     if ($rhs =~ m/xmm/) {
       $type = 'sse';
     }
-    elsif ($rhs =~ m/mm/) {
+    elsif ($rhs =~ m/[^i]mm/) {
       $type = 'mmx';
     }
     else {
@@ -60,7 +60,7 @@ foreach (@inteldat)
         $immno = bump($immno);
       }
       elsif (m/^r(32)?\/m(8|16|32)$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         s/\///;
         $fnname .= "_$_";
       }
@@ -81,24 +81,24 @@ foreach (@inteldat)
         $fnname .= "_rel32";
       }
       elsif (m/^m(8|16|32|64)$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_$_";
       }
       elsif (m/^m(16&16|32&32)$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         s/&16|&32/x2/;
         $fnname .= "_$_";
       }
       elsif (m/^m16&32$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_m16n32";
       }
       elsif (m/^DR0-DR7$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_dbg";
       }
       elsif (m/^CR[0234]$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_cr" . substr($_,2,1);
       }
       elsif (m/^(mm|Sreg)$/) {
@@ -106,7 +106,7 @@ foreach (@inteldat)
         $fnname .= "_$_";
       }
       elsif (m/^mm.*\/m(16|32|64)/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         s/\///;
         $fnname .= "_$_";
       }
@@ -132,25 +132,25 @@ foreach (@inteldat)
         $fnname .= "_$_";
       }
       elsif (m/^m16\:(16|32)/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         s/:/_/;
         $fnname .= "_$_";
       }
       elsif (m/^m(2|16|32|64)(byte|int|real)/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_$_";
       }
       elsif (m/^m80(dec|bcd|real)/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_$_";
       }
       elsif (m/^m(14\/28|94\/108|512)byte/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         s/\///;
         $fnname .= "_$_";
       }
       elsif (m/^m$/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_$_";
       }
       elsif (m/^ST\(0\)/) {
@@ -161,7 +161,7 @@ foreach (@inteldat)
         $fnname .= "_sti";
       }
       elsif (m/^xmm(2)?\/.*/) {
-        @args[$narg++] = "rtasm_mtype* mem";
+        @args[$narg++] = "rtasm_mtype mem";
         s/\///;
         $fnname .= "_$_";
       }
@@ -193,14 +193,14 @@ foreach (@inteldat)
       }
       elsif (m/\/r/) {
         # get mode
-        $modrm = "\trtasm_putbyte(nat, mem->rm | (reg<<3) | (mem->mod<<6));\n";
-        $mem = "\trtasm_mem(nat, mem);\n";
+        $modrm = "\trtasm_putbyte(nat, mem.rm | (reg<<3) | (mem.mod<<6));\n";
+        $mem = "\trtasm_mem(nat, &mem);\n";
       }
       elsif (m/\/[0-7]/) {
         s/\///;
-        $modrm = "\trtasm_putbyte(nat, mem->rm | ".($_<<3)." | " .
-                 "(mem->mod<<6));\n";
-        $mem = "\trtasm_mem(nat, mem);\n";
+        $modrm = "\trtasm_putbyte(nat, mem.rm | ".($_<<3)." | " .
+                 "(mem.mod<<6));\n";
+        $mem = "\trtasm_mem(nat, &mem);\n";
       }
       elsif (m/\/sf/) {
         $modrm = "\trtasm_putbyte(nat, 0xF8);\n";
