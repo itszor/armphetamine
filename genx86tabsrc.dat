@@ -56,3 +56,4 @@ bt   |MR,Mi        |c|
 cmc  |n            |c|
 stc  |n            |c|
 clc  |n            |c|
+nop  |n            ||

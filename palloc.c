@@ -61,6 +61,9 @@ void palloc_constant(pheta_chunk* chunk)
           chunk->alloc[dest].info.value = byte;
         }
         break;
+        
+        default:  // it's nothing to do with constants
+        break;
       }
     }
   }
@@ -164,7 +167,7 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
       default:
       {
-        pheta_getused(instr, i, &ndest, destr, &nsrc, srcr);
+        pheta_getused(instr, &ndest, destr, &nsrc, srcr);
 
         if (ndest==1 && (nsrc==1 || nsrc==2))
         {
@@ -325,7 +328,7 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
     pheta_instr* instr = walk->data;
     list* scanblock;
 
-    pheta_getused(instr, i, &ndest, destr, &nsrc, srcr);
+    pheta_getused(instr, &ndest, destr, &nsrc, srcr);
 
     for (j=0; j<ndest; j++)
     {
@@ -666,19 +669,19 @@ void palloc_shufflecommit(pheta_chunk* chunk)
         uint5 src = instr->data.op.src1;
         lookfor[armreg] = src;
         sourceplace[armreg] = walk;
-   // fprintf(stderr, "Found a commit for reg %d at %d\n", armreg, inststart);
+        fprintf(stderr, "Found a commit for reg %d at %p\n", armreg, walk);
       }
       
-      pheta_getused(instr, 0, &ndest, destr, &nsrc, srcr);
+      pheta_getused(instr, &ndest, destr, &nsrc, srcr);
       
       for (j=0; j<ndest; j++)
       {
         uint5 k;
         for (k=0; k<ph_NUMREG; k++)
         {
-          if (lookfor[k]==destr[j])
+          if ((uint5)lookfor[k]==destr[j])
           {
-     //   fprintf(stderr, "Setting commitplace[%d] to %d\n", k, inststart);
+            fprintf(stderr, "Setting commitplace[%d] to %p\n", k, walk);
             commitplace[k] = walk;
           }
         }

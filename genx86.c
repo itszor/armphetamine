@@ -26,7 +26,7 @@ static const char* abname[] = {
   "test", "cmp", "ret", "seto", "setno", "setb", "setae", "sete", "setne", 
   "setbe", "seta", "sets", "setns", "setl", "setge", "setle", "setg", "jo",
   "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jl", "jge", "jle",
-  "jg", "call", "jecxz", "bt", "cmc", "stc", "clc"
+  "jg", "call", "jecxz", "bt", "cmc", "stc", "clc", "nop"
 };
 
 /*
@@ -68,6 +68,26 @@ static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
 
   switch SIZEDTYPE(inst->op[1]->type, inst->op[1]->width)
   {
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_BYTE):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].rm32_i8)
+        {
+          genx86_tab[opcode].rm32_i8(nat, rtasm_reg(reg), 
+            inst->op[1]->data.imm);
+        }
+        else if (genx86_tab[opcode].rm32_i32)
+        {
+          genx86_tab[opcode].rm32_i32(nat, rtasm_reg(reg), 
+            inst->op[1]->data.imm);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+  
     case SIZEDTYPE(gotype_IMMEDIATE, gowidth_DWORD):
     {
       if (ops==2)
@@ -155,6 +175,10 @@ static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
       else ERR;
     }
     else ERR;
+    break;
+    
+    default:
+    ERR;
   }
 }
 
@@ -300,6 +324,10 @@ static void genx86_asm_r8_2(nativeblockinfo* nat, genx86_op* inst, uint5 opcode,
       else ERR;
     }
     else ERR;
+    break;
+    
+    default:
+    ERR;
   }
 }
 
@@ -647,14 +675,17 @@ void genx86_insert(pheta_chunk* chunk, genx86_buffer* buf, clist* posn,
 
 uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
 {
+  static const char* patypename[] =
+    { "unset", "constb", "const", "rfile", "ireg", "stack",
+      "alias", "spilled" };
   if (a->type != b->type) return 0;
 
   switch (a->type)
   {
     case gotype_PARTIAL:
     fprintf(stderr, "WARNING: Comparing partial allocations for equivalence\n");
-    fprintf(stderr, "a->data.src=%d, b->data.src=%d\n",
-      a->data.src, b->data.src);
+    fprintf(stderr, "a->data.src=%s, b->data.src=%s\n",
+      patypename[a->data.src->type], patypename[b->data.src->type]);
     if (a->data.src != b->data.src) return 0;
     break;
     
@@ -686,10 +717,22 @@ uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
 void genx86_move(pheta_chunk* chunk, genx86_buffer* buf, palloc_info* dest, 
   palloc_info* src)
 {
-  genx86_operand* destop = genx86_findoperand(chunk, dest);
-  genx86_operand* srcop = genx86_findoperand(chunk, src);
+  genx86_operand* destopi, *destop = genx86_findoperand(chunk, dest);
+  genx86_operand* srcopi, *srcop = genx86_findoperand(chunk, src);
   
-  if (genx86_equivalent(destop, srcop)) return;
+  if (dest->type==pal_ALIAS)
+    destopi = genx86_findoperand(chunk,
+      &chunk->alloc[palloc_close(chunk, dest->info.value)]);
+  else
+    destopi = destop;
+  
+  if (src->type==pal_ALIAS)
+    srcopi = genx86_findoperand(chunk,
+      &chunk->alloc[palloc_close(chunk, src->info.value)]);
+  else
+    srcopi = srcop;
+  
+  if (genx86_equivalent(destopi, srcopi)) return;
   
   genx86_append(chunk, buf, ab_MOV, destop, srcop, 0);
 }
@@ -909,29 +952,14 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     case ph_COMMIT:
     {
       genx86_delayedfetchcommit* dfc;
-      if (instr->data.op.dest<15)
-      {
-        list_add(&buf->commit);
-        buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
-        dfc->src = instr->data.op.dest;
-        dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
-        dfc->loc = buf->buffer->prev;
-        fprintf(stderr, "Storing commit %d to %d\n", instr->data.op.src1,
-          instr->data.op.dest);
-      }
-      else
-      {
-        fprintf(stderr, "Special commit\n");
-        switch (instr->data.op.dest)
-        {
-          case ph_R15_ADDR:
-          case ph_R15_FULL:
-          {
-            
-          }
-          break;
-        }
-      }
+
+      list_add(&buf->commit);
+      buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
+      dfc->src = instr->data.op.dest;
+      dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
+      dfc->loc = buf->buffer->prev;
+      fprintf(stderr, "Storing commit %d to %d\n", instr->data.op.src1,
+        instr->data.op.dest);
 /*
       uint5 armdest = instr->data.op.dest;
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
@@ -1630,29 +1658,25 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     // 26-bit mode.
     case ph_CAJMP:
     {
-      genx86_operand* dest, *c8;
-      dest = cnew(genx86_operand);
-      dest->type = gotype_INDREGPLUSDISP8;
-      dest->width = gowidth_DWORD;
-      dest->data.regdisp.base = EBP;
-      dest->data.regdisp.disp = 15*4;
-      c8 = genx86_makeconstant(chunk, 8);
-      genx86_append(chunk, buf, ab_ADD, dest, c8, 0);
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      genx86_operand* src = genx86_findoperand(chunk, src1);
+      genx86_operand* c8 = genx86_makeconstant(chunk, 8);
+      genx86_append(chunk, buf, ab_ADD, src, c8, 0);
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
     break;
-    
+
     case ph_CONST:
     case ph_CONSTB:
     /* these don't need to generate any actual code */
     break;
-    
+
     case ph_UKJMP:
     {
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
     break;
-    
+
     default:
     fprintf(stderr, "Unimplemented ph2 opcode: %s\n", opname[instr->opcode]);
     exit(1);

@@ -39,7 +39,8 @@ nativesupport.o: nativesupport.c defs.h registers.h processor.h \
  codegen.h allocate.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h \
- clist.h cnew.h palloc.h phetadism.h
+ clist.h cnew.h palloc.h phetadism.h genx86.h x86asm.h rtasm.h \
+ rtasm_fns.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h clist.h phetadism.h
@@ -64,7 +65,8 @@ flush.o: flush.c defs.h flush.h machine.h processor.h registers.h \
  codegen.h allocate.h x86asm.h clist.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h bset.h pqueue.h \
- clist.h cnew.h palloc.h phetadism.h
+ clist.h cnew.h palloc.h phetadism.h genx86.h x86asm.h rtasm.h \
+ rtasm_fns.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h clist.h phetadism.h

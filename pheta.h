@@ -90,6 +90,7 @@ typedef enum {
 #define ph_IREG 8
 
 typedef struct {
+  pheta_opcode opcode;
   union {
     struct {
       uint4 dest;
@@ -108,7 +109,6 @@ typedef struct {
     } con;
     void* ptr;
   } data;
-  uint3 opcode;
 } pheta_instr;
 
 struct genx86_buffer;
@@ -234,28 +234,39 @@ extern const uint3 pheta_instlength[];
 extern pheta_chunk* pheta_newchunk(uint5 start, uint5 length);
 
 extern pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr);
+
 extern void pheta_destroybasicblock(pheta_basicblock* blk);
 
 extern pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
-                                         uint5 length);
+  uint5 length);
+                                         
 extern void pheta_link(pheta_basicblock* from, uint5 code,
-                       pheta_basicblock* condtrue, pheta_basicblock* condfalse);
+  pheta_basicblock* condtrue, pheta_basicblock* condfalse);
+  
 extern uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...);
-extern void pheta_getused(pheta_instr* instr, int index, uint5* numdest,
-                          uint5 dest[], uint5* numsrc, uint5 src[]);
+
+extern void pheta_getused(pheta_instr* instr, uint5* numdest,
+  uint5 dest[], uint5* numsrc, uint5 src[]);
+  
 extern void pheta_dfs_visit(pheta_basicblock* blk, uint5* time);
+
 extern void pheta_dfs(pheta_chunk* chunk);
+
 extern void pheta_scc(pheta_chunk* chunk);
+
 extern void pheta_scc_visit(pheta_basicblock* blk);
+
 extern void pheta_predecessor(pheta_chunk* chunk);
 
 extern void pheta_gdlprint(pheta_chunk* chunk, char* outfile);
 
 extern void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag);
+  
 extern void pheta_fixup_flags(pheta_chunk* chunk);
 
 extern void pheta_optimise_transitive_branch(pheta_chunk* chunk);
+
 extern void pheta_cull_unused_nodes(pheta_chunk* chunk);
 
 extern uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno);
@@ -267,30 +278,42 @@ extern void pheta_lsync(pheta_chunk* chunk);
 extern pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line);
 
 extern int pheta_dp(machineinfo* machine, instructionformat inst,
-                    void* chunk);
+  void* chunk);
+  
 extern int pheta_dp_imm(machineinfo* machine, instructionformat inst,
-                        void* chunk);
+  void* chunk);
+  
 extern void pheta_dp_guts(machineinfo* machine, instructionformat inst,
-                          pheta_chunk* chunk, uint5 op2);
+  pheta_chunk* chunk, uint5 op2);
+  
 extern int pheta_mul(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_sdt(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_bdt(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_bra(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_swi(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_cdt(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_cdo(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_crt(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_sds(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
+  
 extern int pheta_und(machineinfo* machine, instructionformat inst,
-                      void* chunk);
+  void* chunk);
   
 #endif

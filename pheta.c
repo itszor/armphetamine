@@ -14,6 +14,7 @@
 #include "clist.h"
 #include "phetadism.h"
 #include "bset.h"
+#include "genx86.h"
 
 static const uint5 ccflags[] =
 {
@@ -142,7 +143,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
 
 //      fprintf(stderr, "prescan: dest=%d\n", dest);
 
-      if (dest>=0 && dest<length && !hash_lookup(leaders, i))
+      if (dest>=0 && dest<(sint5)length && !hash_lookup(leaders, i))
       {
         p = hash_insert(leaders, dest);
 /*        p->data = pheta_newbasicblock(chunk, base+dest*4);*/
@@ -194,7 +195,6 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       pheta_basicblock* prev = chunk->currentblock;
       pheta_basicblock* thisinst;
       pheta_basicblock* rest;
-      hashentry* blk;
 
       thisinst = pheta_getbasicblock(chunk, i);
 
@@ -373,7 +373,11 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     case ph_PHI:
     instr->data.imm = va_arg(ap, uint5);
     break;
-    
+
+    case ph_CAJMP:
+    instr->data.op.src1 = va_arg(ap, uint5);
+    break;
+
     // this is a "#line" equivalent directive sort of
     case ph_ADDRESS:
     instr->data.imm = va_arg(ap, uint5);
@@ -390,7 +394,7 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
 }
 
 // return the intermediate registers used by an instruction
-void pheta_getused(pheta_instr* instr, int index, uint5* numdest, uint5 dest[],
+void pheta_getused(pheta_instr* instr, uint5* numdest, uint5 dest[],
   uint5* numsrc, uint5 src[])
 {
   *numdest = 0;
@@ -422,6 +426,7 @@ void pheta_getused(pheta_instr* instr, int index, uint5* numdest, uint5 dest[],
     break;
 
     case ph_SPILL:
+    case ph_CAJMP:
     {
       src[(*numsrc)++] = instr->data.op.src1;
     }
@@ -481,6 +486,9 @@ void pheta_getused(pheta_instr* instr, int index, uint5* numdest, uint5 dest[],
       src[(*numsrc)++] = instr->data.op.src1;
       src[(*numsrc)++] = instr->data.op.src2;
     }
+    break;
+    
+    default:  // !!! things might not be fully handled...
     break;
   }
 }
@@ -543,6 +551,7 @@ void pheta_scc_visit(pheta_basicblock* blk)
   clist* walk;
   clist* decreasing = clist_new(), *scan, *at;
   blk->marker = col_GREY;
+
   for (walk=blk->predecessor->next; walk->data; walk=walk->next)
   {
     pheta_basicblock* parent = walk->data;
@@ -582,6 +591,7 @@ void pheta_scc_visit(pheta_basicblock* blk)
 void pheta_predecessor(pheta_chunk* chunk)
 {
   list* scanblock;
+
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
@@ -592,12 +602,12 @@ void pheta_predecessor(pheta_chunk* chunk)
       for (seek=blk->trueblk->predecessor->next; seek->data; seek=seek->next)
       {
         pheta_basicblock* sblk = seek->data;
-        if (sblk->finishtime == stime)
+        if (sblk->finishtime == (uint5)stime)
         {
           insertat = 0;
           break;
         }
-        if (sblk->finishtime > stime) insertat = seek;
+        if ((sint5)sblk->finishtime > stime) insertat = seek;
       }
       if (insertat)
       {
@@ -612,12 +622,12 @@ void pheta_predecessor(pheta_chunk* chunk)
       for (seek=blk->falseblk->predecessor->next; seek->data; seek=seek->next)
       {
         pheta_basicblock* sblk = seek->data;
-        if (sblk->finishtime == stime)
+        if (sblk->finishtime == (uint5)stime)
         {
           insertat = 0;
           break;
         }
-        if (sblk->finishtime > stime) insertat = seek;
+        if ((sint5)sblk->finishtime > stime) insertat = seek;
       }
       if (insertat)
       {
@@ -657,10 +667,10 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
   for (scan=chunk->blocks; scan; scan=scan->prev)
   {
     pheta_basicblock* blk = scan->data;
-    clist* pred, *inst;
+    clist* inst;
     uint5 i;
     extern const char* txtcc[];
-    pheta_instr* prev;
+    pheta_instr* prev = 0;
     
  /*   fprintf(f, "  node: {\n");
     fprintf(f, "  }\n");*/
@@ -673,7 +683,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
     {
       pheta_instr* instr = inst->data;
       fprintf(f, "  node: {\n");
-      fprintf(f, "    title: \"%.8x:%.4x:", blk, i);
+      fprintf(f, "    title: \"%p:%.4x:", blk, i);
       phetadism_instruction(f, instr);
       fprintf(f, "\"\n  }\n");
 
@@ -681,9 +691,9 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
       {
         fprintf(f, "  edge: {\n");
         fprintf(f, "    thickness: 4\n");
-        fprintf(f, "    sourcename: \"%.8x:%.4x:", blk, i-1);
+        fprintf(f, "    sourcename: \"%p:%.4x:", blk, i-1);
         phetadism_instruction(f, prev);
-        fprintf(f, "\"\n    targetname: \"%.8x:%.4x:", blk, i);
+        fprintf(f, "\"\n    targetname: \"%p:%.4x:", blk, i);
         phetadism_instruction(f, instr);
         fprintf(f, "\"\n  }\n");
       }
@@ -692,7 +702,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
     }
 
     fprintf(f, "  node: {\n");
-    fprintf(f, "    title: \"%.8x:%s%s\"\n", blk,
+    fprintf(f, "    title: \"%p:%s%s\"\n", blk,
       (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
     fprintf(f, "    shape: rhomboid\n");
     fprintf(f, "  }\n");
@@ -701,9 +711,9 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
     {
       fprintf(f, "  edge: {\n");
       fprintf(f, "    thickness: 4\n");
-      fprintf(f, "    sourcename: \"%.8x:%.4x:", blk, i-1);
+      fprintf(f, "    sourcename: \"%p:%.4x:", blk, i-1);
       phetadism_instruction(f, prev);
-      fprintf(f, "\"\n    targetname: \"%.8x:%s%s\"\n", blk,
+      fprintf(f, "\"\n    targetname: \"%p:%s%s\"\n", blk,
         (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
       fprintf(f, "  }\n");
     }
@@ -787,10 +797,9 @@ void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
   for (scan=chunk->blocks; scan; scan=scan->prev)
   {
     pheta_basicblock* blk = scan->data;
-    clist* pred, *inst;
+    clist* inst;
     uint5 i;
     extern const char* txtcc[];
-    pheta_instr* prev;
     
  /*   fprintf(f, "  node: {\n");
     fprintf(f, "  }\n");*/
@@ -901,7 +910,7 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
         // flag stuff only for ARM state affecting variant
         need |= (needflag & have);
         needflag &= ~need;
-        if (needpred != -1 && needpred<16)
+        if (needpred != (uint5)-1 && needpred<16)
         {
           if ((ccflags[needpred] & have) == ccflags[needpred])
           {
@@ -939,7 +948,8 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
       break;
     } // switch (opcode)
   }
-  if (needflag != 0 || needpred != -1)
+
+  if (needflag != 0 || needpred != (uint5)-1)
   {
     clist* l;
     fprintf(stderr, "Trying next level up\n");
@@ -1574,6 +1584,8 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   sint5 op1 = -1;
   const uint5 needop1mask = 0x5fff;
   
+  IGNORE(machine);
+  
   if (needop1mask & (1<<inst.dp.opcode))
     op1 = pheta_lfetch(chunk, inst.dp.rn);
   
@@ -1822,16 +1834,14 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     if (destr==15)
     {
       destr = inst.dp.s ? ph_R15_FULL : ph_R15_ADDR;
+
+      // sometimes this should be a RTS
+      pheta_emit(chunk, ph_CAJMP, dest);
+      pheta_emit(chunk, ph_SYNC);
     }
     pheta_lcommit(chunk, destr, dest);
-    if (inst.dp.rd==15)
-    {
-      pheta_emit(chunk, ph_SYNC);
-      // sometimes this should be a RTS
-      pheta_emit(chunk, ph_CAJMP);
-    }
   }
-  return 0;
+  return;
 }
 
 int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
@@ -1839,8 +1849,10 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   sint5 offset = ((sint5)(inst.bra.offset<<8))>>8;
   pheta_chunk* chunk = (pheta_chunk*)data;
   uint5 index = ((chunk->virtualaddress-chunk->start)>>2);
-  uint5 dest = index+offset+2;
+  sint5 dest = index+offset+2;
   uint5 next = index+1;
+
+  IGNORE(machine);
   
   pheta_cycles(chunk, 2);  // err, or maybe 3
   
@@ -1850,7 +1862,7 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
     pheta_lcommit(chunk, ph_R14, destpc);
   }
   
-  if (dest>=0 && dest<chunk->length)
+  if (dest>=0 && dest<(sint5)chunk->length)
   {
     pheta_basicblock* prevblk = chunk->currentblock;
     hashentry* taken = hash_lookup(chunk->leaders, dest);
@@ -1901,6 +1913,8 @@ int pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
   uint5 op2 = pheta_lfetch(chunk, inst.mul.rs);
   uint5 dest;
 
+  IGNORE(machine);
+
   if (inst.mul.a)  // accumulate
   {
     uint5 temp = pheta_emit(chunk, ph_MUL, op1, op2);
@@ -1942,6 +1956,9 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   int basereg = pheta_lfetch(chunk, inst.sdt.rn);
   sint5 offsetreg = -1;  // -1 for zero/no offset
   uint5 setpc = 0;
+  uint5 loadreg = 0;
+
+  IGNORE(machine);
   
   pheta_lsync(chunk);
   
@@ -2040,16 +2057,14 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   
   if (inst.sdt.l)  // load
   {
-    uint5 destr = inst.sdt.rd==15 ? ph_R15_ADDR : inst.sdt.rd;
+/*    uint5 destr = inst.sdt.rd==15 ? ph_R15_ADDR : inst.sdt.rd;*/
     if (inst.sdt.b)  // it's a byte!
     {
-      int load = pheta_emit(chunk, ph_LDB, basereg);
-      pheta_lcommit(chunk, destr, load);
+      loadreg = pheta_emit(chunk, ph_LDB, basereg);
     }
     else  // it's a word!
     {
-      int load = pheta_emit(chunk, ph_LDW, basereg);
-      pheta_lcommit(chunk, destr, load);
+      loadreg = pheta_emit(chunk, ph_LDW, basereg);
     }
     setpc = 1;
     pheta_cycles(chunk, 3);
@@ -2091,12 +2106,13 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   }
 
   // !!! exception semantics? !!!
-  if (inst.sdt.rd==15)
+  if (setpc)
   {
     // use an extra cycle for pipeline bubble or something
     pheta_cycles(chunk, 1);
+    pheta_emit(chunk, ph_CAJMP, loadreg);
     pheta_emit(chunk, ph_SYNC);
-    pheta_emit(chunk, ph_CAJMP);
+    pheta_lcommit(chunk, ph_R15_FULL, loadreg);
   }
   return 0;
 }
@@ -2105,7 +2121,9 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   uint5 basereg = pheta_lfetch(chunk, inst.bdt.rn);
   uint5 fourreg = pheta_emit(chunk, ph_CONSTB, 4);
-  uint5 setpc = 0;
+  uint5 setpc = 0, loadreg = 0;
+
+  IGNORE(machine);
   
   pheta_lsync(chunk);
   pheta_cycles(chunk, 1);
@@ -2140,15 +2158,14 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 
         if (inst.bdt.l)
         {
-          int load = pheta_emit(chunk, ph_LDW, basereg);
+          loadreg = pheta_emit(chunk, ph_LDW, basereg);
           if (i==15)
           {
-            pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, load);
             setpc = 1;
             pheta_cycles(chunk, 1);
           }
           else
-            pheta_lcommit(chunk, i, load);
+            pheta_lcommit(chunk, i, loadreg);
         }
         else
         {
@@ -2173,15 +2190,14 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 
         if (inst.bdt.l)
         {
-          int load = pheta_emit(chunk, ph_LDW, basereg);
+          loadreg = pheta_emit(chunk, ph_LDW, basereg);
           if (i==15)
           {
-            pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, load);
             setpc = 1;
             pheta_cycles(chunk, 1);
           }
           else
-            pheta_lcommit(chunk, i, load);
+            pheta_lcommit(chunk, i, loadreg);
         }
         else
         {
@@ -2198,14 +2214,17 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
   // !!! exception semantics? !!!  
   if (setpc)
   {
+    pheta_emit(chunk, ph_CAJMP, loadreg);
     pheta_emit(chunk, ph_SYNC);
-    pheta_emit(chunk, ph_CAJMP);
+    pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, loadreg);
   }
   return 0;
 }
 
 int pheta_swi(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_SWI);
@@ -2214,6 +2233,8 @@ int pheta_swi(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_cdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
@@ -2222,6 +2243,8 @@ int pheta_cdt(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_cdo(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
@@ -2230,6 +2253,8 @@ int pheta_cdo(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_crt(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
@@ -2238,6 +2263,9 @@ int pheta_crt(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_sds(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
+  IGNORE(chunk);
   fprintf(stderr, "Unimplemented instruction: SWP\n");
   exit(1);
   return 0;
@@ -2245,6 +2273,8 @@ int pheta_sds(machineinfo* machine, instructionformat inst, void* chunk)
 
 int pheta_und(machineinfo* machine, instructionformat inst, void* chunk)
 {
+  IGNORE(machine);
+  IGNORE(inst);
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);

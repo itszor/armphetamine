@@ -67,7 +67,8 @@ typedef enum {
   ab_BT,
   ab_CMC,
   ab_STC,
-  ab_CLC
+  ab_CLC,
+  ab_NOP
 } genx86_ab86;
 
 /*
@@ -222,8 +223,6 @@ typedef struct {
   uint5 flagcorrupt;
 } genx86_variant;
 
-#define gx_SIGNEDIMM 0x1
-
 extern void genx86_append(pheta_chunk* chunk, genx86_buffer*, uint5 opcode, 
   genx86_operand* dest, genx86_operand* src1, genx86_operand* src2);
   
@@ -231,8 +230,10 @@ extern void genx86_move(pheta_chunk* chunk, genx86_buffer*, palloc_info* dest,
   palloc_info* src);
   
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
-                       palloc_info* src1, palloc_info* src2, list* x);
-		       
+  palloc_info* src1, palloc_info* src2, list* x);
+
+extern genx86_buffer* genx86_newbuffer(void);
+
 extern nativeblockinfo* genx86_translate(pheta_chunk* chunk);
 
 extern uint5 genx86_translate_opcode(genx86_buffer* buf,
