@@ -9,7 +9,27 @@
 #include "hash.h"
 #include "block.h"
 
+void nativesupport_invoke2(machineinfo* machine, nativeblockinfo* code)
+{
+  int o1, o2;
+  registerinfo* reg = machine->reg;
+  
+  fprintf(stderr, "--> entering native code\n");
+  
+  asm __volatile__(
+    "pushl %%ebp\n\t"
+    "movl %2,%%ebp\n\t"
+    "call *%3\n\t"
+    "popl %%ebp"
+    : "=r" (o1), "=r" (o2)
+    : "a" (reg), "b" (code->base)
+    : "cx", "dx", "si", "di", "memory");
+  
+  fprintf(stderr, "<-- leaving native code\n");
+}
+
 #ifdef I386
+
 // glue code used to execute native code fragments
 void nativesupport_invoke(machineinfo* machine, nativeblockinfo* code)
 {

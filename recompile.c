@@ -1,10 +1,12 @@
 #include "recompile.h"
 #include "pheta.h"
 #include "machine.h"
+#include "x86asm.h"
 
 pheta_chunk* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
 {
   pheta_chunk* mychunk;
+  nativeblockinfo* nat;
 
   mychunk = pheta_translatechunk(machine, start, (end-start)/4);
 /*  phetadism_chunk(mychunk);*/
@@ -57,7 +59,9 @@ pheta_chunk* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);
   fprintf(stderr, "Flattening code\n");
-  genx86_flatten_code(mychunk);
+  nat = genx86_flatten_code(mychunk);
+  
+  nativesupport_invoke2(machine, nat);
 
   return mychunk;
 }

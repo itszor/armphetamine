@@ -240,4 +240,6 @@ extern uint5 genx86_translate_opcode(genx86_buffer* buf,
   pheta_chunk* chunk, pheta_basicblock* blk, pheta_instr* instr,
   meminfo* mem);
 
+extern nativeblockinfo* genx86_flatten_code(pheta_chunk*);
+
 #endif

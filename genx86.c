@@ -1957,7 +1957,7 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_basicblock* blk)
   }
 }
 
-void genx86_flatten_code(pheta_chunk* chunk)
+nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
 {
   list* scanblock;
   nativeblockinfo* nat = rtasm_new();
@@ -2083,7 +2083,7 @@ void genx86_flatten_code(pheta_chunk* chunk)
       if (blk->trueblk && blk->trueblk->marker)
       {
         op = cnew(genx86_op);
-        op->operator = unconditional ? ab_JMP : ab_JE;
+        op->operator = unconditional ? ab_JMP : ab_JNE;
         op->op[0] = genx86_makeconstant(chunk, blk->trueblk->natoffset - 
           nat->length - (unconditional ? 5 : 6));
         op->op[1] = op->op[2] = 0;
@@ -2129,4 +2129,6 @@ void genx86_flatten_code(pheta_chunk* chunk)
 
   relocate_fix(&nat->reloc, nat->base);
   x86dism_block(nat);
+  
+  return nat;
 }

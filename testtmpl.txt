@@ -1,3 +1,8 @@
 load armtest 0x10008000
 disassemble start-addr end-addr
 phetatrans start-addr end-addr
+setreg 14 end-addr
+registers
+breakset end-addr
+run start-addr
+registers
