@@ -40,6 +40,14 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <h1><a name="news">News</a></h1>
 
+<h3>5 August 2001</h3>
+
+<p>Well, I think ARMphetamine is just a spare-time project again, after a brief flirtation with being my academic research. Depends really on whether there's anything academically valid to research on dynarec - I'm having a hard time convincing myself and the people around me that there is, so the research is going off at a tangent on the dynamic optimisation side. Essentially it's the same project, but fiddling with the IR a bit, designing an architecture around it, throwing away the ARM frontend then creating loads of run-time optimisations for it. Ssh, don't tell the multinational corporations.
+
+<p>On the original ARMphetamine side, I've spent a couple of days hacking mercilessly at it, so that now it knows how to flatten basic blocks into ordinary x86 code. I don't know if the way I've done this is overkill - since neither depth-first nor breadth-first traversal do anything to keep, ie, loops contiguous as far as I can tell, I've tried to design it so that strongly-connected basic blocks are kept together if possible. I admit to not thinking this through as carefully as I should have so I've probably got the wrong end of the stick entirely. There's a priority queue in there, so that block reordering based on branch taken/not taken frequency can be used to influence the layout of the final program at some future stage.
+
+<p>Read (well, skimmed through carefully really) Andrew Appel's "Modern Compiler Implementation in ML", and was slightly disappointed that there wasn't more in it with respect to optimisation.
+
 <h3>24 June 2001</h3>
 
 <p>OK, I think I might have this code generation thingy sorted. The problem is that the compilation mechanism (register allocation, code generation, exception handling) seems to need to know everything at once. By producing a list of pseudo target instructions with mutable slots where the operands should be, I <i>think</i> I can get closer to that. Each virtual register in the intermediate code corresponds to one of these slots, so each use of that register can be reallocated somewhere else by just changing the value in one slot. This should enable code generation at the same time as register allocation, which makes the exception stuff easier and also since variable lifetimes are known at that point it's easier to allocate temporaries, etc.
@@ -180,7 +188,6 @@ available when I've had the chance to clean it up a lot.
 
 <hr>
 
-
 <h1><a name="status">Status</a></h1>
 
 <p>Some preliminary (old!) comparative benchmarks are available:
@@ -229,7 +236,7 @@ available when I've had the chance to clean it up a lot.
 </tr>
 </table>
 
-<p>These benchmarks were obtained using the standard (if aging) "Dhrystone" program (higher numbers are better). As you may infer, the emulator currently runs somewhere around the speed of an ARM610. Performance increases are expected.
+<p>These benchmarks were obtained using the standard (if aging) "Dhrystone" program (higher numbers are better). As you may infer, the emulator currently runs somewhere around the speed of an ARM610 on my development machine. Performance increases are expected.
 
 <hr>
 
@@ -244,6 +251,7 @@ of the university project ARMphetamine was written for.
 <li>Download the postscript dissertation <a href="diss.ps">here</a>.
 <li>My thoughts on further work to be done on the project <a href="further.html">here</a>.
 <li>The <a href="pheta2.html">new intermediate representation</a>.
+<li><a href="design2.html">ARMphetamine 2</a> information.
 </ul>
 
 <hr>
@@ -263,8 +271,7 @@ of the university project ARMphetamine was written for.
 <h1><a name="feedback">Feedback</a></h1>
 
 <p>You can get in contact with me about ARMphetamine at <a
-href="mailto:jules@dynarec.com">jules@dynarec.com</a>. (<a
-href="mailto:brown@cs.bris.ac.uk">brown@cs.bris.ac.uk</a> might get a faster reply).
+href="mailto:brown@cs.bris.ac.uk">brown@cs.bris.ac.uk</a>. If that doesn't work for whatever reason, you could try <a href="mailto:jules@dynarec.com">jules@dynarec.com</a> instead. I'd appreciate it if you didn't send mail in HTML format.
 
 <p>You can find more information about dynamic recompilation at <a
 href="http://www.dynarec.com/">dynarec.com</a>. Thanks to Neil Bradley for the web space!

@@ -83,7 +83,8 @@ keyboard.o: keyboard.c keyboard.h defs.h
 genx86.o: genx86.c genx86.h defs.h x86asm.h hash.h list.h registers.h \
  processor.h clist.h rtasm.h rtasm_fns.h palloc.h pheta.h decode.h \
  machine.h memory.h keyboard.h mouse.h bset.h pqueue.h x86dism.h \
- pseudo.h codegen.h allocate.h phetadism.h relocate.h cnew.h
+ pseudo.h codegen.h allocate.h phetadism.h relocate.h cnew.h \
+ genx86_tab.h
 palloc.o: palloc.c palloc.h defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h clist.h cnew.h x86asm.h genx86.h rtasm.h rtasm_fns.h
