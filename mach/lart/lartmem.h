@@ -39,6 +39,8 @@ uint5 memory_readrom0(meminfo* mem, uint5 addr);
 uint5 memory_readhalfrom0(meminfo* mem, uint5 addr);
 uint5 memory_readbyterom0(meminfo* mem, uint5 addr);
 
+void memory_writerom0(meminfo* mem, uint5 addr, uint5 data);
+
 uint5 memory_readrom1(meminfo* mem, uint5 addr);
 uint5 memory_readhalfrom1(meminfo* mem, uint5 addr);
 uint5 memory_readbyterom1(meminfo* mem, uint5 addr);

@@ -577,7 +577,9 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       pcset = 1;
       if (inst.dp.s && reg->spsr_current != 0)
       {
-        processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+        psrinfo oldspsr = reg->spsr[reg->spsr_current];
+        processor_mode(machine, oldspsr.flag.mode);
+        reg->cpsr = oldspsr;
       }
     }
     
@@ -782,7 +784,9 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
       pcset = 1;
       if (inst.dp.s && reg->spsr_current != 0)
       {
-        processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+        psrinfo oldspsr = reg->spsr[reg->spsr_current];
+        processor_mode(machine, oldspsr.flag.mode);
+        reg->cpsr = oldspsr;
       }
     }
     
@@ -832,7 +836,8 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       /* control fields updated? */
       if (field & 0xff)
       {
-        processor_mode(machine, val & 0x1f);
+        int oldmode = reg->cpsr.flag.mode;
+        psrinfo oldcpsr = reg->cpsr;
 
 /*        if (!(reg->cpsr.flag.interrupt & 0x2))
         {
@@ -847,6 +852,11 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
         reg->cpsr.value &= ~field;
         reg->cpsr.value |= val & field;
 
+        if (reg->cpsr.flag.mode != oldmode)
+        {
+          reg->spsr[oldmode&15] = oldcpsr;
+          processor_mode(machine, reg->cpsr.flag.mode);
+        }
       /*  INCPC;
 
         if (interrupt)
@@ -1380,15 +1390,18 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 
     if (inst.bdt.s && inst.bdt.l && (inst.bdt.reglist & (1<<15)))
     {
+      psrinfo oldspsr = reg->spsr[reg->spsr_current];
       fprintf(stderr, "Potential trouble spot (LDM)\n");
       fprintf(stderr, "Address = %.8x\n", oldpc-8);
 /*      machine->trace = 1;*/
     /*  reg->cpsr.flag.interrupt &= 1;*/
       fprintf(stderr, "Causing mode switch to: %d\n", 
         reg->spsr[reg->spsr_current].flag.mode);
-      processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+
+      processor_mode(machine, oldspsr.flag.mode);
+      reg->cpsr = oldspsr;
     //  reg->cpsr = reg->spsr[oldmode&15];
-      machine->trace = 1;
+/*      machine->trace = 1;*/
       /* mumble */
       reg->r[15]+=INSTSIZE*2;
       return 1;
@@ -1424,8 +1437,6 @@ int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   else
   {
     registerinfo* reg = machine->reg;
-
-    INCPC;
 
   #ifdef FAKESWI
     fake_syscall(machine, inst.swi.number);

@@ -181,6 +181,7 @@ void ostimer_clock(machineinfo* machine)
   ostimer_registers* oti = mem->ostimer;
   intctrl_registers* icr = mem->intctrl;
   uint5 i, clk;
+  uint5 oldstate;
 
   clk = oti->clock++;
 
@@ -192,11 +193,13 @@ void ostimer_clock(machineinfo* machine)
     return;*/
   }
 
-/*  intctrl_blank(machine, 26);
+ /* intctrl_blank(machine, 26);
   intctrl_blank(machine, 27);
   intctrl_blank(machine, 28);
   intctrl_blank(machine, 29);*/
 
+  oldstate = oti->ossr;
+  
   for (i=0; i<4; i++)
   {
     if (clk==oti->osmr[i])
@@ -209,8 +212,12 @@ void ostimer_clock(machineinfo* machine)
   }
 
   intctrl_add(machine, (oti->ossr&0xf)<<26);
-  
-//fprintf(stderr, "icip=%.8x, int=%x\n", icr->icip, reg->cpsr.flag.interrupt);
-  
-  intctrl_fire(machine);
+
+  /* maybe only fire for 'new' state (rising edge) */
+/*  if (oti->ossr & ~oldstate)*/
+  {
+  //fprintf(stderr, "icip=%.8x, int=%x\n", icr->icip, reg->cpsr.flag.interrupt);
+
+    intctrl_fire(machine);
+  }
 }

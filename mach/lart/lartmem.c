@@ -17,6 +17,13 @@ const mem_readbank mem_rrom0 =
   memory_readrom0
 };
 
+const mem_writebank mem_wrom0 =
+{
+  memory_writerom0,
+  memory_writerom0,
+  memory_writerom0
+};
+
 const mem_readbank mem_rrom1 =
 {
   memory_readbyterom1,
@@ -160,6 +167,7 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
   switch (physaddress >> 24)
   {
     case 0x00: // ROM bank 0
+    case 0x08: // alt location
     tlb->read = readperm ? mem_rrom0 : mem_rfault;
     tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
@@ -289,6 +297,16 @@ uint5 memory_readhalfrom0(meminfo* mem, uint5 physaddress)
 uint5 memory_readbyterom0(meminfo* mem, uint5 physaddress)
 {
   return ((uint3*)mem->rom0)[physaddress & 0xffffff];
+}
+
+void memory_writerom0(meminfo* mem, uint5 physaddress, uint5 data)
+{
+  static uint5 mode = 0;
+  if (data==0x02018040)
+  {
+    fprintf(stderr, "FLASH: Read ID codes");
+    mode = 1;
+  }
 }
 
 uint5 memory_readrom1(meminfo* mem, uint5 physaddress)
