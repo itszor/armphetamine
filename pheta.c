@@ -121,6 +121,7 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   b->predecessor = clist_new();
   b->scsubgraph = 0;
   b->srcstart = startaddr;
+  b->cycles = 0;
   b->live = pqueue_new();
   b->required = 0;
   b->set = 0;
@@ -134,6 +135,16 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   }
 
   return b;
+}
+
+void pheta_cyclecount(pheta_chunk* chunk)
+{
+  uint5 cyc = pheta_emit(chunk, ph_FETCH, ph_CLOCK);
+  pheta_emit(chunk, ph_NFEXPECT, ph_C|ph_V|ph_N|ph_Z);
+  cyc = pheta_emit(chunk, ph_SUB, cyc, pheta_emit(chunk, ph_CONST, 
+    chunk->currentblock->cycles));
+  pheta_emit(chunk, ph_NFCOMMIT, ph_C|ph_V|ph_N|ph_Z, 0, bitcc_LE);
+  pheta_emit(chunk, ph_COMMIT, ph_CLOCK, cyc);
 }
 
 /*
@@ -199,6 +210,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       if (chunk->currentblock)
       {
         pheta_basicblock* prev = chunk->currentblock;
+        pheta_cyclecount(chunk);
         pheta_lsync(chunk);  // synchronise registers
         chunk->currentblock = blockstart->data;
         assert(prev != chunk->currentblock);
@@ -655,7 +667,7 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
       break;*/
       
       case ph_FCOMMIT:
-      case ph_NFCOMMIT:
+/*      case ph_NFCOMMIT:  -- handle seperately */
       {
         uint5 have = instr->data.flag.have;
         uint5 need = instr->data.flag.need;
@@ -757,7 +769,7 @@ void pheta_lsync(pheta_chunk* chunk)
 
 void pheta_state(pheta_chunk* chunk)
 {
-  uint5 i;
+/*  uint5 i;*/
   list* alive = 0;
   
 /*  for (i=0; i<ph_NUMREG; i++)
@@ -772,6 +784,11 @@ void pheta_state(pheta_chunk* chunk)
     }
   }*/
   pheta_emit(chunk, ph_STATE, alive);
+}
+
+void pheta_cycles(pheta_chunk* chunk, uint5 n)
+{
+  chunk->currentblock->cycles += n;
 }
 
 void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
@@ -791,6 +808,8 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
   {
     shiftreg = temp>>8;
     shiftreg = pheta_lfetch(chunk, shiftreg);
+
+    pheta_cycles(chunk, 2);
     
     if (shifttype != 3)
     {
@@ -1059,6 +1078,8 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
   {
     int amount = temp >> 7;
     int amountreg = -1;
+
+    pheta_cycles(chunk, 1);
     
     if (shifttype!=0 || amount!=0)
     {
@@ -1471,7 +1492,9 @@ void pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   uint5 index = ((chunk->virtualaddress-chunk->start)>>2);
   uint5 dest = index+offset+2;
   uint5 next = index+1;
-    
+  
+  pheta_cycles(chunk, 2);  // err, or maybe 3
+  
   if (inst.bra.l)
   {
     uint5 destpc = pheta_emit(chunk, ph_CONST, chunk->virtualaddress-4);
@@ -1523,6 +1546,7 @@ void pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
       dest = pheta_emit(chunk, ph_ADD, temp,
                         pheta_lfetch(chunk, inst.mul.rn));
     }
+    pheta_cycles(chunk, 4);  // possibly average-case ish
   }
   else
   {
@@ -1536,6 +1560,7 @@ void pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
     {
       dest = pheta_emit(chunk, ph_MUL, op1, op2);
     }
+    pheta_cycles(chunk, 3);
   }
 
   pheta_lcommit(chunk, inst.mul.rd, dest);
@@ -1546,6 +1571,8 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   int basereg = pheta_lfetch(chunk, inst.sdt.rn);
   sint5 offsetreg = -1;  // -1 for zero/no offset
   uint5 setpc = 0;
+  
+  pheta_lsync(chunk);
   
   if (inst.sdt.i)  // shifted register offset
   {
@@ -1650,6 +1677,7 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
       pheta_lcommit(chunk, inst.sdt.rd, load);
     }
     setpc = 1;
+    pheta_cycles(chunk, 3);
   }
   else  // save (pc+12 issue!)
   {
@@ -1673,6 +1701,7 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
       }
       pheta_emit(chunk, ph_STW, store, basereg);
     }
+    pheta_cycles(chunk, 2);
   }
   
   if (!inst.sdt.p && offsetreg != -1)  // post-indexed addressing
@@ -1688,6 +1717,8 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   // !!! exception semantics? !!!
   if (inst.sdt.rd==15)
   {
+    // use an extra cycle for pipeline bubble or something
+    pheta_cycles(chunk, 1);
     pheta_emit(chunk, ph_SYNC);
     pheta_emit(chunk, ph_CAJMP);
   }
@@ -1699,6 +1730,9 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
   uint5 fourreg = pheta_emit(chunk, ph_CONSTB, 4);
   uint5 setpc = 0;
   
+  pheta_lsync(chunk);
+  pheta_cycles(chunk, 1);
+
   if (inst.bdt.w)  // writeback (real ARM does this before the transfer)
   {
     uint5 offsetby;
@@ -1709,6 +1743,8 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
     else
       offsetby = pheta_emit(chunk, ph_SUB, basereg,
         pheta_emit(chunk, ph_CONSTB, 4*setbits(inst.bdt.reglist)));
+
+    pheta_cycles(chunk, setbits(inst.bdt.reglist));
 
     pheta_lcommit(chunk, inst.bdt.rn, offsetby);
   }
@@ -1732,6 +1768,7 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
           {
             pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, load);
             setpc = 1;
+            pheta_cycles(chunk, 1);
           }
           else
             pheta_lcommit(chunk, i, load);
@@ -1764,6 +1801,7 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
           {
             pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, load);
             setpc = 1;
+            pheta_cycles(chunk, 1);
           }
           else
             pheta_lcommit(chunk, i, load);

@@ -229,6 +229,7 @@ extern pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
                                          uint5 length);
 extern void pheta_link(pheta_basicblock* from, uint5 code,
                        pheta_basicblock* condtrue, pheta_basicblock* condfalse);
+extern uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...);
 extern void pheta_getused(pheta_instr* instr, int index, uint5* numdest,
                           uint5 dest[], uint5* numsrc, uint5 src[]);
 extern void pheta_dfs_visit(pheta_basicblock* blk, uint5* time);

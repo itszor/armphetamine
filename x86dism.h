@@ -3,6 +3,7 @@
 
 #include "x86asm.h"
 
+extern void x86dism_partblock(nativeblockinfo* blk, uint5 start, uint5 length);
 extern void x86dism_block(nativeblockinfo* blk);
 
 #endif

@@ -397,9 +397,12 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
   pqueueitem* rstart;
   palloc_liverange* range;
   
-  rstart = pqueue_extract(blk->live);
-  range = (palloc_liverange*) rstart->data;
-  free(rstart);
+  if ((rstart = pqueue_extract(blk->live)))
+  {
+    range = (palloc_liverange*) rstart->data;
+
+  }
+  else range = 0;
 
   for (scan=blk->base->next; scan->data; scan=scan->next, line++)
   {
@@ -448,7 +451,7 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
 /*  fprintf(stderr, "line=%d range->startline=%d\n", line, range->startline);*/
     
-    while (line == range->startline)
+    while (range && line == range->startline)
     {
       pqueueitem* activate, *del;
       uint5 lineno = range->startline;
@@ -703,6 +706,8 @@ void palloc_print(pheta_chunk* chunk)
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
                            "ESP", "EBP", "ESI", "EDI"};
   int i;
+  extern const char* armreg[];
+  
   for (i=0; i<chunk->tempno; i++)
   {
     palloc_info* a = &chunk->alloc[i];
@@ -734,7 +739,9 @@ void palloc_print(pheta_chunk* chunk)
       
       case pal_IREG:
       {
-        fprintf(stderr, "%3d: x86 register %s\n", i, regname[a->info.ireg.num]);
+        fprintf(stderr, "%3d: x86 register %s (ARM: %s)\n", i, 
+          regname[a->info.ireg.num], a->info.ireg.arm_affiliation==-1 ? "none" :
+          armreg[a->info.ireg.arm_affiliation]);
       }
       break;
       

@@ -494,6 +494,201 @@ static const genx86_variant genx86_tab[] =
               NULL,
               0, 0
             },
+   /* jo */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jo_rel8,
+              &rtasm_jo_rel32,
+              NULL,
+              0, 0
+            },
+  /* jno */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jno_rel8,
+              &rtasm_jno_rel32,
+              NULL,
+              0, 0
+            },
+   /* jb */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jb_rel8,
+              &rtasm_jb_rel32,
+              NULL,
+              0, 0
+            },
+  /* jae */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jae_rel8,
+              &rtasm_jae_rel32,
+              NULL,
+              0, 0
+            },
+   /* je */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_je_rel8,
+              &rtasm_je_rel32,
+              NULL,
+              0, 0
+            },
+  /* jne */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jne_rel8,
+              &rtasm_jne_rel32,
+              NULL,
+              0, 0
+            },
+  /* jbe */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jbe_rel8,
+              &rtasm_jbe_rel32,
+              NULL,
+              0, 0
+            },
+   /* ja */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_ja_rel8,
+              &rtasm_ja_rel32,
+              NULL,
+              0, 0
+            },
+   /* js */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_js_rel8,
+              &rtasm_js_rel32,
+              NULL,
+              0, 0
+            },
+  /* jns */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jns_rel8,
+              &rtasm_jns_rel32,
+              NULL,
+              0, 0
+            },
+   /* jl */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jl_rel8,
+              &rtasm_jl_rel32,
+              NULL,
+              0, 0
+            },
+  /* jge */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jge_rel8,
+              &rtasm_jge_rel32,
+              NULL,
+              0, 0
+            },
+  /* jle */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jle_rel8,
+              &rtasm_jle_rel32,
+              NULL,
+              0, 0
+            },
+   /* jg */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jg_rel8,
+              &rtasm_jg_rel32,
+              NULL,
+              0, 0
+            },
+  /* jmp */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jmp_rm32,
+              &rtasm_jmp_rel8,
+              &rtasm_jmp_rel32,
+              NULL,
+              0, 0
+            },
  /* call */ { NULL,
               NULL,
               NULL,
@@ -578,8 +773,9 @@ static const char* abname[] = {
   "shl", "shr", "sar", "ror", "rol", "and", "or", "xor", "add", "adc",
   "sub", "sbb", "imul", "lea", "mov", "not", "push", "pop", "rcr", "rcl",
   "test", "cmp", "ret", "seto", "setno", "setb", "setae", "sete", "setne", 
-  "setbe", "seta", "sets", "setns", "setl", "setge", "setle", "setg", "call", 
-  "jecxz", "bt"
+  "setbe", "seta", "sets", "setns", "setl", "setge", "setle", "setg", "jo",
+  "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jl", "jge", "jle",
+  "jg", "call", "jecxz", "bt"
 };
 
 /*
@@ -995,16 +1191,51 @@ void genx86_move(nativeblockinfo* nat, palloc_info* dest, palloc_info* src,
   genx86_out(nat, ab_MOV, dest, src, &nul, map);
 }
 
-nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
-                                  uint5* startline)
+void genx86_preserve(nativeblockinfo* nat, pheta_chunk* chunk, list* map)
 {
-  uint5 i;
+  list* scan;
+  palloc_info dest, src, nul;
+
+  nul.type = pal_UNSET;
+
+  for (scan=map; scan; scan=scan->prev)
+  {
+    pheta_rpair* rpair = (pheta_rpair*) scan->data;
+    if (chunk->alloc[rpair->ph].type == pal_IREG)
+    {
+      dest.type = pal_RFILE;
+      if (chunk->alloc[rpair->ph].info.ireg.arm_affiliation != -1)
+      {
+        dest.info.value = 
+          chunk->alloc[rpair->ph].info.ireg.arm_affiliation*4;
+        src.type = pal_IREG;
+        src.info.ireg.num = chunk->alloc[rpair->ph].info.ireg.num;
+        genx86_out(nat, ab_MOV, &dest, &src, &nul, map);
+      }
+      else fprintf(stderr, "Not preserving register %%%d\n", rpair->ph);
+    }
+  }
+}
+
+nativeblockinfo* genx86_translate(pheta_chunk* chunk)
+{
   nativeblockinfo* nat = x86asm_newnative();
-  nativeblockinfo* truebranch = 0, *falsebranch = 0;
-  palloc_info nul;
+  uint5 startline = 0;
+  
+  genx86_translate_inner(nat, chunk, chunk->root, &startline);
+  
+  return nat;
+}
+
+uint5 genx86_translate_inner(nativeblockinfo* nat,
+  pheta_chunk* chunk, pheta_basicblock* blk, uint5* startline)
+{
+  uint5 i, startpos = nat->length;
+  sint5 truebranch = -1, falsebranch = -1;
+  palloc_info nul, one, off;
   list* map = 0;
   clist* walk;
-  
+    
   nul.type = pal_UNSET;
   
   for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
@@ -1045,12 +1276,21 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       {
         uint5 armdest = instr->data.op.dest;
         palloc_info* src = &chunk->alloc[instr->data.op.src1];
-        if (src->type == pal_IREG)
+        switch (src->type)
         {
-          palloc_info pdest;
-          pdest.type = pal_RFILE;
-          pdest.info.value = armdest*4;
-          genx86_out(nat, ab_MOV, &pdest, src, &nul, map);
+          case pal_IREG:
+          case pal_CONSTB:
+          case pal_CONST:
+          {
+            palloc_info pdest;
+            pdest.type = pal_RFILE;
+            pdest.info.value = armdest*4;
+            genx86_out(nat, ab_MOV, &pdest, src, &nul, map);
+          }
+          break;
+          
+          default:
+          break;
         }
       }
       break;
@@ -1378,8 +1618,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_LDW:
       {
-        palloc_info rel, dest, src;
-        list* scan;
+        palloc_info rel;
         rel.type = pal_CONST;
         rel.info.value = 0;
         /*  memory structure base
@@ -1389,26 +1628,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
         rel.type = pal_CONSTB;
         rel.info.value = 6;
         genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
-        for (scan=map; scan; scan=scan->prev)
-        {
-          pheta_rpair* rpair = (pheta_rpair*) scan->data;
-          if (chunk->alloc[rpair->ph].type == pal_IREG)
-          {
-            dest.type = pal_RFILE;
-            if (chunk->alloc[rpair->ph].info.ireg.arm_affiliation != -1)
-            {
-              dest.info.value = 
-                chunk->alloc[rpair->ph].info.ireg.arm_affiliation*4;
-            }
-            else
-            {
-              dest.info.value = -4;
-            }
-            src.type = pal_IREG;
-            src.info.ireg.num = chunk->alloc[rpair->ph].info.ireg.num;
-            genx86_out(nat, ab_MOV, &dest, &src, &nul, map);
-          }
-        }
+        genx86_preserve(nat, chunk, map);
         rel.type = pal_CONST;
         rel.info.value = 0;
         genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
@@ -1417,12 +1637,44 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       break;
       
       case ph_LDB:
-      rtasm_nop(nat);
+      {
+        palloc_info rel;
+        rel.type = pal_CONST;
+        rel.info.value = 0;
+        /*  memory structure base
+         *  address
+         */
+        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
+        rel.type = pal_CONSTB;
+        rel.info.value = 6;
+        genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
+        genx86_preserve(nat, chunk, map);
+        rel.type = pal_CONST;
+        rel.info.value = 0;
+        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
+        genx86_out(nat, ab_RET, &nul, &nul, &nul, map);
+      }
       break;
       
       case ph_STW:
       case ph_STB:
-      rtasm_nop(nat);
+      {
+        palloc_info rel;
+        rel.type = pal_CONST;
+        rel.info.value = 0;
+        /*  memory structure base
+         *  address
+         */
+        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
+        rel.type = pal_CONSTB;
+        rel.info.value = 6;
+        genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
+        genx86_preserve(nat, chunk, map);
+        rel.type = pal_CONST;
+        rel.info.value = 0;
+        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
+        genx86_out(nat, ab_RET, &nul, &nul, &nul, map);
+      }
       break;
       
       case ph_SWI:
@@ -1463,19 +1715,31 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
   }  // for (...)
 
   phetadism_block(blk, *startline);
-  x86dism_block(nat);
+  x86dism_partblock(nat, startpos, nat->length);
 
   blk->marker = 1;
 
   (*startline) += blk->length;
 
-  if (blk->trueblk && !blk->trueblk->marker)
-    truebranch = genx86_translate(chunk, blk->trueblk, startline);
-  
-  if (blk->falseblk && !blk->falseblk->marker)
-    falsebranch = genx86_translate(chunk, blk->falseblk, startline);
-
   /* join parent block to true/false blocks... */
 
-  return nat;
+  if (blk->trueblk && !blk->trueblk->marker)
+  {
+    blk->trueblk->marker = 1;
+    truebranch = genx86_translate_inner(nat, chunk, blk->trueblk, startline);
+
+/*    one.type = pal_CONSTB;
+    one.info.value = 1;
+    off.type = pal_RFILE;
+    off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
+    genx86_out(nat, ab_TEST, &off, &one, &nul, map);
+    off.type = pal_CONST;
+    off.info.value = truebranch;
+    genx86_out(nat, ab_JNE, &off, &nul, &nul, map);*/
+  }
+
+  if (blk->falseblk && !blk->falseblk->marker)
+    falsebranch = genx86_translate_inner(nat, chunk, blk->falseblk, startline);
+
+  return startpos;
 }

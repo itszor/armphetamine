@@ -46,6 +46,21 @@ typedef enum {
   ab_SETGE,
   ab_SETLE,
   ab_SETG,
+  ab_JO,
+  ab_JNO,
+  ab_JB,
+  ab_JAE,
+  ab_JE,
+  ab_JNE,
+  ab_JBE,
+  ab_JA,
+  ab_JS,
+  ab_JNS,
+  ab_JL,
+  ab_JGE,
+  ab_JLE,
+  ab_JG,
+  ab_JMP,
   ab_CALL,
   ab_JECXZ,
   ab_BT
@@ -89,7 +104,8 @@ typedef struct {
 extern void genx86_test(void);
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                        palloc_info* src1, palloc_info* src2, list* x);
-extern nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* 
-                                         blk, uint5* startline);
+extern nativeblockinfo* genx86_translate(pheta_chunk* chunk);
+extern uint5 genx86_translate_inner(nativeblockinfo* nat,
+  pheta_chunk* chunk, pheta_basicblock* blk, uint5* startline);
 
 #endif
