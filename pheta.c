@@ -1673,6 +1673,7 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
           if (i==15)
           {
             pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, load);
+            setpc = 1;
           }
           else
             pheta_lcommit(chunk, i, load);

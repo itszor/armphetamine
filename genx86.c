@@ -9,6 +9,7 @@
 #include "pheta.h"
 #include "palloc.h"
 #include "pseudo.h"
+#include "phetadism.h"
 
 static const genx86_variant genx86_tab[] =
 {
@@ -17,6 +18,9 @@ static const genx86_variant genx86_tab[] =
               &rtasm_shl_rm32_imm8,
               NULL,
               &rtasm_shl_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -30,6 +34,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               CFLAG, VFLAG|NFLAG|ZFLAG
             },
   /* sar */ { NULL,
@@ -37,6 +44,9 @@ static const genx86_variant genx86_tab[] =
               &rtasm_sar_rm32_imm8,
               NULL,
               &rtasm_sar_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -50,6 +60,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               CFLAG, VFLAG
             },
   /* rol */ { NULL,
@@ -60,12 +73,18 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               CFLAG, VFLAG
             },
   /* and */ { &rtasm_and_r32_rm32,
               &rtasm_and_rm32_r32,
               &rtasm_and_rm32_imm8,
               &rtasm_and_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -80,12 +99,18 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               NFLAG|ZFLAG, CFLAG|VFLAG
             },
   /* xor */ { &rtasm_xor_r32_rm32,
               &rtasm_xor_rm32_r32,
               &rtasm_xor_rm32_imm8,
               &rtasm_xor_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -100,12 +125,18 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               CFLAG|VFLAG|NFLAG|ZFLAG, 0
             },
   /* adc */ { &rtasm_adc_r32_rm32,
               &rtasm_adc_rm32_r32,
               &rtasm_adc_rm32_imm8,
               &rtasm_adc_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -120,12 +151,18 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               ICFLAG|VFLAG|NFLAG|ZFLAG, 0
             },
   /* sbb */ { &rtasm_sbb_r32_rm32,
               &rtasm_sbb_rm32_r32,
               &rtasm_sbb_rm32_imm8,
               &rtasm_sbb_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -140,9 +177,15 @@ static const genx86_variant genx86_tab[] =
               &rtasm_imul_r32_rm32_imm8,
               &rtasm_imul_r32_rm32_imm32,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               0, CFLAG|VFLAG|NFLAG|ZFLAG
             },
   /* lea */ { &rtasm_lea_r32_m32,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -160,6 +203,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
   /* not */ { NULL,
@@ -170,6 +216,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_not_rm32,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
   /* push */{ NULL,
@@ -180,6 +229,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_push_rm32,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
   /* pop */ { NULL,
@@ -190,6 +242,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_pop_rm32,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
   /* rcr */ { NULL,
@@ -197,6 +252,9 @@ static const genx86_variant genx86_tab[] =
               &rtasm_rcr_rm32_imm8,
               NULL,
               &rtasm_rcr_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -210,12 +268,18 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               CFLAG, VFLAG
             },
   /* test */{ NULL,
               &rtasm_test_rm32_r32,
               NULL,
               &rtasm_test_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
               NULL,
               NULL,
               NULL,
@@ -230,7 +294,23 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
+              NULL,
+              NULL,
+              NULL,
               ICFLAG|VFLAG|NFLAG|ZFLAG, 0
+            },
+  /* ret */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_ret,
+              0, 0
             },
  /* seto */ { NULL,
               NULL,
@@ -240,6 +320,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_seto_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setno */ { NULL,
@@ -250,6 +333,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setno_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
  /* setb */ { NULL,
@@ -260,6 +346,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setb_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setae */ { NULL,
@@ -270,6 +359,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setae_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
  /* sete */ { NULL,
@@ -280,6 +372,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_sete_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setne */ { NULL,
@@ -290,6 +385,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setne_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setbe */ { NULL,
@@ -300,6 +398,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setbe_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
  /* seta */ { NULL,
@@ -310,6 +411,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_seta_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
  /* sets */ { NULL,
@@ -320,6 +424,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_sets_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setns */ { NULL,
@@ -330,6 +437,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setns_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
  /* setl */ { NULL,
@@ -340,6 +450,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setl_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setge */ { NULL,
@@ -350,6 +463,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setge_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
 /* setle */ { NULL,
@@ -360,6 +476,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setle_rm8,
+              NULL,
+              NULL,
+              NULL,
               0, 0
             },
  /* setg */ { NULL,
@@ -370,6 +489,35 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               &rtasm_setg_rm8,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+ /* call */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_call_rel32,
+              NULL,
+              0, CFLAG|VFLAG|NFLAG|ZFLAG
+            },
+/* jecxz */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_jecxz_rel8,
+              NULL,
+              NULL,
               0, 0
             }
 };
@@ -416,7 +564,8 @@ static const char* allocname[] = {
 static const char* abname[] = {
   "shl", "shr", "sar", "ror", "rol", "and", "or", "xor", "add", "adc",
   "sub", "sbb", "imul", "lea", "mov", "not", "push", "pop", "rcr", "rcl",
-  "test", "cmp"
+  "test", "cmp", "ret", "seto", "setno", "setb", "setae", "sete", "setne", "setbe",
+  "seta", "sets", "setns", "setl", "setge", "setle", "setg", "call"
 };
 
 /*
@@ -449,6 +598,16 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
   
   switch (COMPOUND(dest->type, src1->type, src2->type))
   {
+    case COMPOUND(pal_UNSET, pal_UNSET, pal_UNSET):
+    {
+      if (genx86_tab[opcode].narg)
+      {
+        genx86_tab[opcode].narg(nat);
+      }
+      else ERR;
+    }
+    break;
+ 
     case COMPOUND(pal_RFILE, pal_UNSET, pal_UNSET):
     {
       if (genx86_tab[opcode].rm32)
@@ -474,6 +633,26 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].rm32)
       {
         genx86_tab[opcode].rm32(nat, rtasm_ind8(ESP, dest->info.value));
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_CONST, pal_UNSET, pal_UNSET):
+    {
+      if (genx86_tab[opcode].i32)
+      {
+        genx86_tab[opcode].i32(nat, dest->info.value);
+      }
+      else ERR;
+    }
+    break;
+
+    case COMPOUND(pal_CONSTB, pal_UNSET, pal_UNSET):
+    {
+      if (genx86_tab[opcode].i8)
+      {
+        genx86_tab[opcode].i8(nat, dest->info.value);
       }
       else ERR;
     }
@@ -1124,7 +1303,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
         if (pred)
         {
           uint5 j;
-          const static predset[] =
+          const static uint5 predset[] =
           {
             ab_SETE, ab_SETNE, ab_SETB, ab_SETAE,
             ab_SETS, ab_SETNS, ab_SETO, ab_SETNO,
@@ -1145,6 +1324,25 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       break;
       
       case ph_LDW:
+      {
+        palloc_info rel;
+        rel.type = pal_CONST;
+        rel.info.value = 0;
+        /*  memory structure base
+         *  address
+         */
+        genx86_out(nat, ab_CALL, &rel, &nul, &nul, line);
+        rel.type = pal_CONSTB;
+        rel.info.value = 6;
+        genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, line);
+        /* sync */
+        rel.type = pal_CONST;
+        rel.info.value = 0;
+        genx86_out(nat, ab_CALL, &rel, &nul, &nul, line);
+        genx86_out(nat, ab_RET, &nul, &nul, &nul, line);
+      }
+      break;
+      
       case ph_LDB:
       rtasm_nop(nat);
       break;
@@ -1163,6 +1361,8 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       break;
       
       case ph_SYNC:
+      // sync needs to store all allocated registers back to memory, but that
+      // information isn't available here... damn.
       break;
       
       // !!! things missing

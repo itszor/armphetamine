@@ -30,6 +30,7 @@ typedef enum {
   ab_RCL,
   ab_TEST,
   ab_CMP,
+  ab_RET,
   ab_SETO,
   ab_SETNO,
   ab_SETB,
@@ -43,7 +44,9 @@ typedef enum {
   ab_SETL,
   ab_SETGE,
   ab_SETLE,
-  ab_SETG
+  ab_SETG,
+  ab_CALL,
+  ab_JECXZ
 } genx86_ab86;
 
 typedef struct {
@@ -61,6 +64,9 @@ typedef void (*genx86_r32_rm32_i8)(nativeblockinfo*, uint3, rtasm_mtype, uint3);
 typedef void (*genx86_r32_rm32_i32)(nativeblockinfo*, uint3, rtasm_mtype, 
                                     uint5);
 typedef void (*genx86_rm32)(nativeblockinfo* nat, rtasm_mtype);
+typedef void (*genx86_i8)(nativeblockinfo* nat, uint3);
+typedef void (*genx86_i32)(nativeblockinfo* nat, uint5);
+typedef void (*genx86_narg)(nativeblockinfo* nat);
 
 typedef struct {
   genx86_r32_rm32 r32_rm32;
@@ -71,6 +77,9 @@ typedef struct {
   genx86_r32_rm32_i8 r32_rm32_i8;
   genx86_r32_rm32_i32 r32_rm32_i32;
   genx86_rm32 rm32;
+  genx86_i8 i8;
+  genx86_i32 i32;
+  genx86_narg narg;
   uint5 flagset;
   uint5 flagcorrupt;
 } genx86_variant;
