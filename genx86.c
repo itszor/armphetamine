@@ -1931,9 +1931,24 @@ static void killrelocentry(void* data)
   free(data);
 }
 
-void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_basicblock* blk)
+void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
+  pheta_basicblock* blk, pheta_basicblock* last)
 {
   clist* scancode;
+  uint5 unconditional;
+  list* scanreloc;
+
+  fprintf(stderr, "Flatten %p\n", blk);
+
+  blk->natoffset = nat->length;
+  
+  for (scanreloc=blk->reloc; scanreloc; scanreloc=scanreloc->prev)
+  {
+    reloc_record* reloc = scanreloc->data;
+    reloc->value = nat->length - reloc->offset - 4;
+  }
+  
+  relocate_fix(&blk->reloc, nat->base);
   
   for (scancode=blk->gxbuffer->buffer->next; scancode->data; 
        scancode=scancode->next)
@@ -1980,10 +1995,107 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_basicblock* blk)
       }
     }
   }
+
+  unconditional = ((blk->predicate & 0xf)==ph_AL);
+
+  // if we have a true or a false block, and not a single true always block
+  if ((blk->trueblk || blk->falseblk) && !unconditional)
+  {
+    genx86_op* op = cnew(genx86_op);
+    genx86_operand* off;
+    op->operator = ab_TEST;
+    off = genx86_makebaseoffset(chunk, (blk->predicate & ph_NAT) ?
+      offsetof(registerinfo, npredbuf[blk->predicate & 0xf]) :
+      offsetof(registerinfo, predbuf[blk->predicate & 0xf]), gowidth_BYTE);
+    op->op[0] = off;
+    op->op[1] = genx86_makeconstant(chunk, 1);
+    op->op[2] = 0;
+    genx86_asm(nat, op);
+    free(op);
+  }
+  
+  blk->marker = 1;
+  
+  if (blk->trueblk)
+  {
+    if (blk->falseblk)
+    {
+      if (blk->falseblk->marker)
+      {
+        genx86_op* op = cnew(genx86_op);
+
+        op->operator = ab_JE;
+        op->op[0] = genx86_makeconstant(chunk, blk->falseblk->natoffset -
+          nat->length - 6);
+        op->op[1] = op->op[2] = 0;
+        genx86_asm(nat, op);
+        free(op);
+      }
+      else
+      {
+        // put in patchback request, unless false blk will follow immediately
+        if (!blk->trueblk->marker)
+        {
+          genx86_op* op = cnew(genx86_op);
+          reloc_record* reloc;
+
+          op->operator = ab_JE;
+          op->op[0] = genx86_makeconstant(chunk, 0x100);
+          op->op[1] = op->op[2] = 0;
+          genx86_asm(nat, op);
+          reloc = cnew(reloc_record);
+          reloc->type = reloc_ABSOLUTE;
+          reloc->value = 0;
+          reloc->offset = nat->length-4;
+          reloc->size = relsize_WORD;
+          list_add(&blk->falseblk->reloc);
+          blk->falseblk->reloc->data = reloc;
+          free(op);
+        }
+      }
+    }  // if (blk->falseblk)
+  
+    if (blk->trueblk->marker)
+    {
+      genx86_op* op;
+      // jump to already-generated code
+      op = cnew(genx86_op);
+      op->operator = unconditional ? ab_JMP : ab_JNE;
+      op->op[0] = genx86_makeconstant(chunk, blk->trueblk->natoffset -
+        nat->length - (unconditional ? 5 : 6));
+      op->op[1] = op->op[2] = 0;
+      genx86_asm(nat, op);
+      free(op);
+    }
+    else
+    {
+      // generate new code
+      genx86_flatten_code_inner(nat, chunk, blk->trueblk, blk);
+    }
+  }
+  
+  if (blk->falseblk && !blk->falseblk->marker)
+  {
+    genx86_flatten_code_inner(nat, chunk, blk->falseblk, blk);
+  }
 }
 
 nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
 {
+  nativeblockinfo* nat = rtasm_new();
+  
+  palloc_clearmarkers(chunk);
+  
+  genx86_flatten_code_inner(nat, chunk, chunk->root, 0);
+
+  relocate_fix(&nat->reloc, nat->base);
+  
+  x86dism_block(nat);
+  
+  return nat;
+}
+
+/*
   list* scanblock;
   nativeblockinfo* nat = rtasm_new();
   pqueue* queue = pqueue_new();
@@ -2165,3 +2277,5 @@ nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
   
   return nat;
 }
+*/
+
