@@ -43,6 +43,8 @@ const mem_readbank mem_rnull =
 const mem_readbank mem_rrom0 =
 {
   memory_readbyterom0,
+  memory_readbyterom0,
+  memory_readrom0,
   memory_readrom0,
   memory_readrom0
 };
