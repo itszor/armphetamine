@@ -10,6 +10,12 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <h1><a name="news">News</a></h1>
 
+<h3>25 March 2001</h3>
+
+<p>Linear scan now works reasonably convincingly, and a new x86 code generator is well on the way to being half-written. Despite there being no attempt at optimisation and only a handful of opcodes being compiled (fetch, commit, lsl, asl, lsr, ror, rol, and, adc, sub, sbc, mul), the code looks pretty good to me (though there are far too many moves - but we can deal with those in due course <tt>;o)</tt>).
+
+<p>The new backend knows about lots more x86 instructions and instruction variants than the old one - it was <i>so</i> cool to see an <tt>add</tt> instruction being converted one-to-one into an <tt>lea</tt> instruction. Still missing are flow control, flag handling, lots of opcodes...
+
 <h3>24 March 2001</h3>
 
 <p>I've implemented linear scan register allocation. This isn't necessarily a good thing, since I stayed awake all night to do it. Now the sun is up though, time for bed I think. It doesn't work even slightly, of course, and the code is utterly revolting <tt>;o)</tt>. Also various changes to ph2 translator, etc.

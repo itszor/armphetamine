@@ -12,7 +12,9 @@ typedef enum {
   pal_CONST,
   pal_RFILE,
   pal_IREG,
-  pal_ALIAS
+  pal_STACK,
+  pal_ALIAS,
+  pal_NUMTYPES
 } palloc_type;
 
 typedef struct {
@@ -30,8 +32,8 @@ struct palloc_info {
     } ireg;
     uint5 value;
   } info;
-  hashtable* referenced_by;
-  palloc_liverange edge;
+/*  hashtable* referenced_by;
+  palloc_liverange edge;*/
 };
 
 typedef struct palloc_info palloc_info;

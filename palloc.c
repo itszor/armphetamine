@@ -14,7 +14,7 @@ void palloc_init(pheta_chunk* chunk)
   {
     chunk->alloc[i].type = pal_UNSET;
   }
-  chunk->alloc[i].referenced_by = hash_new(8);
+/*  chunk->alloc[i].referenced_by = hash_new(8);*/
 }
 
 void palloc_free(pheta_chunk* chunk)
@@ -52,8 +52,7 @@ void palloc_constant(pheta_chunk* chunk)
         {
           uint5 dest = blk->base[i+1];
           uint5 byte = blk->base[i+2];
-          // using CONSTB here makes things way more complicated
-          chunk->alloc[dest].type = pal_CONST;
+          chunk->alloc[dest].type = pal_CONSTB;
           chunk->alloc[dest].info.value = byte;
         }
         break;
@@ -450,6 +449,7 @@ void palloc_shufflecommit(pheta_chunk* chunk)
 }
 
 // this has gone stale
+/*
 void palloc_refby(pheta_chunk* chunk)
 {
   list* scanblock;
@@ -473,6 +473,7 @@ void palloc_refby(pheta_chunk* chunk)
     }
   }
 }
+*/
 
 void palloc_print(pheta_chunk* chunk)
 {
@@ -517,6 +518,12 @@ void palloc_print(pheta_chunk* chunk)
       case pal_ALIAS:
       {
         fprintf(stderr, "%3d: Aliased to %d\n", i, a->info.value);
+      }
+      break;
+      
+      case pal_STACK:
+      {
+        fprintf(stderr, "%3d: On stack, location %d\n", i, a->info.value);
       }
       break;
     }

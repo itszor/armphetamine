@@ -7,6 +7,190 @@
 #include "pheta.h"
 #include "palloc.h"
 
+static const genx86_variant genx86_tab[] =
+{
+  /* lsl */ { NULL,
+              NULL,
+              &rtasm_shl_rm32_imm8,
+              NULL,
+              &rtasm_shl_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* lsr */ { NULL,
+              NULL,
+              &rtasm_shr_rm32_imm8,
+              NULL,
+              &rtasm_shr_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* asr */ { NULL,
+              NULL,
+              &rtasm_sar_rm32_imm8,
+              NULL,
+              &rtasm_sar_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* ror */ { NULL,
+              NULL,
+              &rtasm_ror_rm32_imm8,
+              NULL,
+              &rtasm_ror_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* rol */ { NULL,
+              NULL,
+              &rtasm_rol_rm32_imm8,
+              NULL,
+              &rtasm_rol_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* and */ { &rtasm_and_r32_rm32,
+              &rtasm_and_rm32_r32,
+              &rtasm_and_rm32_imm8,
+              &rtasm_and_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* or */  { &rtasm_or_r32_rm32,
+              &rtasm_or_rm32_r32,
+              &rtasm_or_rm32_imm8,
+              &rtasm_or_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* xor */ { &rtasm_xor_r32_rm32,
+              &rtasm_xor_rm32_r32,
+              &rtasm_xor_rm32_imm8,
+              &rtasm_xor_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* add */ { &rtasm_add_r32_rm32,
+              &rtasm_add_rm32_r32,
+              &rtasm_add_rm32_imm8,
+              &rtasm_add_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* adc */ { &rtasm_adc_r32_rm32,
+              &rtasm_adc_rm32_r32,
+              &rtasm_adc_rm32_imm8,
+              &rtasm_adc_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* sub */ { &rtasm_sub_r32_rm32,
+              &rtasm_sub_rm32_r32,
+              &rtasm_sub_rm32_imm8,
+              &rtasm_sub_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* sbb */ { &rtasm_sbb_r32_rm32,
+              &rtasm_sbb_rm32_r32,
+              &rtasm_sbb_rm32_imm8,
+              &rtasm_sbb_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* imul */{ &rtasm_imul_r32_rm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_imul_r32_rm32_imm8,
+              &rtasm_imul_r32_rm32_imm32,
+              NULL,
+              0, 0
+            },
+  /* lea */ { &rtasm_lea_r32_m32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* mov */ { &rtasm_mov_r32_rm32,
+              &rtasm_mov_rm32_r32,
+              NULL,
+              &rtasm_mov_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              0, 0
+            },
+  /* not */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_not_rm32,
+              0, 0
+            },
+  /* push */{ NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_push_rm32,
+              0, 0
+            },
+  /* pop */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_pop_m32,
+              0, 0
+            }
+};
+
 void genx86_test(void)
 {
   nativeblockinfo* nat = x86asm_newnative();
@@ -41,12 +225,315 @@ void genx86_test(void)
   x86asm_deletenative(nat);
 }
 
-void genx86_regmove(nativeblockinfo* nat, uint3 dest, uint3 src)
+#define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
+                           ((S1)*pal_NUMTYPES) + (S2))
+#define ERR { fprintf(stderr, "Specialisation error at %d. Opcode=%d\n", \
+               __LINE__, opcode); exit(1); }
+
+void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
+                palloc_info* src1, palloc_info* src2)
 {
-  if (src != dest)
+  switch (COMPOUND(dest->type, src1->type, src2->type))
   {
-    rtasm_mov_r32_rm32(nat, dest, rtasm_reg(src));
+    case COMPOUND(pal_RFILE, pal_UNSET, pal_UNSET):
+    {
+      if (genx86_tab[opcode].rm32)
+      {
+        genx86_tab[opcode].rm32(nat, rtasm_ind8(EBP, dest->info.value*4));
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_UNSET, pal_UNSET):
+    {
+      if (genx86_tab[opcode].rm32)
+      {
+        genx86_tab[opcode].rm32(nat, rtasm_reg(dest->info.ireg.num));
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_STACK, pal_UNSET, pal_UNSET):
+    {
+      if (genx86_tab[opcode].rm32)
+      {
+        genx86_tab[opcode].rm32(nat, rtasm_ind8(ESP, dest->info.value*4));
+      }
+      else ERR;
+    }
+    break;
+
+    case COMPOUND(pal_RFILE, pal_CONSTB, pal_UNSET):
+    {
+      if (genx86_tab[opcode].rm32_i8)
+      {
+        genx86_tab[opcode].rm32_i8(nat, rtasm_ind8(EBP, dest->info.value*4), 
+          src1->info.value);
+      }
+      else if (genx86_tab[opcode].rm32_i32)
+      {
+        genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value*4),
+          src1->info.value);
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_RFILE, pal_CONST, pal_UNSET):
+    {
+      if (genx86_tab[opcode].rm32_i32)
+      {
+        genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value*4),
+          src1->info.value);
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_RFILE, pal_RFILE, pal_UNSET):
+    ERR;
+    break;
+    
+    case COMPOUND(pal_RFILE, pal_IREG, pal_UNSET):
+    {
+      if (genx86_tab[opcode].rm32_r32)
+      {
+        genx86_tab[opcode].rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
+          src1->info.ireg.num);
+      }
+      else if (genx86_tab[opcode].rm32_c)
+      {
+        if (src1->info.ireg.num==ECX)
+        {
+          genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value*4));
+        }
+        else
+        {
+          rtasm_push_r32(nat, ECX);
+          rtasm_mov_r32_rm32(nat, ECX, rtasm_reg(src1->info.ireg.num));
+          genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value*4));
+          rtasm_pop_r32(nat, ECX);
+        }
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_RFILE, pal_STACK, pal_UNSET):
+    ERR;
+    break;
+    
+    case COMPOUND(pal_IREG, pal_CONSTB, pal_UNSET):
+    {
+      uint5 value = src1->info.value;
+      if (value<128 && genx86_tab[opcode].rm32_i8)
+      {
+        genx86_tab[opcode].rm32_i8(nat, rtasm_reg(dest->info.ireg.num), 
+          value);
+      }
+      else if (genx86_tab[opcode].rm32_i32)
+      {
+        genx86_tab[opcode].rm32_i32(nat, rtasm_reg(dest->info.ireg.num), 
+          value);
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_CONST, pal_UNSET):
+    {
+      uint5 value = src1->info.value;
+      if (value<128 && genx86_tab[opcode].rm32_i8)
+      {
+        genx86_tab[opcode].rm32_i8(nat, rtasm_reg(dest->info.ireg.num),
+          value);
+      }
+      else if (genx86_tab[opcode].rm32_i32)
+      {
+        genx86_tab[opcode].rm32_i32(nat, rtasm_reg(dest->info.ireg.num),
+          value);
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_RFILE, pal_UNSET):
+    {
+      if (genx86_tab[opcode].r32_rm32)
+      {
+        genx86_tab[opcode].r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
+          src1->info.value*4));
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_IREG, pal_UNSET):
+    {
+      if (genx86_tab[opcode].r32_rm32)
+      {
+        genx86_tab[opcode].r32_rm32(nat, dest->info.ireg.num, 
+          rtasm_reg(src1->info.ireg.num));
+      }
+      else if (genx86_tab[opcode].rm32_c)
+      {
+        if (src1->info.ireg.num==ECX)
+        {
+          genx86_tab[opcode].rm32_c(nat, rtasm_reg(dest->info.ireg.num));
+        }
+        else
+        {
+          if (dest->info.ireg.num==ECX)
+          {
+            rtasm_xchg_r32_rm32(nat, ECX, rtasm_reg(src1->info.ireg.num));
+            genx86_tab[opcode].rm32_c(nat, rtasm_reg(src1->info.ireg.num));
+            rtasm_xchg_r32_rm32(nat, ECX, rtasm_reg(src1->info.ireg.num));
+          }
+          else
+          {
+            rtasm_push_r32(nat, ECX);
+            rtasm_mov_r32_rm32(nat, ECX, rtasm_reg(src1->info.ireg.num));
+            genx86_tab[opcode].rm32_c(nat, rtasm_reg(dest->info.ireg.num));
+            rtasm_pop_r32(nat, ECX);
+          }
+        }
+      }
+      else ERR;
+    }
+    break;
+
+    case COMPOUND(pal_IREG, pal_STACK, pal_UNSET):
+    {
+      if (genx86_tab[opcode].r32_rm32)
+      {
+        genx86_tab[opcode].r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(ESP,
+          src1->info.value*4));
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_IREG, pal_IREG):
+    {
+      switch (opcode)
+      {
+        case ab_LEA:  // we can only do LEA like this!
+        {
+          genx86_tab[ab_LEA].r32_rm32(nat, dest->info.ireg.num,
+            rtasm_scind(src1->info.ireg.num, src2->info.ireg.num, scale_1));
+        }
+        break;
+        
+        default:
+        ERR;
+      }
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_RFILE, pal_CONSTB):
+    {
+      if (genx86_tab[opcode].r32_rm32_i8)
+      {
+        genx86_tab[opcode].r32_rm32_i8(nat, dest->info.ireg.num, rtasm_ind8(EBP,
+          src1->info.value*4), src2->info.value);
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_RFILE, pal_CONST):
+    {
+      if (genx86_tab[opcode].r32_rm32_i8)
+      {
+        genx86_tab[opcode].r32_rm32_i32(nat, dest->info.ireg.num, 
+          rtasm_ind8(EBP, src1->info.value*4), src2->info.value);
+      }
+      else ERR;
+    }
+    break;
+
+    case COMPOUND(pal_IREG, pal_IREG, pal_CONSTB):
+    {
+      if (genx86_tab[opcode].r32_rm32_i8)
+      {
+        genx86_tab[opcode].r32_rm32_i8(nat, dest->info.ireg.num, 
+          rtasm_reg(src1->info.ireg.num), src2->info.value);
+      }
+      else ERR;
+    }
+    break;
+
+    case COMPOUND(pal_IREG, pal_IREG, pal_CONST):
+    {
+      if (genx86_tab[opcode].r32_rm32_i8)
+      {
+        genx86_tab[opcode].r32_rm32_i32(nat, dest->info.ireg.num, 
+          rtasm_reg(src1->info.ireg.num), src2->info.value);
+      }
+      else ERR;
+    }
+    break;
+
+    case COMPOUND(pal_IREG, pal_STACK, pal_CONSTB):
+    {
+      if (genx86_tab[opcode].r32_rm32_i8)
+      {
+        genx86_tab[opcode].r32_rm32_i8(nat, dest->info.ireg.num, rtasm_ind8(ESP,
+          src1->info.value*4), src2->info.value);
+      }
+      else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_IREG, pal_STACK, pal_CONST):
+    {
+      if (genx86_tab[opcode].r32_rm32_i8)
+      {
+        genx86_tab[opcode].r32_rm32_i32(nat, dest->info.ireg.num, 
+          rtasm_ind8(ESP, src1->info.value*4), src2->info.value);
+      }
+      else ERR;
+    }
+    break;
+    
+    default:
+    ERR;
   }
+}
+
+#undef COMPOUND
+#undef ERR
+
+// Won't move something into itself, simplifies zero-loads
+void genx86_move(nativeblockinfo* nat, palloc_info* dest, palloc_info* src)
+{
+  palloc_info nul;
+  nul.type = pal_UNSET;
+  if (dest->type==src->type)
+  {
+    switch (dest->type)
+    {
+      case pal_IREG:
+      if (dest->info.ireg.num==src->info.ireg.num) return;
+      break;
+      
+      case pal_RFILE:
+      case pal_STACK:
+      if (dest->info.value==src->info.value) return;
+      break;
+      
+      default:
+      break;
+    }
+  }
+  if (src->type==pal_CONST || src->type==pal_CONSTB && dest->type==pal_IREG)
+  {
+    genx86_out(nat, ab_XOR, dest, dest, &nul);
+    return;
+  }
+  genx86_out(nat, ab_MOV, dest, src, &nul);
 }
 
 nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
@@ -54,6 +541,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
   uint5 i;
   nativeblockinfo* nat = x86asm_newnative();
   nativeblockinfo* truebranch = 0, *falsebranch = 0;
+  palloc_info nul;
+  
+  nul.type = pal_UNSET;
   
   for (i=0; i<blk->length; i++)
   {
@@ -63,20 +553,22 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
     {
       case ph_FETCH:
       {
-        uint5 dest = blk->base[i+1];
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
         uint5 armsrc = blk->base[i+2];
-        switch (chunk->alloc[dest].type)
+        switch (dest->type)
         {
           case pal_IREG:
           {
-            rtasm_mov_r32_rm32(nat, chunk->alloc[dest].info.ireg.num,
-              rtasm_ind8(EBP, armsrc*4));
+            palloc_info psrc;
+            psrc.type = pal_RFILE;
+            psrc.info.value = armsrc;
+            genx86_out(nat, ab_MOV, dest, &psrc, &nul);
           }
           break;
           
           case pal_RFILE:
           {
-            chunk->alloc[dest].info.value = armsrc;
+            dest->info.value = armsrc;
           }
           break;
         }
@@ -86,1328 +578,144 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
       case ph_COMMIT:
       {
         uint5 armdest = blk->base[i+1];
-        uint5 src = blk->base[i+2];
-        if (chunk->alloc[src].type == pal_IREG)
+        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        if (src->type == pal_IREG)
         {
-          rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, armdest*4),
-            chunk->alloc[src].info.ireg.num);
+          palloc_info pdest;
+          pdest.type = pal_RFILE;
+          pdest.info.value = armdest;
+          genx86_out(nat, ab_MOV, &pdest, src, &nul);
         }
       }
       break;
       
-#define COMPOUND(D,S1,S2) (((D)<<6) | ((S1)<<3) | (S2))
-
       case ph_LSL:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_SHL, dest, src2, &nul);
+      }
+      break;
+      
       case ph_LSR:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_SHR, dest, src2, &nul);
+      }
+      break;
+      
       case ph_ASR:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_SAR, dest, src2, &nul);
+      }
+      break;
+      
       case ph_ROR:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_ROR, dest, src2, &nul);
+      }
+      break;
+      
       case ph_ROL:
       {
         palloc_info* dest = &chunk->alloc[blk->base[i+1]];
         palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
         palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
-        
-        switch (COMPOUND(dest->type, src1->type, src2->type))
-        {
-          case COMPOUND(pal_IREG, pal_IREG, pal_CONST):
-          {
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_LSL:
-              rtasm_shl_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-              
-              case ph_LSR:
-              rtasm_shl_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-
-              case ph_ASR:
-              rtasm_sar_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-
-              case ph_ROR:
-              rtasm_ror_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-
-              case ph_ROL:
-              rtasm_rol_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_IREG):
-          {
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            if (src2->info.ireg.num!=ECX)
-            {
-              if (dest->info.ireg.num!=ECX)
-              {
-                rtasm_push_r32(nat, ECX);
-              }
-              else
-              {
-                rtasm_xchg_r32_rm32(nat, ECX, rtasm_reg(src2->info.ireg.num));
-              }
-            }
-            switch (opcode)
-            {
-              case ph_LSL:
-              rtasm_shl_rm32_cl(nat, rtasm_reg(dest->info.ireg.num));
-              break;
-
-              case ph_LSR:
-              rtasm_shr_rm32_cl(nat, rtasm_reg(dest->info.ireg.num));
-              break;
-
-              case ph_ASR:
-              rtasm_sar_rm32_cl(nat, rtasm_reg(dest->info.ireg.num));
-              break;
-
-              case ph_ROR:
-              rtasm_ror_rm32_cl(nat, rtasm_reg(dest->info.ireg.num));
-              break;
-
-              case ph_ROL:
-              rtasm_rol_rm32_cl(nat, rtasm_reg(dest->info.ireg.num));
-              break;
-            }
-            if (src2->info.ireg.num!=ECX)
-            {
-              if (dest->info.ireg.num!=ECX)
-              {
-                rtasm_pop_r32(nat, ECX);
-              }
-              else
-              {
-                rtasm_xchg_r32_rm32(nat, ECX, rtasm_reg(src2->info.ireg.num));
-              }
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_CONST):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            switch (opcode)
-            {
-              case ph_LSL:
-              rtasm_shl_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-              
-              case ph_LSR:
-              rtasm_shr_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-              
-              case ph_ASR:
-              rtasm_sar_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-              
-              case ph_ROR:
-              rtasm_ror_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-              
-              case ph_ROL:
-              rtasm_rol_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num),
-                src2->info.value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_CONST):
-          {
-            uint5 value;
-            switch (opcode)
-            {
-              case ph_LSL:
-              value = src1->info.value << src2->info.value;
-              break;
-              
-              case ph_LSR:
-              value = src1->info.value >> src2->info.value;
-              break;
-              
-              case ph_ASR:
-              value = (sint5)src1->info.value >> src2->info.value;
-              break;
-              
-              case ph_ROR:
-              value = ROR(src1->info.value, src2->info.value);
-              break;
-              
-              case ph_ROL:
-              value = ROR(src1->info.value, 31-src2->info.value);
-              break;
-            }
-            rtasm_mov_r32_imm32(nat, dest->info.ireg.num, value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_CONST):
-          {
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_LSL:
-              rtasm_shl_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.value);
-              break;
-              
-              case ph_LSR:
-              rtasm_shr_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.value);
-              break;
-              
-              case ph_ASR:
-              rtasm_sar_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.value);
-              break;
-              
-              case ph_ROR:
-              rtasm_ror_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.value);
-              break;
-              
-              case ph_ROL:
-              rtasm_rol_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_IREG):
-          {
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            if (src2->info.ireg.num!=ECX)
-            {
-              rtasm_push_r32(nat, ECX);
-              rtasm_mov_r32_rm32(nat, ECX, rtasm_reg(src2->info.ireg.num));
-            }
-            switch (opcode)
-            {
-              case ph_LSL:
-              rtasm_shl_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-              
-              case ph_LSR:
-              rtasm_shr_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-
-              case ph_ASR:
-              rtasm_sar_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-
-              case ph_ROR:
-              rtasm_ror_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-
-              case ph_ROL:
-              rtasm_rol_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-            }
-            if (src2->info.ireg.num!=ECX)
-            {
-              rtasm_pop_r32(nat, ECX);
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_RFILE):
-          {
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            rtasm_push_r32(nat, ECX);
-            rtasm_mov_r32_rm32(nat, ECX, rtasm_ind8(EBP, src2->info.ireg.num));
-            switch (opcode)
-            {
-              case ph_LSL:
-              rtasm_shl_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-              
-              case ph_LSR:
-              rtasm_shr_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-              
-              case ph_ASR:
-              rtasm_sar_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-              
-              case ph_ROR:
-              rtasm_ror_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-              
-              case ph_ROL:
-              rtasm_rol_rm32_cl(nat, rtasm_ind8(EBP, dest->info.value*4));
-              break;
-            }
-            rtasm_pop_r32(nat, ECX);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_CONST):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_CONST):
-          {
-            uint5 value;
-            switch (opcode)
-            {
-              case ph_LSL:
-              value = src1->info.value << src2->info.value;
-              break;
-              
-              case ph_LSR:
-              value = src1->info.value >> src2->info.value;
-              break;
-              
-              case ph_ASR:
-              value = (sint5)src1->info.value >> src2->info.value;
-              break;
-              
-              case ph_ROR:
-              value = ROR(src1->info.value, src2->info.value);
-              break;
-              
-              case ph_ROL:
-              value = ROR(src1->info.value, 31-src2->info.value);
-              break;
-            }
-            rtasm_mov_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              value);
-          }
-          break;
-
-          case COMPOUND(pal_RFILE, pal_CONST, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-        }
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_ROL, dest, src2, &nul);
       }
-      break;  // three-arg shift operations
-        
+      break;
+
       case ph_AND:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_AND, dest, src2, &nul);
+      }
+      break;
+
       case ph_OR:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_OR, dest, src2, &nul);
+      }
+      break;
+
       case ph_EOR:
       {
         palloc_info* dest = &chunk->alloc[blk->base[i+1]];
         palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
         palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
-        
-        switch (COMPOUND(dest->type, src1->type, src2->type))
-        {
-          case COMPOUND(pal_IREG, pal_IREG, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_AND:
-              if (value<128)
-                rtasm_and_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_and_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-              
-              case ph_OR:
-              if (value<128)
-                rtasm_or_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_or_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-              
-              case ph_EOR:
-              if (value<128)
-                rtasm_xor_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_xor_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_IREG):
-          {
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_OR:
-              rtasm_or_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_EOR:
-              rtasm_xor_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_RFILE):
-          {
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-              
-              case ph_OR:
-              rtasm_or_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-              
-              case ph_EOR:
-              rtasm_xor_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value));
-            switch (opcode)
-            {
-              case ph_AND:
-              if (value<128)
-                rtasm_and_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_and_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-
-              case ph_OR:
-              if (value<128)
-                rtasm_and_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_and_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-
-              case ph_EOR:
-              if (value<128)
-                rtasm_and_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_and_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_IREG):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_OR:
-              rtasm_or_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_EOR:
-              rtasm_xor_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_RFILE):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_OR:
-              rtasm_or_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_EOR:
-              rtasm_xor_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_CONST):
-          {
-            uint5 value;
-            switch (opcode)
-            {
-              case ph_AND:
-              value = src1->info.value & src2->info.value;
-              break;
-              
-              case ph_OR:
-              value = src1->info.value | src2->info.value;
-              break;
-              
-              case ph_EOR:
-              value = src1->info.value ^ src2->info.value;
-              break;
-            }
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_IREG):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num),
-              src1->info.value);
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_OR:
-              rtasm_or_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_EOR:
-              rtasm_xor_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_RFILE):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num),
-              src1->info.value);
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_OR:
-              rtasm_or_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_EOR:
-              rtasm_xor_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_AND:
-              if (value<128)
-                rtasm_and_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_and_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_OR:
-              if (value<128)
-                rtasm_or_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_or_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_EOR:
-              if (value<128)
-                rtasm_xor_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_xor_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_IREG):
-          {
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_OR:
-              rtasm_or_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_EOR:
-              rtasm_xor_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            if (dest->info.value != src1->info.value)
-            {
-              fprintf(stderr, "Bad allocation\n");
-              exit(1);
-            }
-            switch (opcode)
-            {
-              case ph_AND:
-              if (value<128)
-                rtasm_and_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_and_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_OR:
-              if (value<128)
-                rtasm_or_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_or_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_EOR:
-              if (value<128)
-                rtasm_xor_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_xor_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_IREG):
-          {
-            if (dest->info.value != src1->info.value)
-            {
-              fprintf(stderr, "Bad allocation\n");
-              exit(1);
-            }
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-              
-              case ph_OR:
-              rtasm_or_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-              
-              case ph_EOR:
-              rtasm_xor_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_CONST):
-          {
-            uint5 value;
-            switch (opcode)
-            {
-              case ph_AND:
-              value = src1->info.value & src2->info.value;
-              break;
-              
-              case ph_OR:
-              value = src1->info.value | src2->info.value;
-              break;
-              
-              case ph_EOR:
-              value = src1->info.value ^ src2->info.value;
-              break;
-            }
-            rtasm_mov_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              value);
-          }
-          break;
-
-          case COMPOUND(pal_RFILE, pal_CONST, pal_IREG):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.value);
-            switch (opcode)
-            {
-              case ph_AND:
-              rtasm_and_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_OR:
-              rtasm_or_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_EOR:
-              rtasm_xor_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-        }
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_XOR, dest, src2, &nul);
       }
-      break;  // three-arg logic operations
+      break;
       
       case ph_ADD:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        if (dest->type==pal_IREG && src1->type==pal_IREG && 
+            src2->type==pal_IREG)
+        {
+          genx86_out(nat, ab_LEA, dest, src1, src2);
+        }
+        else
+        {
+          genx86_move(nat, dest, src1);
+          genx86_out(nat, ab_ADD, dest, src2, &nul);
+        }
+      }
+      break;
+      
       case ph_ADC:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_ADC, dest, src2, &nul);
+      }
+      break;
+      
       case ph_SUB:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_SUB, dest, src2, &nul);
+      }
+      break;
+
       case ph_SBC:
       {
         palloc_info* dest = &chunk->alloc[blk->base[i+1]];
         palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
         palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
-        
-        switch (COMPOUND(dest->type, src1->type, src2->type))
-        {
-          case COMPOUND(pal_IREG, pal_IREG, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_ADD:
-              if (value<128)
-                rtasm_add_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_add_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-              
-              case ph_ADC:
-              if (value<128)
-                rtasm_adc_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_adc_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-              
-              case ph_SUB:
-              if (value<128)
-                rtasm_sub_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_sub_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-
-              case ph_SBC:
-              if (value<128)
-                rtasm_sbb_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_sbb_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_IREG):
-          {
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_lea_r32_m32(nat, dest->info.ireg.num,
-                rtasm_scind(src1->info.ireg.num, src2->info.ireg.num, scale_1));
-              break;
-              
-              case ph_ADC:
-              genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-              rtasm_adc_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_SUB:
-              genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-              rtasm_sub_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-
-              case ph_SBC:
-              genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-              rtasm_sbb_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_RFILE):
-          {
-            genx86_regmove(nat, dest->info.ireg.num, src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-              
-              case ph_ADC:
-              rtasm_adc_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-              
-              case ph_SUB:
-              rtasm_sub_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value));
-            switch (opcode)
-            {
-              case ph_ADD:
-              if (value<128)
-                rtasm_add_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_add_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-
-              case ph_ADC:
-              if (value<128)
-                rtasm_adc_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_adc_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-
-              case ph_SUB:
-              if (value<128)
-                rtasm_sub_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_sub_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-
-              case ph_SBC:
-              if (value<128)
-                rtasm_sbb_rm32_imm8(nat, rtasm_reg(dest->info.ireg.num), value);
-              else
-                rtasm_sbb_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), 
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_IREG):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_ADC:
-              rtasm_adc_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_SUB:
-              rtasm_sub_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_RFILE):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_ADC:
-              rtasm_adc_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_SUB:
-              rtasm_sub_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_CONST):
-          {
-            uint5 value;
-            switch (opcode)
-            {
-              case ph_ADD:
-              value = src1->info.value + src2->info.value;
-              break;
-              
-              case ph_ADC:
-              case ph_SBC:
-              fprintf(stderr, "Allocation error\n");
-              exit(1);
-              break;
-              
-              case ph_SUB:
-              value = src1->info.value - src2->info.value;
-              break;
-            }
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num), value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_IREG):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num),
-              src1->info.value);
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_ADC:
-              rtasm_adc_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-              
-              case ph_SUB:
-              rtasm_sub_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_r32_rm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_RFILE):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num),
-              src1->info.value);
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_ADC:
-              rtasm_adc_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_SUB:
-              rtasm_sub_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4));
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_ADD:
-              if (value<128)
-                rtasm_add_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_add_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_ADC:
-              if (value<128)
-                rtasm_adc_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_adc_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_SUB:
-              if (value<128)
-                rtasm_sub_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_sub_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_SBC:
-              if (value<128)
-                rtasm_sbb_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_sbb_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_IREG):
-          {
-            rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.ireg.num);
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_ADC:
-              rtasm_adc_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_SUB:
-              rtasm_sub_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            if (dest->info.value != src1->info.value)
-            {
-              fprintf(stderr, "Bad allocation\n");
-              exit(1);
-            }
-            switch (opcode)
-            {
-              case ph_ADD:
-              if (value<128)
-                rtasm_add_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_add_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_ADC:
-              if (value<128)
-                rtasm_adc_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_adc_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_SUB:
-              if (value<128)
-                rtasm_sub_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_sub_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-
-              case ph_SBC:
-              if (value<128)
-                rtasm_sbb_rm32_imm8(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              else
-                rtasm_sbb_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                  value);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_IREG):
-          {
-            if (dest->info.value != src1->info.value)
-            {
-              fprintf(stderr, "Bad allocation\n");
-              exit(1);
-            }
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-              
-              case ph_ADC:
-              rtasm_adc_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-              
-              case ph_SUB:
-              rtasm_sub_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_CONST):
-          {
-            uint5 value;
-            switch (opcode)
-            {
-              case ph_ADD:
-              value = src1->info.value + src2->info.value;
-              break;
-              
-              case ph_SUB:
-              value = src1->info.value - src2->info.value;
-              break;
-              
-              case ph_ADC:
-              case ph_SBC:
-              fprintf(stderr, "Allocation error\n");
-              exit(1);
-              break;
-            }
-            rtasm_mov_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              value);
-          }
-          break;
-
-          case COMPOUND(pal_RFILE, pal_CONST, pal_IREG):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_ind8(EBP, dest->info.value*4),
-              src1->info.value);
-            switch (opcode)
-            {
-              case ph_ADD:
-              rtasm_add_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_ADC:
-              rtasm_adc_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_SUB:
-              rtasm_sub_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-
-              case ph_SBC:
-              rtasm_sbb_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
-                src2->info.ireg.num);
-              break;
-            }
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-        }
+        genx86_move(nat, dest, src1);
+        genx86_out(nat, ab_SBB, dest, src2, &nul);
       }
-      break;  // three-arg arithmetic operations
+      break;
       
       case ph_MUL:
       {
@@ -1415,166 +723,39 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
         palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
         palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
         
-        switch (COMPOUND(dest->type, src1->type, src2->type))
+        if ((src2->type==pal_CONST || src2->type==pal_CONSTB) && 
+            dest->type==pal_IREG)
         {
-          case COMPOUND(pal_IREG, pal_IREG, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            if (value<128)
-              rtasm_imul_r32_rm32_imm8(nat, dest->info.ireg.num,
-                rtasm_reg(src1->info.ireg.num), src2->info.value);
-            else
-              rtasm_imul_r32_rm32_imm32(nat, dest->info.ireg.num,
-                rtasm_reg(src1->info.ireg.num), src2->info.value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_IREG):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, 
-              rtasm_reg(src1->info.ireg.num));
-            rtasm_imul_r32_rm32(nat, dest->info.ireg.num,
-              rtasm_reg(src2->info.ireg.num));
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_IREG, pal_RFILE):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src2->info.value*4));
-            rtasm_imul_r32_rm32(nat, dest->info.ireg.num,
-              rtasm_reg(src1->info.ireg.num));
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_CONST):
-          {
-            uint5 value = src2->info.value;
-            if (value<128)
-              rtasm_imul_r32_rm32_imm8(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src1->info.value*4), src2->info.value);
-            else
-              rtasm_imul_r32_rm32_imm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src1->info.value*4), src2->info.value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_IREG):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            rtasm_imul_r32_rm32(nat, dest->info.ireg.num,
-              rtasm_reg(src2->info.ireg.num));
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_RFILE, pal_RFILE):
-          {
-            rtasm_mov_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src1->info.value*4));
-            rtasm_imul_r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-              src2->info.value*4));
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_CONST):
-          {
-            rtasm_mov_rm32_imm32(nat, rtasm_reg(dest->info.ireg.num),
-              src1->info.value * src2->info.value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_IREG):
-          {
-            uint5 value = src1->info.value;
-            if (value<128)
-              rtasm_imul_r32_rm32_imm8(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num), value);
-            else
-              rtasm_imul_r32_rm32_imm32(nat, dest->info.ireg.num,
-                rtasm_reg(src2->info.ireg.num), value);
-          }
-          break;
-          
-          case COMPOUND(pal_IREG, pal_CONST, pal_RFILE):
-          {
-            uint5 value = src1->info.value;
-            if (value<128)
-              rtasm_imul_r32_rm32_imm8(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-                src2->info.value*4), value);
-            else
-              rtasm_imul_r32_rm32_imm32(nat, dest->info.ireg.num,
-                rtasm_ind8(EBP, src2->info.value*4), value);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_CONST):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_IREG, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_CONST):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_RFILE, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_CONST):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-
-          case COMPOUND(pal_RFILE, pal_CONST, pal_IREG):
-          {
-            rtasm_nop(nat);
-          }
-          break;
-          
-          case COMPOUND(pal_RFILE, pal_CONST, pal_RFILE):
-          {
-            rtasm_nop(nat);
-          }
-          break;
+          genx86_out(nat, ab_IMUL, dest, src1, src2);
+        }
+        else
+        {
+          genx86_move(nat, dest, src1);
+          genx86_out(nat, ab_IMUL, dest, src2, &nul);
         }
       }
       break;
-
-#undef COMPOUND
-      
+              
       case ph_RRX:
       case ph_RLX:
       break;  // two-arg shift operations
       
       case ph_MOV:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        genx86_move(nat, dest, src);
+      }
+      break;
+      
       case ph_NOT:
-      rtasm_nop(nat);
-      break;  // two-arg logic operations
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        genx86_move(nat, dest, src);
+        genx86_out(nat, ab_NOT, dest, &nul, &nul);
+      }
+      break;
       
       case ph_TEQ:
       case ph_TST:
