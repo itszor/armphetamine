@@ -8,6 +8,157 @@
 #include "iomd.h"
 #include "machine.h"
 
+const mem_writebank mem_wfault =
+{
+  memory_writefault,
+  memory_writefault,
+  memory_writefault
+};
+
+const mem_readbank mem_rfault =
+{
+  memory_readfault,
+  memory_readfault,
+  memory_readfault,
+  memory_readfault,
+  memory_readfault
+};
+
+const mem_writebank mem_wnull =
+{
+  memory_nullwrite,
+  memory_nullwrite,
+  memory_nullwrite
+};
+
+const mem_readbank mem_rnull =
+{
+  memory_nullread,
+  memory_nullread,
+  memory_nullread,
+  memory_nullread,
+  memory_nullread
+};
+
+const mem_readbank mem_rrom0 =
+{
+  memory_readbyterom0,
+  memory_readrom0,
+  memory_readrom0
+};
+
+const mem_readbank mem_rrom1 =
+{
+  memory_readbyterom1,
+  memory_readbyterom1,
+  memory_readbyterom1,
+  memory_readbyterom1,
+  memory_readrom1
+};
+
+const mem_writebank mem_wvram =
+{
+  memory_writebytevram,
+  memory_writebytevram,
+  memory_writevram
+};
+
+const mem_readbank mem_rvram =
+{
+  memory_readbytevram,
+  memory_readbytevram,
+  memory_readbytevram,
+  memory_readbytevram,
+  memory_readvram
+};
+
+const mem_writebank mem_wiomd =
+{
+  iomd_writeword,
+  iomd_writeword,
+  iomd_writeword
+};
+
+const mem_readbank mem_riomd =
+{
+  iomd_readword,
+  iomd_readword,
+  iomd_readword,
+  iomd_readword,
+  iomd_readword
+};
+
+const mem_writebank mem_wvidc20 =
+{
+  vidc20_writebyte,
+  vidc20_writeword,
+  vidc20_writeword
+};
+
+const mem_writebank mem_wbank0 =
+{
+  memory_writebytebank0,
+  memory_writebank0,
+  memory_writebank0
+};
+
+const mem_readbank mem_rbank0 =
+{
+  memory_readbytebank0,
+  memory_readbytebank0,
+  memory_readbank0,
+  memory_readbank0,
+  memory_readbank0
+};
+
+const mem_writebank mem_wbank1 =
+{
+  memory_writebytebank1,
+  memory_writebank1,
+  memory_writebank1
+};
+
+const mem_readbank mem_rbank1 =
+{
+  memory_readbytebank1,
+  memory_readbytebank1,
+  memory_readbank1,
+  memory_readbank1,
+  memory_readbank1
+};
+
+const mem_writebank mem_wbank2 =
+{
+  memory_writebytebank2,
+  memory_writebank2,
+  memory_writebank2
+};
+
+const mem_readbank mem_rbank2 =
+{
+  memory_readbytebank2,
+  memory_readbytebank2,
+  memory_readbank2,
+  memory_readbank2,
+  memory_readbank2
+};
+
+const mem_writebank mem_wbank3 =
+{
+  memory_writebytebank3,
+  memory_writebank3,
+  memory_writebank3
+};
+
+const mem_readbank mem_rbank3 =
+{
+  memory_readbytebank3,
+  memory_readbytebank3,
+  memory_readbank3,
+  memory_readbank3,
+  memory_readbank3
+};
+
 meminfo* memory_initialise(uint5 bytes)
 {
   meminfo* mem = cnew(meminfo);
@@ -261,45 +412,36 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
   switch ((physaddress >> 24) & 0x1f)
   {
     case 0x00: // ROM bank 0
-    tlb->readbyte = readperm ? memory_readbyterom0 : memory_readfault;
-    tlb->readword = readperm ? memory_readrom0 : memory_readfault;
-    tlb->writebyte = tlb->writeword =
-      writeperm ? memory_nullwrite : memory_writefault;
+    tlb->read = readperm ? mem_rrom0 : mem_rfault;
+    tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
 
     case 0x01: // ROM bank 1
-    tlb->readbyte = readperm ? memory_readbyterom1 : memory_readfault;
-    tlb->readword = readperm ? memory_readrom1 : memory_readfault;
-    tlb->writebyte = tlb->writeword =
-      writeperm ? memory_nullwrite : memory_writefault;
+    tlb->read = readperm ? mem_rrom1 : mem_rfault;
+    tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
 
     case 0x02: // VRAM
-    tlb->readbyte = readperm ? memory_readbytevram : memory_readfault;
-    tlb->readword = readperm ? memory_readvram : memory_readfault;
-    tlb->writebyte = writeperm ? memory_writebytevram : memory_writefault;
-    tlb->writeword = writeperm ? memory_writevram : memory_writefault;
+    tlb->read = readperm ? mem_rvram : mem_rfault;
+    tlb->write = writeperm ? mem_wvram : mem_wfault;
     break;
 
     case 0x03: // module I/O space
     switch ((physaddress >> 20) & 0xf)
     {
       case 0x2:  // iomd registers
-      tlb->readbyte = readperm ? iomd_readword : memory_readfault;
-      tlb->readword = readperm ? iomd_readword : memory_readfault;
-      tlb->writebyte = writeperm ? iomd_writeword : memory_writefault;
-      tlb->writeword = writeperm ? iomd_writeword : memory_writefault;
+      tlb->read = readperm ? mem_riomd : mem_rfault;
+      tlb->write = writeperm ? mem_wiomd : mem_wfault;
       break;
       
       case 0x4:  // video registers
-      tlb->readbyte = tlb->readword = memory_nullread;
-      tlb->writebyte = writeperm ? vidc20_writebyte : memory_writefault;
-      tlb->writeword = writeperm ? vidc20_writeword : memory_writefault;
+      tlb->read = readperm ? mem_rnull : mem_rfault;
+      tlb->write = writeperm ? mem_wvidc20 : mem_wfault;
       break;
       
       default:
-      tlb->readbyte = tlb->readword = memory_nullread;
-      tlb->writebyte = tlb->writeword = memory_nullwrite;
+      tlb->read = mem_rnull;
+      tlb->write = mem_wnull;
     }
     break;
 
@@ -311,48 +453,40 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     case 0x0d:
     case 0x0e:
     case 0x0f:
-    tlb->readbyte = tlb->readword = memory_nullread;
-    tlb->writebyte = tlb->writeword = memory_nullwrite;
+    tlb->read = mem_rnull;
+    tlb->write = mem_wnull;
     break;
 
     case 0x10: // DRAM bank 0 (64Mb)
     case 0x11:
     case 0x12:
     case 0x13:
-    tlb->readbyte = readperm ? memory_readbytebank0 : memory_readfault;
-    tlb->readword = readperm ? memory_readbank0 : memory_readfault;
-    tlb->writebyte = writeperm ? memory_writebytebank0 : memory_writefault;
-    tlb->writeword = writeperm ? memory_writebank0 : memory_writefault;
+    tlb->read = readperm ? mem_rbank0 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank0 : mem_wfault;
     break;
 
     case 0x14: // DRAM bank 1 (64Mb)
     case 0x15:
     case 0x16:
     case 0x17:
-    tlb->readbyte = readperm ? memory_readbytebank1 : memory_readfault;
-    tlb->readword = readperm ? memory_readbank1 : memory_readfault;
-    tlb->writebyte = writeperm ? memory_writebytebank1 : memory_writefault;
-    tlb->writeword = writeperm ? memory_writebank1 : memory_writefault;
+    tlb->read = readperm ? mem_rbank1 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank1 : mem_wfault;
     break;
 
     case 0x18: // DRAM bank 2 (64Mb)
     case 0x19:
     case 0x1a:
     case 0x1b:
-    tlb->readbyte = readperm ? memory_readbytebank2 : memory_readfault;
-    tlb->readword = readperm ? memory_readbank2 : memory_readfault;
-    tlb->writebyte = writeperm ? memory_writebytebank2 : memory_writefault;
-    tlb->writeword = writeperm ? memory_writebank2 : memory_writefault;
+    tlb->read = readperm ? mem_rbank2 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank2 : mem_wfault;
     break;
 
     case 0x1c: // DRAM bank 3 (64Mb)
     case 0x1d:
     case 0x1e:
     case 0x1f:
-    tlb->readbyte = readperm ? memory_readbytebank3 : memory_readfault;
-    tlb->readword = readperm ? memory_readbank3 : memory_readfault;
-    tlb->writebyte = writeperm ? memory_writebytebank3 : memory_writefault;
-    tlb->writeword = writeperm ? memory_writebank3 : memory_writefault;
+    tlb->read = readperm ? mem_rbank3 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank3 : mem_wfault;
     break;
 
     default:
@@ -602,7 +736,7 @@ uint5 memory_readdataword(meminfo* mem, uint5 virtualaddress)
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
-  return mem->datatlb.readword(mem, physaddress);
+  return mem->datatlb.read.word(mem, physaddress);
 }
 
 uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
@@ -618,7 +752,7 @@ uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
     physaddress = mem->insttlb.physical |
                   (virtualaddress & ~mem->insttlb.mask);
   }
-  return mem->insttlb.readword(mem, physaddress);
+  return mem->insttlb.read.word(mem, physaddress);
 }
 
 void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
@@ -634,7 +768,7 @@ void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
-  mem->datatlb.writeword(mem, physaddress, data);
+  mem->datatlb.write.word(mem, physaddress, data);
 }
 
 uint3 memory_readbyte(meminfo* mem, uint5 virtualaddress)
@@ -650,7 +784,7 @@ uint3 memory_readbyte(meminfo* mem, uint5 virtualaddress)
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
-  return mem->datatlb.readbyte(mem, physaddress);
+  return mem->datatlb.read.byte(mem, physaddress);
 }
 
 void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint3 data)
@@ -666,6 +800,6 @@ void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint3 data)
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
-  mem->datatlb.writebyte(mem, physaddress, data);
+  mem->datatlb.write.byte(mem, physaddress, data);
 }
 
