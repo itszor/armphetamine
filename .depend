@@ -26,7 +26,7 @@ loadaout.o: loadaout.c loadaout.h
 machine.o: machine.c cnew.h machine.h defs.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h block.h pseudo.h decode.h \
  codegen.h allocate.h x86asm.h clist.h analyse.h execute.h profile.h \
- transmap.h pheta.h bset.h pqueue.h
+ transmap.h pheta.h bset.h pqueue.h sapcm.h fifo.h ostimer.h
 main.o: main.c cnew.h defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h decode.h loadaout.h block.h \
  pseudo.h codegen.h allocate.h x86asm.h clist.h analyse.h generators.h \
@@ -109,11 +109,12 @@ transmap.o: transmap.c cnew.h transmap.h defs.h hash.h list.h pheta.h \
  mouse.h bset.h pqueue.h clist.h
 profile.o: profile.c profile.h defs.h transmap.h hash.h list.h pheta.h \
  decode.h machine.h processor.h registers.h memory.h keyboard.h \
- mouse.h bset.h pqueue.h clist.h cnew.h nativesupport.h x86asm.h
-recompile.o: recompile.c recompile.h defs.h pheta.h list.h decode.h \
- machine.h processor.h registers.h memory.h keyboard.h mouse.h hash.h \
- bset.h pqueue.h clist.h palloc.h genx86.h x86asm.h rtasm.h \
- rtasm_fns.h
+ mouse.h bset.h pqueue.h clist.h cnew.h nativesupport.h x86asm.h \
+ recompile.h
+recompile.o: recompile.c recompile.h defs.h x86asm.h hash.h list.h \
+ registers.h processor.h clist.h machine.h memory.h keyboard.h mouse.h \
+ pheta.h decode.h bset.h pqueue.h phetadism.h palloc.h genx86.h \
+ rtasm.h rtasm_fns.h
 sapcm.o: sapcm.c defs.h sapcm.h memory.h keyboard.h mouse.h hash.h \
  list.h machine.h processor.h registers.h fifo.h
 ostimer.o: ostimer.c defs.h iomd.h memory.h keyboard.h mouse.h hash.h \

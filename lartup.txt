@@ -3,8 +3,8 @@ romload lart-kernel 0x00020000
 romload lart-initrd 0x00100000
 # breakset 0xc0008000
 # trace on
-# breakset 0x00020700
+breakset 0x00020090
 run 0x0
-# breakclear 0x00020700
-# trace on
-# run 0x00020700
+breakclear 0x00020090
+trace on
+run 0x00020090

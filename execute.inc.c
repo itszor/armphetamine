@@ -1518,7 +1518,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                       inst.instruction = memory_readinstword(mem, instaddr);
                       fprintf(stderr, "%.8x : %.8x : ", instaddr, 
                               inst.instruction);
-                      dispatch(machine, inst, &diss, 0);
+                      dispatch(machine, inst, &diss, (void*)instaddr);
                       fprintf(stderr, "\n");
                       dispatch(machine, inst, machine->exectab, 0);
                     }

@@ -30,6 +30,10 @@ machineinfo* machine_create(uint5 memory)
 	return machine;
 }
 
+#define LOCALFLAG(X) \
+  ((mem->currentmode<16) ? (((pcinfo*)&reg->r[15])->flag.X) \
+                         : (reg->cpsr.flag.X))
+
 // emulation loop, debugging version
 void machine_start(machineinfo* machine)
 {
@@ -62,23 +66,16 @@ void machine_start(machineinfo* machine)
 
     } while (feednewpc);
     
-    assert(machine->pstate->start != -1);
+    assert(machine->pstate->start != -1u);
 #endif
     
     inst.instruction = memory_readinstword(mem, instaddr);
     
     if (machine->trace)
     {
-      uint5 x;
       fprintf(stderr, "%.8x : %.8x : ", instaddr, inst.instruction);
       dispatch(machine, inst, &diss, (void*)instaddr);
       fprintf(stderr, "\n");
-      for (x=0; x<15; x++)
-      {
-        fprintf(stderr, "r%d=%.8x ", x, reg->r[x]);
-      }
-      fprintf(stderr, "%c%c%c%c\n", FLAG(c)?'C':'c', FLAG(v)?'V':'v',
-              FLAG(n)?'N':'n', FLAG(z)?'Z':'z');
     }
     
     if (hash_lookup(machine->breakpoints, instaddr))
@@ -89,6 +86,17 @@ void machine_start(machineinfo* machine)
     else
     {
       uint5 retcode = dispatch(machine, inst, machine->exectab, 0);
+      if (machine->trace)
+      {
+        uint5 x;
+        for (x=0; x<15; x++)
+        {
+          fprintf(stderr, "r%d=%.8x ", x, reg->r[x]);
+        }
+        fprintf(stderr, "%c%c%c%c\n", LOCALFLAG(c)?'C':'c', 
+                LOCALFLAG(v)?'V':'v', LOCALFLAG(n)?'N':'n', 
+                LOCALFLAG(z)?'Z':'z');
+      }
       if (retcode==1)
       {
         /* Uses instruction ptr in state before execute has mangled it */

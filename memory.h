@@ -200,9 +200,6 @@ extern void memory_postwrite(meminfo* mem, uint5* virtualaddress);
 extern uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
                                       tlbentry* tlb);
                                       
-extern uint5 memory_readinstword(meminfo* mem, uint5 address);
-extern uint5 memory_readdataword(meminfo* mem, uint5 address);
-
 extern void memory_writeword(meminfo* mem, uint5 address, uint5 data);
 extern void memory_writehalf(meminfo* mem, uint5 address, uint5 data);
 extern void memory_writebyte(meminfo* mem, uint5 address, uint5 data);
@@ -211,6 +208,9 @@ extern uint5 memory_readbyte(meminfo* mem, uint5 address);
 extern uint5 memory_readsbyte(meminfo* mem, uint5 address);
 extern uint5 memory_readhalf(meminfo* mem, uint5 address);
 extern uint5 memory_readshalf(meminfo* mem, uint5 address);
+extern uint5 memory_readdataword(meminfo* mem, uint5 address);
+
+extern uint5 memory_readinstword(meminfo* mem, uint5 address);
 
 extern void memory_clone(meminfo* dest, meminfo* src);
 
