@@ -146,8 +146,8 @@ typedef struct {
 } genx86_op;
 
 typedef struct {
+  uint5 src;
   uint5 var;
-  uint5 reg;
   clist* loc;
 } genx86_delayedfetchcommit;
 
@@ -194,7 +194,7 @@ typedef struct {
 
 extern void genx86_test(void);
 extern void genx86_append(pheta_chunk* chunk, genx86_buffer*, uint5 opcode, 
-  palloc_info* dest, palloc_info* src1, palloc_info* src2);
+  genx86_operand* dest, genx86_operand* src1, genx86_operand* src2);
 extern void genx86_move(pheta_chunk* chunk, genx86_buffer*, palloc_info* dest, 
   palloc_info* src);
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
