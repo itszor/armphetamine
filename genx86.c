@@ -277,6 +277,7 @@ static const char* abname[] = {
   "test", "cmp"
 };
 
+/*
 palloc_info* genx86_closesplit(palloc_info* a, uint5 line)
 {
   if (a->type==pal_SPLIT)
@@ -288,6 +289,7 @@ palloc_info* genx86_closesplit(palloc_info* a, uint5 line)
   else
     return a;
 }
+*/
 
 #define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
                            ((S1)*pal_NUMTYPES) + (S2))
@@ -299,9 +301,9 @@ palloc_info* genx86_closesplit(palloc_info* a, uint5 line)
 void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                 palloc_info* src1, palloc_info* src2, uint5 line)
 {
-  dest = genx86_closesplit(dest, line);
+/*  dest = genx86_closesplit(dest, line);
   src1 = genx86_closesplit(src1, line);
-  src2 = genx86_closesplit(src2, line);
+  src2 = genx86_closesplit(src2, line);*/
   
   switch (COMPOUND(dest->type, src1->type, src2->type))
   {
@@ -391,6 +393,8 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       else if (genx86_tab[opcode].r32_rm32)
       {
         // ew!
+        // *** xchg reg,[mem] is a BAD INSTRUCTION according to pentium
+        // optimisation doc
         rtasm_xchg_r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
           dest->info.value*4));
         genx86_tab[opcode].r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,

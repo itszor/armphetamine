@@ -18,6 +18,8 @@ const uint3 pheta_instlength[] = {
   3,  /* constb */
   3,  /* fetch */
   3,  /* commit */
+  2,  /* spill */
+  2,  /* reload */
   2,  /* fexpect */
   2,  /* fcommit */
   2,  /* fensure */
@@ -297,6 +299,14 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     emitbyte(block, &written, va_arg(ap, uint5));
     emitbyte(block, &written, va_arg(ap, uint5));
     break;
+
+    case ph_SPILL:
+    emitbyte(block, &written, va_arg(ap, uint5));
+    break;
+
+    case ph_RELOAD:
+    emitbyte(block, &written, va_arg(ap, uint5));
+    break;
     
     case ph_FEXPECT:
     case ph_FCOMMIT:
@@ -414,6 +424,18 @@ void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
     case ph_COMMIT:
     {
       src[(*numsrc)++] = base[index+1];
+    }
+    break;
+
+    case ph_SPILL:
+    {
+      src[(*numsrc)++] = base[index];
+    }
+    break;
+
+    case ph_RELOAD:
+    {
+      dest[(*numdest)++] = base[index];
     }
     break;
 

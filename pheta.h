@@ -13,6 +13,8 @@ typedef enum {
   ph_CONSTB,
   ph_FETCH,
   ph_COMMIT,
+  ph_SPILL,
+  ph_RELOAD,
   ph_FEXPECT,
   ph_FCOMMIT,
   ph_FENSURE,
@@ -117,6 +119,7 @@ typedef struct {
   struct palloc_liverange** reversetable;
   uint3 reguse[8];
   uint5 regno;
+  uint5* rename;
   pqueue* active;
 } pheta_chunk;
 

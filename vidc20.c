@@ -10,7 +10,7 @@
 
 void vidc20_init(meminfo* mem)
 {
-  SDL_Init(SDL_INIT_VIDEO);
+/*  SDL_Init(SDL_INIT_VIDEO);*/
   mem->video.surf = 0;
   mem->video.paladdr = 0;
 //  mem->video.surf = SDL_SetVideoMode(512, 384, 8, SDL_HWSURFACE);

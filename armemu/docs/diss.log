@@ -1,13 +1,13 @@
-This is TeX, Version 3.14159 (Web2C 7.3.1) (format=latex 1999.8.27)  26 JUN 2000 01:08
+This is TeX, Version 3.14159 (Web2C 7.3.1) (format=latex 2001.4.1)  1 APR 2001 19:55
 **diss
 (diss.tex
-LaTeX2e <1998/12/01> patch level 1
-Babel <v3.6x> and hyphenation patterns for american, french, german, ngerman, i
-talian, nohyphenation, loaded.
-(/usr/share/texmf/tex/latex/base/report.cls
-Document Class: report 1999/01/07 v1.4a Standard LaTeX document class
-(/usr/share/texmf/tex/latex/base/size12.clo
-File: size12.clo 1999/01/07 v1.4a Standard LaTeX file (size option)
+LaTeX2e <1999/12/01> patch level 1
+Babel <v3.6Z> and hyphenation patterns for american, french, german, ngerman, n
+ohyphenation, loaded.
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/base/report.cls
+Document Class: report 1999/09/10 v1.4a Standard LaTeX document class
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/base/size12.clo
+File: size12.clo 1999/09/10 v1.4a Standard LaTeX file (size option)
 )
 \c@part=\count79
 \c@chapter=\count80
@@ -22,25 +22,25 @@ File: size12.clo 1999/01/07 v1.4a Standard LaTeX file (size option)
 \belowcaptionskip=\skip42
 \bibindent=\dimen102
 )
-(/usr/share/texmf/tex/latex/ntgclass/a4.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/ntgclass/a4.sty
 Package: a4 1999/03/03 v1.2f A4 based page layout
 )
-(/usr/share/texmf/tex/latex/tools/verbatim.sty
-Package: verbatim 1997/04/30 v1.5k LaTeX2e package for verbatim enhancements
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/tools/verbatim.sty
+Package: verbatim 2000/01/07 v1.5m LaTeX2e package for verbatim enhancements
 \every@verbatim=\toks14
 \verbatim@line=\toks15
 \verbatim@in@stream=\read1
 )
-(/usr/share/texmf/tex/latex/fancyhdr/fancyhdr.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/fancyhdr/fancyhdr.sty
 \headwidth=\dimen103
 )
-(/usr/share/texmf/tex/latex/carlisle/ltxtable.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/carlisle/ltxtable.sty
 Package: ltxtable 1995/12/11 v0.2 longtable/tabularx merge (DPC)
 
-(/usr/share/texmf/tex/latex/tools/tabularx.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/tools/tabularx.sty
 Package: tabularx 1999/01/07 v2.07 `tabularx' package (DPC)
 
-(/usr/share/texmf/tex/latex/tools/array.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/tools/array.sty
 Package: array 1998/05/13 v2.3m Tabular extension package (FMi)
 \col@sep=\dimen104
 \extrarowheight=\dimen105
@@ -56,7 +56,7 @@ Package: array 1998/05/13 v2.3m Tabular extension package (FMi)
 \TX@cols=\count88
 \TX@ftn=\toks17
 )
-(/usr/share/texmf/tex/latex/tools/longtable.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/tools/longtable.sty
 Package: longtable 1998/05/13 v4.09 Multi-page Table package (DPC)
 \LTleft=\skip45
 \LTright=\skip46
@@ -74,10 +74,10 @@ Package: longtable 1998/05/13 v4.09 Multi-page Table package (DPC)
 \c@LT@chunks=\count93
 \LT@p@ftn=\toks18
 ))
-(/usr/share/texmf/tex/latex/amsfonts/amssymb.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/amsfonts/amssymb.sty
 Package: amssymb 1996/11/03 v2.2b
 
-(/usr/share/texmf/tex/latex/amsfonts/amsfonts.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/amsfonts/amsfonts.sty
 Package: amsfonts 1997/09/17 v2.2e
 \@emptytoks=\toks19
 \symAMSa=\mathgroup4
@@ -85,11 +85,11 @@ Package: amsfonts 1997/09/17 v2.2e
 LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
 (Font)                  U/euf/m/n --> U/euf/b/n on input line 133.
 ))
-(/usr/share/texmf/tex/latex/psnfss/palatino.sty
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/psnfss/palatino.sty
 Package: palatino 1999/03/29 PSNFSS v.7.2 Palatino font as default roman : S Ra
 htz
 )
-(/usr/share/texmf/tex/plain/dvips/epsf.tex
+(/mnt/usr/local/teTeX/share/texmf/tex/plain/dvips/epsf.tex
 This is `epsf.tex' v2.7k <10 July 1997>
 \epsffilein=\read2
 \epsfframemargin=\dimen112
@@ -119,7 +119,7 @@ LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 42.
 LaTeX Font Info:    ... okay on input line 42.
 LaTeX Font Info:    Try loading font information for OT1+ppl on input line 42.
 
-(/usr/share/texmf/tex/latex/psnfss/ot1ppl.fd
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/psnfss/ot1ppl.fd
 File: ot1ppl.fd 1998/07/06 Fontinst v1.800 font definitions for OT1/ppl.
 )
 \openout2 = `title.aux'.
@@ -131,7 +131,8 @@ LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <17.28> not available
 (Font)              Font shape `OT1/ppl/b/n' tried instead on input line 7.
 LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <24.88> not available
 (Font)              Font shape `OT1/ppl/b/n' tried instead on input line 15.
-) [1
+)
+[1
 
 
 ] [2
@@ -142,12 +143,13 @@ LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <24.88> not available
 
  (proforma.tex
 LaTeX Font Info:    Try loading font information for U+msa on input line 4.
-(/usr/share/texmf/tex/latex/amsfonts/umsa.fd
+
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 1995/01/05 v2.2e AMS font definitions
 )
 LaTeX Font Info:    Try loading font information for U+msb on input line 4.
 
-(/usr/share/texmf/tex/latex/amsfonts/umsb.fd
+(/mnt/usr/local/teTeX/share/texmf/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 1995/01/05 v2.2e AMS font definitions
 )
 LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <14.4> not available
@@ -157,13 +159,13 @@ LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <14.4> not available
 ] [2
 
 
-] (diss.toc
+]
+(diss.toc
 LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <12> not available
 (Font)              Font shape `OT1/ppl/b/n' tried instead on input line 1.
  [3
 
-] [4]
-[5])
+] [4] [5])
 \tf@toc=\write3
 \openout3 = `diss.toc'.
 
@@ -189,12 +191,13 @@ Chapter 1.
 
 ] [2]
 LaTeX Font Info:    Try loading font information for OMS+ppl on input line 25.
- (/usr/share/texmf/tex/latex/psnfss/omsppl.fd
+ (/mnt/usr/local/teTeX/share/texmf/tex/latex/psnfss/omsppl.fd
 File: omsppl.fd 
 )
 LaTeX Font Info:    Font shape `OMS/ppl/m/n' in size <12> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 25.
- [3]) [4]
+ [3])
+[4]
 \openout2 = `ch2.aux'.
 
  (ch2.tex
@@ -217,7 +220,7 @@ Chapter 3.
 
 ]
 LaTeX Font Info:    Try loading font information for OT1+phv on input line 21.
- (/usr/share/texmf/tex/latex/psnfss/ot1phv.fd
+ (/mnt/usr/local/teTeX/share/texmf/tex/latex/psnfss/ot1phv.fd
 File: ot1phv.fd 1998/07/06 Fontinst v1.800 font definitions for OT1/phv.
 )
 Overfull \hbox (26.34593pt too wide) in paragraph at lines 21--21
@@ -400,10 +403,10 @@ LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
  ) 
 Here is how much of TeX's memory you used:
- 1219 strings out of 10898
- 12958 string characters out of 96881
- 82836 words of memory out of 263001
- 4101 multiletter control sequences out of 10000+0
+ 1219 strings out of 10901
+ 13374 string characters out of 72189
+ 82876 words of memory out of 263001
+ 4100 multiletter control sequences out of 10000+0
  21395 words of font info for 73 fonts, out of 400000 for 1000
  14 hyphenation exceptions out of 1000
  28i,16n,40p,1081b,356s stack positions out of 300i,100n,500p,50000b,4000s

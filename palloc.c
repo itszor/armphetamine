@@ -140,7 +140,14 @@ void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
         }
       }
       break;
-    
+
+      case ph_CMN:
+      case ph_TEQ:
+      // purposefully do nothing since there are no x86 equivalents so
+      // these instructions must be synthesized from add & xor respectively,
+      // which need a destination register
+      break;
+
       default:
       {
         pheta_getused(blk->base, i, &ndest, destr, &nsrc, srcr);
@@ -370,8 +377,8 @@ void palloc_deletespans(pheta_chunk* chunk)
   }
 }
 
-void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
-                       uint5 startline)
+void palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
+                             uint5 startline)
 {
   pqueueitem* rstart;
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
@@ -393,6 +400,29 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
       activate->data = range;
       free(rstart);
 
+      // expire old intervals before allocating new ones
+      while ((del = pqueue_head(chunk->active)))
+      {
+        palloc_liverange* delrange = (palloc_liverange*) del->data;
+        if (delrange->startline+delrange->length < lineno)
+        {
+          if (chunk->alloc[delrange->reg].type == pal_IREG &&
+              chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num]==1)
+          {
+            int s;
+            fprintf(stderr, "Expiring register %d\n", delrange->reg);
+            chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num] = 0;
+            for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
+            fprintf(stderr, "\n");
+            chunk->regno--;
+          }
+          del = pqueue_extract(chunk->active);
+          free(del->data);
+          free(del);
+        }
+        else break;
+      }
+    
       if (chunk->regno<maxreg)
       {
         uint5 s;
@@ -446,51 +476,15 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
           delrange->reg, regname[chunk->alloc[delrange->reg].info.ireg.num]);
         fprintf(stderr, "Allocating %s to %d\n", 
           regname[chunk->alloc[delrange->reg].info.ireg.num], range->reg);
- 
+
         chunk->alloc[range->reg].type = pal_IREG;
         chunk->alloc[range->reg].info.ireg.num = 
           chunk->alloc[delrange->reg].info.ireg.num;
 
-        if (chunk->alloc[delrange->reg].type!=pal_SPLIT)
-        {
-          palloc_splitalloc* split;
-          chunk->alloc[delrange->reg].type = pal_SPLIT;
-          chunk->alloc[delrange->reg].info.extra = (void*)split =
-            cnew(palloc_splitalloc);
-
-          split->upper = chunk->alloc[delrange->reg];
-
-          split->lower.type = pal_STACK;
-          split->lower.info.value = (chunk->stacksize++)*4;
-        }
-        else
-        {
-          fprintf(stderr, "Write some code to split again?\n");
-          abort();
-        }
+        /* this breaks sometimes for complicated code, unfortunately. */
+        chunk->alloc[delrange->reg].type = pal_RFILE;
+        chunk->alloc[delrange->reg].info.value = delrange->reg;
       }
-    }
-
-    while ((del = pqueue_head(chunk->active)))
-    {
-      palloc_liverange* delrange = (palloc_liverange*) del->data;
-      if (delrange->startline+delrange->length < lineno)
-      {
-        if (chunk->alloc[delrange->reg].type == pal_IREG &&
-            chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num]==1)
-        {
-          int s;
-          fprintf(stderr, "Expiring register %d\n", delrange->reg);
-          chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num] = 0;
-          for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
-          fprintf(stderr, "\n");
-          chunk->regno--;
-        }
-        del = pqueue_extract(chunk->active);
-        free(del->data);
-        free(del);
-      }
-      else break;
     }
   }
 
@@ -498,13 +492,36 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
 
   if (blk->trueblk && !blk->trueblk->marker)
   {
-    palloc_linearscan(chunk, blk->trueblk, startline+blk->length);
+    palloc_linearscan_inner(chunk, blk->trueblk, startline+blk->length);
   }
   
   if (blk->falseblk && !blk->falseblk->marker)
   {
-    palloc_linearscan(chunk, blk->falseblk, startline+blk->length);
+    palloc_linearscan_inner(chunk, blk->falseblk, startline+blk->length);
   }
+}
+
+void palloc_linearscan(pheta_chunk* chunk)
+{
+  uint5 i;
+
+  chunk->reguse[0] = chunk->reguse[1] = chunk->reguse[2] =
+  chunk->reguse[3] = chunk->reguse[6] = chunk->reguse[7] = 0;
+  chunk->reguse[4] = chunk->reguse[5] = 2;
+  chunk->regno = 0;
+  chunk->active = pqueue_new();
+
+  palloc_clearmarkers(chunk);
+
+  chunk->rename = cnewarray(uint3, chunk->tempno);
+  
+  // start off with a 1-to-1 mapping
+  for (i=0; i<chunk->tempno; i++)
+  {
+    chunk->rename[i] = i;
+  }
+  
+  palloc_linearscan_inner(chunk, chunk->root, 0);
 }
 
 void palloc_printspans(pheta_chunk* chunk)
@@ -682,9 +699,9 @@ void palloc_print(pheta_chunk* chunk)
       }
       break;
       
-      case pal_SPLIT:
+      case pal_SPILLED:
       {
-        fprintf(stderr, "%3d: Split\n", i);
+        fprintf(stderr, "%3d: Spilled to %d\n", i, a->info.value);
       }
       break;
       

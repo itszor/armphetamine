@@ -546,16 +546,10 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_findspans(mychunk, mychunk->root, 0);
   palloc_printspans(mychunk);
   fprintf(stderr, "Doing linear scan allocation\n");
-  mychunk->reguse[0] = mychunk->reguse[1] = mychunk->reguse[2] =
-  mychunk->reguse[3] = mychunk->reguse[6] = mychunk->reguse[7] = 0;
-  mychunk->reguse[4] = mychunk->reguse[5] = 2;
-  mychunk->regno = 0;
-  mychunk->active = pqueue_new();
   fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);
 
-  palloc_clearmarkers(mychunk);
-  palloc_linearscan(mychunk, mychunk->root, 0);
+  palloc_linearscan(mychunk);
   pqueue_delete(mychunk->active);
   fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);

@@ -6,7 +6,8 @@
 #include "pheta.h"
 #include "phetadism.h"
 
-static const char* opname[] = { "const", "constb", "fetch", "commit", "fexpect",
+static const char* opname[] = { "const", "constb", "fetch", "commit", "spill", 
+  "reload", "fexpect",
   "fcommit", "fensure", "setpred", "nfexpect", "nfcommit", "nfensure",
   "nsetpred", "fwrite", "xjmp", "lsl", "lsr", "asr", "ror", "rol", "rrx",
   "rlx", "mov", "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub",
@@ -69,6 +70,14 @@ void phetadism_block(pheta_basicblock* blk)
         uint5 reg = blk->base[i++];
         uint5 src = blk->base[i++];
         printf("commit    r%d, %%%d\n", reg, src);
+      }
+      break;
+
+      case ph_SPILL:
+      case ph_RELOAD:
+      {
+        uint5 reg = blk->base[i++];
+        printf("%-10s%%%d\n", opname[opcode], reg);
       }
       break;
 
