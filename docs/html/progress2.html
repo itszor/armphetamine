@@ -123,6 +123,8 @@
 <li>In the future, a weighting might be added depending on how often branches were taken/not taken in the profiling of the original code before translation.
 </ul>
 
+<p>The rationale being, spatially-adjacent code accesses are more likely to 
+
 <h3>Beyond ARMphetamine: Dynamic Optimisations</h3>
 
 <h4>What is and isn't possible</h4>
@@ -152,15 +154,19 @@
 
 <p>Many of these optimisations are difficult or impossible to perform in an emulation environment for a normal processor, since there is too little information available in most instruction-set architectures (for the purposes of argument, I include Java bytecode amongst those).
 
-<p>The goal which all these optimisations together aim to achieve can be explained like this. Consider a computer programming language. Assume that this language can be executed in two ways, either by interpreting its statements one by one, or by compiling the whole program into machine code and executing that. Both methods of execution should produce the same result, but the compiled program will usually get there much faster.
+<p>The goal which all these optimisations together aim to achieve can be explained like this. Consider a computer programming language. Assume that this language can be executed in two ways, either by interpreting its statements one by one, or by compiling the whole program into machine code and executing that. Both methods of execution should produce the same result, but the compiled program will usually get there much faster. Why? Because we're removing redundant calculations.
 
 <p>Now, consider what a dynamically-recompiling emulator does to achieve its speed. At the basic level the hosted program is run by software emulation of the original processor. 'Hot' sections of code - actually data - are made into specialised subprograms which 'process' that data, so that the net result is the same as processing the data in the original, slow way. Except, of course, that the desired result is obtained much faster.
 
+<h4>Write a compiler by writing an interpreter</h4>
+
 <p>Run-time profile gathering and optimisation will allow one to write an interpreter for a language, say - or any other type of data-processing application for any data - and produce a 'compiler' for that language or application automatically. In essence this would be a system which takes the "dynamic recompilation" approach on <b>any</b> program.
 
-<h3>BORG architecture</h3>
+<p>Let me try to back this claim up. We make the assumption that a program which runs for a long time will process the same data, or the same "sort" of data with commonly repeating sections. 
 
-<p>The Binary Optimisation/Re-Generation (BORG) architecture is designed to enable as many of the previously-mentioned optimisations as possible. It has a new instruction set designed specifically for ease of program analysis, but with a couple of concessions for code size. The main features at present are as follows:
+<h3>Chameleon Architecture</h3>
+
+<p>The Chameleon architecture is designed to enable as many of the previously-mentioned optimisations as possible. It has a new instruction set designed specifically for ease of program analysis, but with a couple of concessions for code size. The main features at present are as follows:
 
 <ul>
 <li>Variable liveness information encoded in the instruction stream.

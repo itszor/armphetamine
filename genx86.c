@@ -108,41 +108,41 @@ static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
     break;
     
     case SIZEDTYPE(gotype_INDREG, gowidth_DWORD):
-    arg2_mtype = rtasm_ind(inst->op[0]->data.reg);
+    arg2_mtype = rtasm_ind(inst->op[1]->data.reg);
     goto r32_m32_wotsit;
     
     case SIZEDTYPE(gotype_INDREGPLUSDISP8, gowidth_DWORD):
-    arg2_mtype = rtasm_ind8(inst->op[0]->data.regdisp.base,
-                            inst->op[0]->data.regdisp.disp);
+    arg2_mtype = rtasm_ind8(inst->op[1]->data.regdisp.base,
+                            inst->op[1]->data.regdisp.disp);
     goto r32_m32_wotsit;
 
     case SIZEDTYPE(gotype_INDREGPLUSDISP32, gowidth_DWORD):
-    arg2_mtype = rtasm_ind32(inst->op[0]->data.regdisp.base,
-                             inst->op[0]->data.regdisp.disp);
+    arg2_mtype = rtasm_ind32(inst->op[1]->data.regdisp.base,
+                             inst->op[1]->data.regdisp.disp);
     goto r32_m32_wotsit;
     
     case SIZEDTYPE(gotype_INDREGPLUSSCALEDREG, gowidth_DWORD):
-    arg2_mtype = rtasm_scind(inst->op[0]->data.regscale.base,
-                             inst->op[0]->data.regscale.index,
-                             inst->op[0]->data.regscale.scale);
+    arg2_mtype = rtasm_scind(inst->op[1]->data.regscale.base,
+                             inst->op[1]->data.regscale.index,
+                             inst->op[1]->data.regscale.scale);
     goto r32_m32_wotsit;
 
     case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP8, gowidth_DWORD):
-    arg2_mtype = rtasm_scind8(inst->op[0]->data.regscaledisp.base,
-                              inst->op[0]->data.regscaledisp.index,
-                              inst->op[0]->data.regscaledisp.scale,
-                              inst->op[0]->data.regscaledisp.offset);
+    arg2_mtype = rtasm_scind8(inst->op[1]->data.regscaledisp.base,
+                              inst->op[1]->data.regscaledisp.index,
+                              inst->op[1]->data.regscaledisp.scale,
+                              inst->op[1]->data.regscaledisp.offset);
     goto r32_m32_wotsit;
     
     case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP32, gowidth_DWORD):
-    arg2_mtype = rtasm_scind32(inst->op[0]->data.regscaledisp.base,
-                               inst->op[0]->data.regscaledisp.index,
-                               inst->op[0]->data.regscaledisp.scale,
-                               inst->op[0]->data.regscaledisp.offset);
+    arg2_mtype = rtasm_scind32(inst->op[1]->data.regscaledisp.base,
+                               inst->op[1]->data.regscaledisp.index,
+                               inst->op[1]->data.regscaledisp.scale,
+                               inst->op[1]->data.regscaledisp.offset);
     goto r32_m32_wotsit;
     
     case SIZEDTYPE(gotype_ADDRESS, gowidth_DWORD):
-    arg2_mtype = rtasm_addr(inst->op[0]->data.addr);
+    arg2_mtype = rtasm_addr(inst->op[1]->data.addr);
 
     r32_m32_wotsit:
     
@@ -253,41 +253,41 @@ static void genx86_asm_r8_2(nativeblockinfo* nat, genx86_op* inst, uint5 opcode,
     break;
     
     case SIZEDTYPE(gotype_INDREG, gowidth_BYTE):
-    arg2_mtype = rtasm_ind(inst->op[0]->data.reg);
+    arg2_mtype = rtasm_ind(inst->op[1]->data.reg);
     goto r8_m8_wotsit;
     
     case SIZEDTYPE(gotype_INDREGPLUSDISP8, gowidth_BYTE):
-    arg2_mtype = rtasm_ind8(inst->op[0]->data.regdisp.base,
-                            inst->op[0]->data.regdisp.disp);
+    arg2_mtype = rtasm_ind8(inst->op[1]->data.regdisp.base,
+                            inst->op[1]->data.regdisp.disp);
     goto r8_m8_wotsit;
 
     case SIZEDTYPE(gotype_INDREGPLUSDISP32, gowidth_BYTE):
-    arg2_mtype = rtasm_ind32(inst->op[0]->data.regdisp.base,
-                             inst->op[0]->data.regdisp.disp);
+    arg2_mtype = rtasm_ind32(inst->op[1]->data.regdisp.base,
+                             inst->op[1]->data.regdisp.disp);
     goto r8_m8_wotsit;
     
     case SIZEDTYPE(gotype_INDREGPLUSSCALEDREG, gowidth_BYTE):
-    arg2_mtype = rtasm_scind(inst->op[0]->data.regscale.base,
-                             inst->op[0]->data.regscale.index,
-                             inst->op[0]->data.regscale.scale);
+    arg2_mtype = rtasm_scind(inst->op[1]->data.regscale.base,
+                             inst->op[1]->data.regscale.index,
+                             inst->op[1]->data.regscale.scale);
     goto r8_m8_wotsit;
 
     case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP8, gowidth_BYTE):
-    arg2_mtype = rtasm_scind8(inst->op[0]->data.regscaledisp.base,
-                              inst->op[0]->data.regscaledisp.index,
-                              inst->op[0]->data.regscaledisp.scale,
-                              inst->op[0]->data.regscaledisp.offset);
+    arg2_mtype = rtasm_scind8(inst->op[1]->data.regscaledisp.base,
+                              inst->op[1]->data.regscaledisp.index,
+                              inst->op[1]->data.regscaledisp.scale,
+                              inst->op[1]->data.regscaledisp.offset);
     goto r8_m8_wotsit;
     
     case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP32, gowidth_BYTE):
-    arg2_mtype = rtasm_scind32(inst->op[0]->data.regscaledisp.base,
-                               inst->op[0]->data.regscaledisp.index,
-                               inst->op[0]->data.regscaledisp.scale,
-                               inst->op[0]->data.regscaledisp.offset);
+    arg2_mtype = rtasm_scind32(inst->op[1]->data.regscaledisp.base,
+                               inst->op[1]->data.regscaledisp.index,
+                               inst->op[1]->data.regscaledisp.scale,
+                               inst->op[1]->data.regscaledisp.offset);
     goto r8_m8_wotsit;
     
     case SIZEDTYPE(gotype_ADDRESS, gowidth_BYTE):
-    arg2_mtype = rtasm_addr(inst->op[0]->data.addr);
+    arg2_mtype = rtasm_addr(inst->op[1]->data.addr);
 
     r8_m8_wotsit:
     
@@ -391,7 +391,7 @@ static void genx86_asm_1(nativeblockinfo* nat, genx86_op* inst, uint5 opcode,
       {
         if (genx86_tab[opcode].rm32)
         {
-          genx86_tab[opcode].rm8(nat, rtasm_reg(inst->op[0]->data.reg));
+          genx86_tab[opcode].rm32(nat, rtasm_reg(inst->op[0]->data.reg));
         }
         else ERR;
       }
@@ -645,13 +645,50 @@ void genx86_insert(pheta_chunk* chunk, genx86_buffer* buf, clist* posn,
   newinst->data = newop;
 }
 
+uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
+{
+  if (a->type != b->type) return 0;
+
+  switch (a->type)
+  {
+    case gotype_PARTIAL:
+    if (a->data.src != b->data.src) return 0;
+    break;
+    
+    case gotype_IMMEDIATE:
+    if (a->width != b->width || a->data.imm != b->data.imm) return 0;
+    break;
+
+    case gotype_REGISTER:
+    if (a->width != b->width || a->data.reg != b->data.reg) return 0;
+    break;
+    
+    // probably overly pessimistic, but it probably doesn't matter at
+    // this point
+    case gotype_INDREG:
+    case gotype_INDREGPLUSDISP8:
+    case gotype_INDREGPLUSDISP32:
+    case gotype_INDREGPLUSSCALEDREG:
+    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+    case gotype_ADDRESS:
+    return 0;
+    break;
+  }
+  
+  return 1;
+}
 
 // Won't move something into itself, simplifies zero-loads
 void genx86_move(pheta_chunk* chunk, genx86_buffer* buf, palloc_info* dest, 
   palloc_info* src)
 {
-  genx86_append(chunk, buf, ab_MOV, genx86_findoperand(chunk, dest),
-    genx86_findoperand(chunk, src), 0);
+  genx86_operand* destop = genx86_findoperand(chunk, dest);
+  genx86_operand* srcop = genx86_findoperand(chunk, src);
+  
+  if (genx86_equivalent(destop, srcop)) return;
+  
+  genx86_append(chunk, buf, ab_MOV, destop, srcop, 0);
 }
 
 /*
@@ -1709,7 +1746,9 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_basicblock* blk)
   {
     hashentry* e;
     genx86_op* op = scancode->data;
+    
     genx86_asm(nat, op);
+    
     if ((e = hash_lookup(blk->gxbuffer->reloc, (uint5)scancode)))
     {
       reloc_record* rel = e->data;
