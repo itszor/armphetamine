@@ -19,7 +19,6 @@ typedef struct {
   uint5 startline;
   uint5 length;
   uint5 reg;
-  uint5 ireg;
 } palloc_liverange;
 
 struct palloc_info {

@@ -112,6 +112,9 @@ typedef struct {
   pheta_basicblock* root;
   pheta_basicblock* currentblock;
   struct palloc_info* alloc;
+  uint3 reguse[8];
+  uint5 regno;
+  pqueue* active;
 } pheta_chunk;
 
 /*

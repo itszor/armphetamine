@@ -4,12 +4,12 @@
 #include "defs.h"
 
 typedef struct {
-  void* item;
+  void* data;
   uint5 priority;
 } pqueueitem;
 
 typedef struct {
-  pqueueitem** data;
+  pqueueitem** item;
   uint5 length, size;
 } pqueue;
 
@@ -22,7 +22,7 @@ extern pqueue* pqueue_new(void);
 extern void pqueue_delete(pqueue* pq);
 extern pqueueitem* pqueue_newitem(uint5 key);
 extern void pqueue_deleteitem(pqueueitem* it);
-extern pqueueitem* pqueue_insert(pqueue** pq, uint5 priority);
+extern pqueueitem* pqueue_insert(pqueue* pq, uint5 priority);
 extern pqueueitem* pqueue_head(pqueue* pq);
 extern pqueueitem* pqueue_extract(pqueue* pq);
 extern void pqueue_heapify(pqueue* pq, uint5 i);

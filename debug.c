@@ -524,9 +524,10 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   end &= ~3;
   fprintf(stderr, "Translating from %x to %x\n", start, end);
   mychunk = pheta_translatechunk(machine, start, (end-start)/4);
-  phetadism_chunk(mychunk);
-  fprintf(stderr, "Register allocating\n");
+/*  phetadism_chunk(mychunk);*/
+  fprintf(stderr, "Initialising\n");
   palloc_init(mychunk);
+  fprintf(stderr, "Constant allocating\n");
   palloc_constant(mychunk);
 //  palloc_nonorthog(mychunk);
 //  palloc_fetchmem(mychunk);
@@ -536,9 +537,19 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
+  palloc_printspans(mychunk);
+  fprintf(stderr, "Doing linear scan allocation\n");
+  mychunk->reguse[0] = mychunk->reguse[1] = mychunk->reguse[2] =
+  mychunk->reguse[3] = mychunk->reguse[6] = mychunk->reguse[7] = 0;
+  mychunk->reguse[4] = mychunk->reguse[5] = 2;
+  mychunk->regno = 0;
+  mychunk->active = pqueue_new();
   palloc_clearmarkers(mychunk);
   palloc_linearscan(mychunk, mychunk->root, 0);
-  palloc_printspans(mychunk);
+  pqueue_delete(mychunk->active);
+  palloc_clearmarkers(mychunk);
+  fprintf(stderr, "Generating x86 code\n");
+  genx86_translate(mychunk, mychunk->root);
   palloc_print(mychunk);
   // pheta_destroychunk(mychunk);  (when it's written...)
 }

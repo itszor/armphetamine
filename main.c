@@ -133,7 +133,7 @@ int main(void)
   vidc20_init(mem);
 #endif
 
-  genx86_test();
+/*  genx86_test();*/
 
 //  fprintf(stderr, "\nInitialising RISC OS API emulation...\n");
   riscosstate = riscos_initialise();

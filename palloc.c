@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "palloc.h"
 #include "cnew.h"
 #include "hash.h"
@@ -183,8 +185,8 @@ void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
     {
       pqueueitem* newspan;
       palloc_liverange* range;
-      newspan = pqueue_insert(&blk->live, startline+i);
-      newspan->item = range = cnew(palloc_liverange);
+      newspan = pqueue_insert(blk->live, startline+i);
+      newspan->data = range = cnew(palloc_liverange);
       range->startline = startline+i;
       range->length = 0;
       range->reg = destr[j];
@@ -197,8 +199,8 @@ void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
       int k;
       for (k=0; k<ablk->live->length; k++)
       {
-        pqueueitem* prevspan = ablk->live->data[k];
-        palloc_liverange* range = (palloc_liverange*) prevspan->item;
+        pqueueitem* prevspan = ablk->live->item[k];
+        palloc_liverange* range = (palloc_liverange*) prevspan->data;
         for (j=0; j<nsrc; j++)
         {
           if (srcr[j]==range->reg)
@@ -232,67 +234,99 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
                        uint5 startline)
 {
   pqueueitem* rstart;
-  pqueue* active = pqueue_new();
-  const uint5 regno = 6;
-  const uint3 regmap[] = {EAX, ECX, EDX, EBX, ESI, EDI};
-  uint3 reguse[] = {0, 0, 0, 0, 2, 2, 0, 0};
-  uint5 regc = 0;
+  const char* regname[] = {"EAX","ECX","EDX","EBX","ESP","EBP","ESI","EDI"};
+  const uint5 maxreg = 6;
+  uint5 regc = 0, i;
   
-  while ((rstart = pqueue_head(blk->live)))
+  while ((rstart = pqueue_extract(blk->live)))
   {
     pqueueitem* activate, *del;
-    palloc_liverange* range = (palloc_liverange*) rstart->item;
+    palloc_liverange* range = (palloc_liverange*) rstart->data;
     uint5 lineno = range->startline;
-    
-    pqueue_extract(blk->live);
-    
-    activate = pqueue_insert(&active, lineno+range->length);
-    activate->item = range;
-    free(rstart);
 
-    if (regc<regno)
+    if (chunk->alloc[range->reg].type==pal_UNSET)
     {
-      uint5 s;
-      sint5 ireg = -1;
-      for (s=0; s<8; s++)
+      fprintf(stderr, "Inserting range for reg %d at %d\n", range->reg, 
+        lineno+range->length);
+
+      activate = pqueue_insert(chunk->active, lineno+range->length);
+      activate->data = range;
+      free(rstart);
+
+      if (chunk->regno<maxreg)
       {
-        if (reguse[s]==0)
+        uint5 s;
+        sint5 ireg = -1;
+        for (s=0; ireg==-1 && s<8; s++)
         {
-          reguse[s] = 1;
-          ireg = s;
-          regc++;
-          break;
+          if (chunk->reguse[s]==0)
+          {
+            chunk->reguse[s] = 1;
+            ireg = s;
+            chunk->regno++;
+          }
         }
+        assert(ireg != -1);
+        fprintf(stderr, "Allocating reg %d as ireg %s\n", range->reg, 
+          regname[ireg]);
+        for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
+        fprintf(stderr, "\n");
+        chunk->alloc[range->reg].type = pal_IREG;
+        chunk->alloc[range->reg].info.ireg.num = ireg;
       }
-      chunk->alloc[range->reg].type = pal_IREG;
-      chunk->alloc[range->reg].info.ireg.num = ireg;
-      range->ireg = ireg;
-    }
-    else
-    {
-      palloc_liverange* delrange;
-      del = pqueue_extract(active);
-      delrange = (palloc_liverange*) del->item;
-      chunk->alloc[range->reg].type = pal_IREG;
-      chunk->alloc[range->reg].info.ireg.num = 
-        chunk->alloc[delrange->reg].info.ireg.num;
-      chunk->alloc[delrange->reg].type = pal_RFILE;
-      chunk->alloc[delrange->reg].info.value = delrange->reg;
-      free(del->item);
-      free(del);
+      else
+      {
+        palloc_liverange* delrange;
+        uint5 j;
+        sint5 f = -1;
+        uint5 end = ((palloc_liverange*)chunk->active->item[0]->data)->startline
+                  + ((palloc_liverange*)chunk->active->item[0]->data)->length;
+        // find furthest end-point (linear search makes priority queue utterly
+        // useless here, but I think I need the wrong end at this point...)
+        for (j=0; j<chunk->active->length; j++)
+        {
+          palloc_liverange* seek = 
+            ((palloc_liverange*)chunk->active->item[j]->data);
+          uint5 test = seek->startline + seek->length;
+
+          if (chunk->alloc[seek->reg].type==pal_IREG &&
+              (test>end || f==-1)) f=j;
+          
+          fprintf(stderr, "Active %d: reg %d\n", j, seek->reg);
+        }
+        assert(f!=-1);
+        del = chunk->active->item[f];
+        assert(del);
+        delrange = (palloc_liverange*) del->data;
+        fprintf(stderr, "Spilling register %d from ireg %s\n",
+          delrange->reg, regname[chunk->alloc[delrange->reg].info.ireg.num]);
+        fprintf(stderr, "Allocating %s to %d\n", 
+          regname[chunk->alloc[delrange->reg].info.ireg.num], range->reg);
+        chunk->alloc[range->reg].type = pal_IREG;
+        chunk->alloc[range->reg].info.ireg.num = 
+          chunk->alloc[delrange->reg].info.ireg.num;
+        chunk->alloc[delrange->reg].type = pal_RFILE;
+        chunk->alloc[delrange->reg].info.value = delrange->reg;
+      }
     }
 
-    while ((del = pqueue_head(active)))
+    while ((del = pqueue_head(chunk->active)))
     {
-      palloc_liverange* delrange = (palloc_liverange*) del->item;
+      palloc_liverange* delrange = (palloc_liverange*) del->data;
       if (delrange->startline+delrange->length < lineno)
       {
-        if (reguse[delrange->ireg]==1)
+        if (chunk->alloc[delrange->reg].type == pal_IREG &&
+            chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num]==1)
         {
-          reguse[delrange->ireg] = 0;
-          regc--;
+          int s;
+          fprintf(stderr, "Expiring register %d\n", delrange->reg);
+          chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num] = 0;
+          for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
+          fprintf(stderr, "\n");
+          chunk->regno--;
         }
-        free(del->item);
+        del = pqueue_extract(chunk->active);
+        free(del->data);
         free(del);
       }
       else break;
@@ -320,11 +354,11 @@ void palloc_printspans(pheta_chunk* chunk)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
     int i;
-    fprintf(stderr, "Block %x:\n", blk);
+    fprintf(stderr, "Block %p:\n", blk);
     for (i=0; i<blk->live->length; i++)
     {
-      pqueueitem* span = blk->live->data[i];
-      palloc_liverange* range = (palloc_liverange*) span->item;
+      pqueueitem* span = blk->live->item[i];
+      palloc_liverange* range = (palloc_liverange*) span->data;
       fprintf(stderr, "Start line: %d, length: %d, reg: %d\n",
         range->startline, range->length, range->reg);
     }
@@ -340,30 +374,31 @@ void palloc_shufflecommit(pheta_chunk* chunk)
   sint5 lookfor[ph_NUMREG];
   sint5 commitplace[ph_NUMREG];
   
-  for (i=0; i<ph_NUMREG; i++)
-  {
-    commitplace[i] = -1;
-    lookfor[i] = -1;
-  }
-  
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
     uint3* newbase = cnewarray(uint3, blk->length);
     uint5 nlength = 0;
 
+    for (i=0; i<ph_NUMREG; i++)
+    {
+      commitplace[i] = -1;
+      lookfor[i] = -1;
+    }
+
     for (i=blk->length-1; i>=0; i--)
     {
       uint5 inststart = i-blk->base[i]+1;
       uint5 opcode = blk->base[inststart];
       uint5 destr[ph_MAXDEST], srcr[ph_MAXSRC], ndest, nsrc, j;
+      
 
       if (opcode==ph_COMMIT)
       {
         uint5 armreg = blk->base[inststart+1];
         uint5 src = blk->base[inststart+2];
         lookfor[armreg] = src;
-      /*  fprintf(stderr, "Found a commit at %d\n", i);*/
+   /* fprintf(stderr, "Found a commit for reg %d at %d\n", armreg, inststart);*/
       }
       
       pheta_getused(blk->base, inststart, &ndest, destr, &nsrc, srcr);
@@ -475,6 +510,12 @@ void palloc_print(pheta_chunk* chunk)
       case pal_IREG:
       {
         fprintf(stderr, "%3d: x86 register %s\n", i, regname[a->info.ireg.num]);
+      }
+      break;
+      
+      case pal_ALIAS:
+      {
+        fprintf(stderr, "%3d: Aliased to %d\n", i, a->info.value);
       }
       break;
     }

@@ -236,8 +236,8 @@ void codegen_recompile(machineinfo* machine, blockinfo* blk)
   codegen_matchblock(machine, blk);
   
   // push start block into priority queue
-  pqi = pqueue_insert(&pq, 0);
-  pqi->item = bb;
+  pqi = pqueue_insert(pq, 0);
+  pqi->data = bb;
   // allocated here
   bb->startalloc = *alloc;
   psb->info[0].special.flag.allocated = psb->info[0].special.flag.complete = 1;
@@ -249,7 +249,7 @@ void codegen_recompile(machineinfo* machine, blockinfo* blk)
     if (!pq->length) break;
     pqi = pqueue_extract(pq);  // get lowest-addressed thingy
     line = pqi->priority;
-    bb = pqi->item;
+    bb = pqi->data;
     #ifdef DEBUG4
     fprintf(stderr, "Generating from %x to %x\n", line, line+bb->length);
     #endif
@@ -295,12 +295,12 @@ void codegen_recompile(machineinfo* machine, blockinfo* blk)
         bb->startalloc = *alloc;
         // copy this allocation state to each destination
         psb->info[line].special.flag.allocated = 1;
-        pqi = pqueue_insert(&pq, line);
+        pqi = pqueue_insert(pq, line);
         psb->info[line].special.flag.complete = 1;
         #ifdef DEBUG
         fprintf(stderr, "Inserting line %d\n", line);
         #endif
-        pqi->item = bb;
+        pqi->data = bb;
       }
     }
   }

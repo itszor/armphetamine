@@ -4,14 +4,13 @@
         .type    simple,function
 
 simple:
-	mov r0,#15
+	mov r0,#7
 loop:
-	ldr r4,[r2,r3]
-	add r3,r4,r5,lsl r6
-	mla r0,r1,r6,r7
-	mla r7,r1,r3,r7
-	add r3,r4,r3,lsr r7
-	subs r0,r0,r1
+	mla r4,r3,r0,r4
+	adds r2,r3,r4,lsl r5
+	subs r0,r0,#1
 	bgt loop - .
-
 	mov pc,r14
+	eor r5,r6,r7
+	and r8,r9,r10
+	mvn r2,r3,ror r4
