@@ -1,0 +1,58 @@
+shl  |Mi,Mc,mi     |c|vnz
+shr  |Mi,Mc,mi     |c|vnz
+sar  |Mi,Mc,mi     |c|vnz
+ror  |Mi,Mc,mi     |c|v
+rol  |Mi,Mc,mi     |c|v
+rcr  |Mi,Mc,mi     |c|v
+rcl  |Mi,Mc,mi     |c|v
+and  |RM,MR,Mi,MI  |nz|cv
+or   |RM,MR,Mi,MI  |nz|cv
+xor  |RM,MR,Mi,MI  |nz|cv
+add  |RM,MR,Mi,MI  |cvnz|
+adc  |RM,MR,Mi,MI  |cvnz|
+sub  |RM,MR,Mi,MI  |ivnz|
+sbb  |RM,MR,Mi,MI  |ivnz|
+imul |RM,RMi,RMI   ||cvnz
+lea  |RMs          ||
+mov  |RM,MR,MI,RI  ||
+not  |M,m          ||
+push |M,i,I        ||
+pop  |M            ||
+test |MR,MI,mi     |nz|cv
+cmp  |RM,MR,MI     |ivnz|
+ret  |n            ||
+seto |m            ||
+setno|m            ||
+setb |m            ||
+setae|m            ||
+sete |m            ||
+setne|m            ||
+setbe|m            ||
+seta |m            ||
+sets |m            ||
+setns|m            ||
+setl |m            ||
+setge|m            ||
+setle|m            ||
+setg |m            ||
+jo   |o,O          ||
+jno  |o,O          ||
+jb   |o,O          ||
+jae  |o,O          ||
+je   |o,O          ||
+jne  |o,O          ||
+jbe  |o,O          ||
+ja   |o,O          ||
+js   |o,O          ||
+jns  |o,O          ||
+jl   |o,O          ||
+jge  |o,O          ||
+jle  |o,O          ||
+jg   |o,O          ||
+jmp  |o,O,M        ||
+call |O            ||cvnz
+jecxz|o            ||
+bt   |MR,Mi        |c|
+cmc  |n            |c|
+stc  |n            |c|
+clc  |n            |c|

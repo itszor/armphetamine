@@ -15,6 +15,8 @@ typedef enum {
   ab_SAR,
   ab_ROR,
   ab_ROL,
+  ab_RCR,
+  ab_RCL,
   ab_AND,
   ab_OR,
   ab_XOR,
@@ -28,8 +30,6 @@ typedef enum {
   ab_NOT,
   ab_PUSH,
   ab_POP,
-  ab_RCR,
-  ab_RCL,
   ab_TEST,
   ab_CMP,
   ab_RET,
@@ -180,36 +180,48 @@ struct genx86_buffer {
 
 typedef struct genx86_buffer genx86_buffer;
 
+typedef void (*genx86_rm8)(nativeblockinfo* nat, rtasm_mtype);
+typedef void (*genx86_i8)(nativeblockinfo* nat, uint3);
+typedef void (*genx86_r8_rm8)(nativeblockinfo* nat, uint3, rtasm_mtype);
+typedef void (*genx86_rm8_r8)(nativeblockinfo* nat, rtasm_mtype, uint3);
+typedef void (*genx86_r8_i8)(nativeblockinfo* nat, uint3, uint3);
+typedef void (*genx86_rm8_i8)(nativeblockinfo*, rtasm_mtype, uint3);
+typedef void (*genx86_rm32)(nativeblockinfo* nat, rtasm_mtype);
+typedef void (*genx86_i32)(nativeblockinfo* nat, uint5);
 typedef void (*genx86_r32_rm32)(nativeblockinfo*, uint3, rtasm_mtype);
 typedef void (*genx86_rm32_r32)(nativeblockinfo*, rtasm_mtype, uint3);
+typedef void (*genx86_r32_i32)(nativeblockinfo*, uint3, uint5);
 typedef void (*genx86_rm32_i8)(nativeblockinfo*, rtasm_mtype, uint3);
 typedef void (*genx86_rm32_i32)(nativeblockinfo*, rtasm_mtype, uint5);
-typedef void (*genx86_rm8_i8)(nativeblockinfo*, rtasm_mtype, uint3);
 typedef void (*genx86_rm32_c)(nativeblockinfo*, rtasm_mtype);
 typedef void (*genx86_r32_rm32_i8)(nativeblockinfo*, uint3, rtasm_mtype, uint3);
 typedef void (*genx86_r32_rm32_i32)(nativeblockinfo*, uint3, rtasm_mtype, 
                                     uint5);
-typedef void (*genx86_rm32)(nativeblockinfo* nat, rtasm_mtype);
-typedef void (*genx86_i8)(nativeblockinfo* nat, uint3);
-typedef void (*genx86_i32)(nativeblockinfo* nat, uint5);
 typedef void (*genx86_narg)(nativeblockinfo* nat);
 
 typedef struct {
-  genx86_r32_rm32 r32_rm32;
-  genx86_rm32_r32 rm32_r32;
-  genx86_rm32_i8 rm32_i8;
-  genx86_rm32_i32 rm32_i32;
-  genx86_rm8_i8 rm8_i8;
-  genx86_rm32_c rm32_c;
-  genx86_r32_rm32_i8 r32_rm32_i8;
-  genx86_r32_rm32_i32 r32_rm32_i32;
-  genx86_rm32 rm32;
-  genx86_i8 i8;
-  genx86_i32 i32;
-  genx86_narg narg;
+  genx86_rm8          rm8;             // m
+  genx86_i8           i8;              // i
+  genx86_r8_rm8       r8_rm8;          // rm
+  genx86_rm8_r8       rm8_r8;          // mr
+  genx86_r8_i8        r8_i8;           // ri
+  genx86_rm8_i8       rm8_i8;          // mi
+  genx86_rm32         rm32;            // M
+  genx86_i32          i32;             // I
+  genx86_r32_rm32     r32_rm32;        // RM
+  genx86_rm32_r32     rm32_r32;        // MR
+  genx86_r32_i32      r32_i32;         // RI
+  genx86_rm32_i8      rm32_i8;         // Mi
+  genx86_rm32_i32     rm32_i32;        // MI
+  genx86_rm32_c       rm32_c;          // Mc
+  genx86_r32_rm32_i8  r32_rm32_i8;     // RMi
+  genx86_r32_rm32_i32 r32_rm32_i32;    // RMI
+  genx86_narg         narg;            // n
   uint5 flagset;
   uint5 flagcorrupt;
 } genx86_variant;
+
+#define gx_SIGNEDIMM 0x1
 
 extern void genx86_append(pheta_chunk* chunk, genx86_buffer*, uint5 opcode, 
   genx86_operand* dest, genx86_operand* src1, genx86_operand* src2);

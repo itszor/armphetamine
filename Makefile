@@ -39,7 +39,7 @@ clean:
 	rm -f *.o emulate $(TESTS)
 
 cleaner:
-	rm -f *.o emulate $(TESTS) rtasm_fns.c rtasm_fns.h .depend
+	rm -f *.o emulate $(TESTS) genx86_tab.c rtasm_fns.c rtasm_fns.h .depend
 
 dynsupport.asm:	structsupport memory.h structsupport.inc
 execute26.c:	execute.inc.c
@@ -99,6 +99,9 @@ rtasm_fns.c:	mkintel.pl
 
 rtasm_fns.h:	rtasm_fns.c
 	./rtasm_mkheader.pl > rtasm_fns.h
+
+genx86_tab.c:	genx86tabsrc.dat mkx86tab.py
+	./mkx86tab.py
 
 rtasm_check:	rtasm_fns.c
 	gcc rtasm_fns.c -o /dev/null 2> error.log
