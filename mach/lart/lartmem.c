@@ -326,7 +326,7 @@ uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
   switch (mem->flashmode)
   {
     case READ_ARRAY:
-/*    fprintf(stderr, "Read flash word %.8x\n", physaddress);*/
+  /*  fprintf(stderr, "Read flash word %.8x\n", physaddress);*/
     return mem->rom0[(physaddress & 0xffffff) >> 2];
 
     case READ_ID_CODES:

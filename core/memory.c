@@ -351,7 +351,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
       fprintf(stderr, "Translation base=%.8x\n", mem->translationbase);
       fprintf(stderr, "Table index=%.8x\n", tableindex);
       
-  /*  diss_around_pc(mem->parent);*/
+      diss_around_pc(mem->parent);
       
       mem->memoryfault = 1;
     }

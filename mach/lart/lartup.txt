@@ -1,6 +1,6 @@
-romload lart-blob2                             0x00000000
-romload lart-kernel-2417                       0x00020000
-romload ramdisk-lart-minimal-new-tty-net       0x00100000
+romload precompiled-blob-2.0.4                 0x00000000
+romload zImage                       0x00020000
+romload lart-jffs2-1.0            0x00100000
 # break 0xc0008000
 # trace on
 # break 0xc0015320
