@@ -2972,6 +2972,13 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       rel->data.imm = 0;
       genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
 
+      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = cnew(reloc_record);
+      reloc->value = 0;
+      reloc->offset = 0;
+      reloc->size = relsize_BYTE;
+      reloc->type = reloc_PLACEHOLDER;
+
       jecxzloc = buf->buffer->prev;
 
       genx86_recover(buf, chunk);
@@ -2989,14 +2996,15 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       reloc->type = reloc_RELATIVE;
 
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
-      genx86_append(chunk, buf, ab_MOV, odest, regeax, 0);
 
       entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
       reloc = entry->data = cnew(reloc_record);
       reloc->value = (uint5)jecxzloc;
       reloc->offset = 0;
       reloc->size = relsize_BYTE;
-      reloc->type = reloc_ABSOLUTE;  // ???
+      reloc->type = reloc_FORWARD;
+
+      genx86_append(chunk, buf, ab_MOV, odest, regeax, 0);
 
       if (preserve_eax)
       {
@@ -3201,14 +3209,38 @@ void genx86_flatten_code_inner(pheta_basicblock* blk)
     if ((e = hash_lookup(blk->gxbuffer->reloc, (uint5)scancode)))
     {
       reloc_record* rel = e->data;
-      uint5 offset;
+      uint5 offset, value;
+
       switch (rel->size)
       {
         case relsize_BYTE: offset = nat->length-1; break;
-	case relsize_HALFWORD: offset = nat->length-2; break;
-	case relsize_WORD: offset = nat->length-4; break;
+        case relsize_HALFWORD: offset = nat->length-2; break;
+        case relsize_WORD: offset = nat->length-4; break;
       }
-      relocate_add(&nat->reloc, rel->value, offset, rel->size, rel->type);
+
+      switch (rel->type)
+      {
+        case reloc_RELATIVE:
+        {
+          relocate_add(&nat->reloc, rel->value, offset, rel->size, rel->type);
+        }
+        break;
+        
+        case reloc_FORWARD:
+        {
+          hashentry* f = hash_lookup(blk->gxbuffer->reloc, rel->value);
+          reloc_record* placeholder = f->data;
+          relocate_add(&nat->reloc, offset-placeholder->value, 
+            placeholder->value, placeholder->size, reloc_ABSOLUTE);
+        }
+        break;
+        
+        case reloc_PLACEHOLDER:
+        {
+          rel->value = offset;
+        }
+        break;
+      }
     }
   }
   hash_nuke(blk->gxbuffer->reloc, &killrelocentry);

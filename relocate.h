@@ -6,7 +6,9 @@
 
 typedef enum {
   reloc_ABSOLUTE,
-  reloc_RELATIVE
+  reloc_RELATIVE,
+  reloc_FORWARD,
+  reloc_PLACEHOLDER
 } reloc_type;
 
 typedef enum {
