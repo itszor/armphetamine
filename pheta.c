@@ -985,7 +985,7 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   }
 }
 
-void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
 {
   uint5 temp = inst.dp.operand2;
   uint5 shifttype = (temp>>5)&3;
@@ -1403,9 +1403,10 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
       break;
     }  // shift type
   }  // register/immediate
+  return 0;
 }
 
-void pheta_dp_imm(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_dp_imm(machineinfo* machine, instructionformat inst, void* chunk)
 {
   uint5 temp = inst.dp.operand2;
   uint5 value = temp&255, amount = (temp>>8)*2, op2;
@@ -1683,9 +1684,10 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   {
     pheta_lcommit(chunk, inst.dp.rd, dest);
   }
+  return 0;
 }
 
-void pheta_bra(machineinfo* machine, instructionformat inst, void* data)
+int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
 {
   sint5 offset = ((sint5)(inst.bra.offset<<8))>>8;
   pheta_chunk* chunk = (pheta_chunk*)data;
@@ -1743,9 +1745,10 @@ void pheta_bra(machineinfo* machine, instructionformat inst, void* data)
     pheta_emit(chunk, ph_UKJMP);
     pheta_link(previous, inst.bra.cond, exitchunk, nottaken->data);
   }
+  return 0;
 }
 
-void pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
 {
   uint5 op1 = pheta_lfetch(chunk, inst.mul.rm);
   uint5 op2 = pheta_lfetch(chunk, inst.mul.rs);
@@ -1784,9 +1787,10 @@ void pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
   }
 
   pheta_lcommit(chunk, inst.mul.rd, dest);
+  return 0;
 }
 
-void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   int basereg = pheta_lfetch(chunk, inst.sdt.rn);
   sint5 offsetreg = -1;  // -1 for zero/no offset
@@ -1942,9 +1946,10 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
     pheta_emit(chunk, ph_SYNC);
     pheta_emit(chunk, ph_CAJMP);
   }
+  return 0;
 }
 
-void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   uint5 basereg = pheta_lfetch(chunk, inst.bdt.rn);
   uint5 fourreg = pheta_emit(chunk, ph_CONSTB, 4);
@@ -2044,45 +2049,52 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
     pheta_emit(chunk, ph_SYNC);
     pheta_emit(chunk, ph_CAJMP);
   }
+  return 0;
 }
 
-void pheta_swi(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_swi(machineinfo* machine, instructionformat inst, void* chunk)
 {
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_SWI);
+  return 0;
 }
 
-void pheta_cdt(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_cdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
+  return 0;
 }
 
-void pheta_cdo(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_cdo(machineinfo* machine, instructionformat inst, void* chunk)
 {
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
+  return 0;
 }
 
-void pheta_crt(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_crt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
+  return 0;
 }
 
-void pheta_sds(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_sds(machineinfo* machine, instructionformat inst, void* chunk)
 {
   fprintf(stderr, "Unimplemented instruction: SWP\n");
   exit(1);
+  return 0;
 }
 
-void pheta_und(machineinfo* machine, instructionformat inst, void* chunk)
+int pheta_und(machineinfo* machine, instructionformat inst, void* chunk)
 {
   pheta_lsync(chunk);
   pheta_emit(chunk, ph_SYNC);
   pheta_emit(chunk, ph_UNDEF);
+  return 0;
 }

@@ -18,7 +18,7 @@ static const char omitsflag[] = {0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0};
 static const char* txtshft[] = {"lsl","lsr","asr","ror","rrx"};
 
 // disassemble a data-processing instruction (register+shift op2)
-void diss_dp(machineinfo* machine, instructionformat inst, void* null)
+int diss_dp(machineinfo* machine, instructionformat inst, void* null)
 {
 	uint5 rm = inst.dp.operand2 & 15;
 	uint5 temp = inst.dp.operand2, shifttype = (temp>>5)&3;
@@ -96,9 +96,10 @@ void diss_dp(machineinfo* machine, instructionformat inst, void* null)
           ? "s" : "", inst.dp.rd, inst.dp.rn, rm, shiftstr);
 		}
 	}
+  return 0;
 }
 
-void diss_dp_imm(machineinfo* machine, instructionformat inst, void* null)
+int diss_dp_imm(machineinfo* machine, instructionformat inst, void* null)
 {
 	uint5 imm = inst.dp.operand2 & 0xff, rot = 2*(inst.dp.operand2>>8);
 	uint5 unopreg = omitsflag[inst.dp.opcode] ? inst.dp.rn : inst.dp.rd;
@@ -120,9 +121,10 @@ void diss_dp_imm(machineinfo* machine, instructionformat inst, void* null)
 			 txtcc[inst.generic.cond], inst.dp.s && !omitsflag[inst.dp.opcode]
 			 ? "s" : "", inst.dp.rd, inst.dp.rn, ROR(imm, rot));
 	}
+  return 0;
 }
 
-void diss_mul(machineinfo* machine, instructionformat inst, void* null)
+int diss_mul(machineinfo* machine, instructionformat inst, void* null)
 {
 	if (inst.mul.a)
 		fprintf(stderr, "mla%s%s r%d,r%d,r%d,r%d", txtcc[inst.generic.cond],
@@ -131,9 +133,10 @@ void diss_mul(machineinfo* machine, instructionformat inst, void* null)
 	else
 		fprintf(stderr, "mul%s%s r%d,r%d,r%d", txtcc[inst.generic.cond],
 			inst.mul.s ? "s" : "", inst.mul.rd, inst.mul.rm, inst.mul.rs);
+  return 0;
 }
 
-void diss_sdt(machineinfo* machine, instructionformat inst, void* null)
+int diss_sdt(machineinfo* machine, instructionformat inst, void* null)
 {
 	if (inst.sdt.i)  // offset=register+shift
 	{
@@ -161,9 +164,10 @@ void diss_sdt(machineinfo* machine, instructionformat inst, void* null)
 				txtcc[inst.generic.cond], inst.sdt.b ? "b" : "", inst.sdt.rd,
 				inst.sdt.rn, inst.sdt.u ? "" : "-", inst.sdt.offset);
 	}
+  return 0;
 }
 
-void diss_bdt(machineinfo* machine, instructionformat inst, void* null)
+int diss_bdt(machineinfo* machine, instructionformat inst, void* null)
 {
 	int reg=0, start=-1, runlength=0, first=1;
 
@@ -186,33 +190,38 @@ void diss_bdt(machineinfo* machine, instructionformat inst, void* null)
 		}
 	}
 	fprintf(stderr, "}%s", inst.bdt.s ? "^" : "");
+  return 0;
 }
 
-void diss_bra(machineinfo* machine, instructionformat inst, void* null)
+int diss_bra(machineinfo* machine, instructionformat inst, void* null)
 {
 	sint5 offset = (sint5)((inst.bra.offset+2)<<8)>>6;
-	fprintf(stderr, "b%s%s pc%s%d", inst.bra.l ? "l" : "", txtcc[inst.generic.cond],
-		offset>=0 ? "+" : "", offset);
+	fprintf(stderr, "b%s%s pc%s%d", inst.bra.l ? "l" : "", 
+    txtcc[inst.generic.cond], offset>=0 ? "+" : "", offset);
+  return 0;
 }
 
-void diss_swi(machineinfo* machine, instructionformat inst, void* null)
+int diss_swi(machineinfo* machine, instructionformat inst, void* null)
 {
 	fprintf(stderr, "swi%s 0x%x", txtcc[inst.generic.cond], inst.swi.number);
+  return 0;
 }
 
-void diss_cdt(machineinfo* machine, instructionformat inst, void* null)
+int diss_cdt(machineinfo* machine, instructionformat inst, void* null)
 {
   fprintf(stderr, "coprocessor data transfer");
+  return 0;
 }
 
-void diss_cdo(machineinfo* machine, instructionformat inst, void* null)
+int diss_cdo(machineinfo* machine, instructionformat inst, void* null)
 {
   fprintf(stderr, "cdp%s %d,%d,c%d,c%d,c%d,%d", txtcc[inst.generic.cond],
 	  inst.cdo.cpn, inst.cdo.cpopc, inst.cdo.crd, inst.cdo.crn, inst.cdo.crm,
 		inst.cdo.cp);
+  return 0;
 }
 
-void diss_crt(machineinfo* machine, instructionformat inst, void* null)
+int diss_crt(machineinfo* machine, instructionformat inst, void* null)
 {
   if (inst.crt.l)  // mrc
   {
@@ -226,15 +235,18 @@ void diss_crt(machineinfo* machine, instructionformat inst, void* null)
       txtcc[inst.generic.cond], inst.crt.cpn, inst.crt.cpopc,
       inst.crt.rd, inst.crt.crn, inst.crt.crm, inst.crt.cp);
   }
+  return 0;
 }
 
-void diss_sds(machineinfo* machine, instructionformat inst, void* null)
+int diss_sds(machineinfo* machine, instructionformat inst, void* null)
 {
   fprintf(stderr, "swp%s%s r%d,r%d,[r%d]", txtcc[inst.generic.cond], inst.sds.b ? "b"
 	  : "", inst.sds.rd, inst.sds.rm, inst.sds.rn);
+  return 0;
 }
 
-void diss_und(machineinfo* machine, instructionformat inst, void* null)
+int diss_und(machineinfo* machine, instructionformat inst, void* null)
 {
   fprintf(stderr, "undefined instruction");
+  return 0;
 }

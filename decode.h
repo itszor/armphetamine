@@ -175,7 +175,7 @@ typedef union {
   uint5 instruction;
 } instructionformat;
 
-typedef void (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
+typedef int (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
 
 // instruction command-function table
 struct insttab {
@@ -308,7 +308,7 @@ typedef enum {
 
 //void decode(uint5 instruction, processorflags* flags, registers* reg, meminfo* mem);
 
-extern void dispatch(machineinfo* machine, instructionformat inst,
+extern int dispatch(machineinfo* machine, instructionformat inst,
                      insttab* action, void* data);
 
 extern insttab diss, exec26, exec32, pseudo, phet4;

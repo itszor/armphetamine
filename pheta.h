@@ -261,31 +261,31 @@ extern void pheta_lsync(pheta_chunk* chunk);
 
 extern pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line);
 
-extern void pheta_dp(machineinfo* machine, instructionformat inst,
-                     void* chunk);
-extern void pheta_dp_imm(machineinfo* machine, instructionformat inst,
-                         void* chunk);
+extern int pheta_dp(machineinfo* machine, instructionformat inst,
+                    void* chunk);
+extern int pheta_dp_imm(machineinfo* machine, instructionformat inst,
+                        void* chunk);
 extern void pheta_dp_guts(machineinfo* machine, instructionformat inst,
                           pheta_chunk* chunk, uint5 op2);
-extern void pheta_mul(machineinfo* machine, instructionformat inst,
+extern int pheta_mul(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_sdt(machineinfo* machine, instructionformat inst,
+extern int pheta_sdt(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_bdt(machineinfo* machine, instructionformat inst,
+extern int pheta_bdt(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_bra(machineinfo* machine, instructionformat inst,
+extern int pheta_bra(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_swi(machineinfo* machine, instructionformat inst,
+extern int pheta_swi(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_cdt(machineinfo* machine, instructionformat inst,
+extern int pheta_cdt(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_cdo(machineinfo* machine, instructionformat inst,
+extern int pheta_cdo(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_crt(machineinfo* machine, instructionformat inst,
+extern int pheta_crt(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_sds(machineinfo* machine, instructionformat inst,
+extern int pheta_sds(machineinfo* machine, instructionformat inst,
                       void* chunk);
-extern void pheta_und(machineinfo* machine, instructionformat inst,
+extern int pheta_und(machineinfo* machine, instructionformat inst,
                       void* chunk);
   
 #endif

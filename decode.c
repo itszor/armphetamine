@@ -19,7 +19,7 @@ insttab diss = {
 	diss_crt,
 	diss_sds,
 	diss_und,
-        NULL
+  NULL
 };
 
 // execution function table, 26-bit
@@ -36,7 +36,7 @@ insttab exec26 = {
 	exec_crt_26,
 	exec_sds_26,
 	exec_und_26,
-        NULL
+  NULL
 };
 
 // execution function table, 32-bit
@@ -53,7 +53,7 @@ insttab exec32 = {
 	exec_crt_32,
 	exec_sds_32,
 	exec_und_32,
-        NULL
+  NULL
 };
 
 // execution function table, thumb mode (subtle differences to 32-bit, etc)
@@ -70,7 +70,7 @@ insttab execthm = {
 	exec_crt_thm,
 	exec_sds_thm,
 	exec_und_thm,
-        exec_thumbl_thm
+  exec_thumbl_thm
 };
 
 // intermediate code translator function table
@@ -79,7 +79,7 @@ insttab pseudo = {
 	pseudo_dp_imm,
 	pseudo_mul,
 	pseudo_sdt,
-	pseudo_bdt,
+  pseudo_bdt,
 	pseudo_bra,
 	pseudo_swi,
 	pseudo_cdt,
@@ -87,7 +87,7 @@ insttab pseudo = {
 	pseudo_crt,
 	pseudo_sds,
 	pseudo_und,
-        NULL
+  NULL
 };
 
 insttab phet4 = {
@@ -107,7 +107,7 @@ insttab phet4 = {
 };
 
 // Tree-shaped instruction dispatch
-void dispatch(machineinfo* machine, instructionformat inst, insttab* action,
+int dispatch(machineinfo* machine, instructionformat inst, insttab* action,
               void* data)
 {
 	switch (inst.generic.type)
@@ -117,11 +117,11 @@ void dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 			if (inst.mul.ident2==0 && inst.mul.ident==9)
 			{
 				// it's a multiply
-				action->mul(machine, inst, data);
+				return action->mul(machine, inst, data);
 			}
 			else
 			{
-				action->dp(machine, inst, data);
+				return action->dp(machine, inst, data);
 			}
 		}
 		break;
@@ -131,11 +131,11 @@ void dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 			if (inst.sds.ident3==2 && inst.sds.ident2==0 && inst.sds.ident==9)
 			{
 			  // it's a single data swap
-				action->sds(machine, inst, data);
+				return action->sds(machine, inst, data);
 			}
 			else
 			{
-				action->dp(machine, inst, data);
+				return action->dp(machine, inst, data);
 			}
 		}
 		break;
@@ -143,47 +143,47 @@ void dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 		case 2: // DP (immediate operand)
 		case 3: // ditto
 		{
-			action->dp_imm(machine, inst, data);
+			return action->dp_imm(machine, inst, data);
 		}
 		break;
 		
 		case 4: // single data transfer
 		case 5: // SDT
 		{
-			action->sdt(machine, inst, data);
+			return action->sdt(machine, inst, data);
 		}
 		break;
 		
 		case 6: // SDT/undefined
 		case 7: // ditto
 		{
-			action->sdt(machine, inst, data);
+			return action->sdt(machine, inst, data);
 		}
 		break;
 		
 		case 8: // Block data transfer
 		case 9: // ditto
 		{
-			action->bdt(machine, inst, data);
+			return action->bdt(machine, inst, data);
 		}
 		break;
 		
 		case 10: // Branch
 		{
-			action->bra(machine, inst, data);
+			return action->bra(machine, inst, data);
 		}
 		break;
 		
 		case 11: // Branch-with-link
 		{
-			action->bra(machine, inst, data);
+			return action->bra(machine, inst, data);
 		}
 		break;
 		
 		case 12: // Coproc data transfer
 		case 13: // ditto
 		{
-		  action->cdt(machine, inst, data);
+		  return action->cdt(machine, inst, data);
 		}
 		break;
 		
@@ -191,19 +191,20 @@ void dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 		{
 		  if (inst.cdo.ident)
 			{
-		    action->crt(machine, inst, data);
+		    return action->crt(machine, inst, data);
 			}
 			else
 			{
-			  action->cdo(machine, inst, data);
+			  return action->cdo(machine, inst, data);
 			}
 		}
 		break;
 		
 		case 15: // Software interrupt
 		{
-			action->swi(machine, inst, data);
+			return action->swi(machine, inst, data);
 		}
 		break;
 	}
+  return 0;
 }

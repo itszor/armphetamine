@@ -501,7 +501,7 @@ void pseudo_jmp(machineinfo* machine, uint5 cond, uint5* dest, psblock* psb)
 	}
 }
 
-void pseudo_dp(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_dp(machineinfo* machine, instructionformat inst, void* blk)
 {
   uint5 temp = inst.dp.operand2;
 	uint5 shifttype = (temp>>5)&3, amount;
@@ -785,9 +785,10 @@ void pseudo_dp(machineinfo* machine, instructionformat inst, void* blk)
 	
 	// at this point, we should have op1 in inst.dp.rn and op2 in op2reg
 	pseudo_dp_guts(machine, inst, blk, op2reg, &tc);
+  return 0;
 }
 
-void pseudo_dp_imm(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_dp_imm(machineinfo* machine, instructionformat inst, void* blk)
 {
   sint5 tc = -1;
 	uint5 imm = pseudo_newtemp(&tc), temp = inst.dp.operand2;
@@ -807,6 +808,7 @@ void pseudo_dp_imm(machineinfo* machine, instructionformat inst, void* blk)
       (value & (1U<<(amount-1))) ? 1 : 0);
 	
 	pseudo_dp_guts(machine, inst, blk, imm, &tc);
+  return 0;
 }
 
 void pseudo_dp_guts(machineinfo* machine, instructionformat inst, void* blk,
@@ -998,7 +1000,7 @@ void pseudo_dp_guts(machineinfo* machine, instructionformat inst, void* blk,
 	}
 }
 
-void pseudo_bra(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_bra(machineinfo* machine, instructionformat inst, void* blk)
 {
 	sint5 offset = (sint5)(inst.bra.offset<<8)>>6, tc=-1;
 	psblock* psb = (psblock*) blk;
@@ -1029,9 +1031,10 @@ void pseudo_bra(machineinfo* machine, instructionformat inst, void* blk)
                  psb);
 		}
 	}
+  return 0;
 }
 
-void pseudo_mul(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_mul(machineinfo* machine, instructionformat inst, void* blk)
 {
   sint5 tc=-1;
 	uint5 temp = inst.mul.rd;
@@ -1059,9 +1062,10 @@ void pseudo_mul(machineinfo* machine, instructionformat inst, void* blk)
 	  pseudo_emit(blk, op_Z, reg_CPSRZ, inst.mul.rd);
 		pseudo_emit(blk, op_N, reg_CPSRN, inst.mul.rd);
 	}*/
+  return 0;
 }
 
-void pseudo_sdt(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_sdt(machineinfo* machine, instructionformat inst, void* blk)
 {
   sint5 tc = -1, offset = -1, addr;
 	uint5 setpc = 0;
@@ -1205,9 +1209,10 @@ void pseudo_sdt(machineinfo* machine, instructionformat inst, void* blk)
 	{
 	  pseudo_emit(blk, op_SETPC | PSSETFLAGS, ALLFLAGS);
 	}
+  return 0;
 }
 
-void pseudo_bdt(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_bdt(machineinfo* machine, instructionformat inst, void* blk)
 {
   sint5 tc = -1, i;
 	uint5 addr = pseudo_newtemp(&tc), base = inst.bdt.rn,
@@ -1293,33 +1298,40 @@ void pseudo_bdt(machineinfo* machine, instructionformat inst, void* blk)
     else
 	    pseudo_emit(blk, op_SETPC);
 	}
+  return 0;
 }
 
-void pseudo_swi(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_swi(machineinfo* machine, instructionformat inst, void* blk)
 {
   sint5 tc=-1;
   pseudo_condition(machine, inst.generic.cond, blk);
 
   pseudo_reconstitutepc(machine, 1, blk, &tc, 0);
 	pseudo_emit(blk, op_SWI, inst.swi.number);
+  return 0;
 }
 
-void pseudo_cdt(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_cdt(machineinfo* machine, instructionformat inst, void* blk)
 {
+  return 0;
 }
 
-void pseudo_cdo(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_cdo(machineinfo* machine, instructionformat inst, void* blk)
 {
+  return 0;
 }
 
-void pseudo_crt(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_crt(machineinfo* machine, instructionformat inst, void* blk)
 {
+  return 0;
 }
 
-void pseudo_sds(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_sds(machineinfo* machine, instructionformat inst, void* blk)
 {
+  return 0;
 }
 
-void pseudo_und(machineinfo* machine, instructionformat inst, void* blk)
+int pseudo_und(machineinfo* machine, instructionformat inst, void* blk)
 {
+  return 0;
 }

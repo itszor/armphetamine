@@ -181,12 +181,14 @@ int EXECUTEFN(exec_condition)(machineinfo* machine, instructionformat inst)
 
 #if defined(ASM_ALU) && defined(ARM26BIT)
 
+#warning "ASM_ALU support is out-of-date"
+
 #include "asmalu.h"
 
-void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -221,12 +223,13 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       reg->r[15] += 4;
  /* }*/
   }
+  return 0;
 }
 
-void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -250,11 +253,13 @@ void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
       reg->r[15] += 4;
   /*  }*/
   }
+  return 0;
 }
 
 #else
+
 // execute an ALU instruction with op2 as a shifted register
-void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   void* null)
 {
   registerinfo* reg = machine->reg;
@@ -275,7 +280,7 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   // islogic affects the way the carry flag is set
   int islogic = logic & (1<<inst.dp.opcode);
 
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 
   if (regshift)  // shift by register
   {
@@ -545,12 +550,18 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   if (inst.dp.s) { ZNFLAGS; }
 
   if (inst.dp.rd==15 && (affectrd & (1<<inst.dp.opcode)))
+  {
     reg->r[15]+=INSTSIZE*2;
+    return 1;
+  }
   else
+  {
     INCPC;
+    return 0;
+  }
 }
 
-void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   void* null)
 {
   registerinfo* reg = machine->reg;
@@ -560,7 +571,7 @@ void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   // mask for rd-affecting instructions
   const uint5 affectrd = 0xf0ff;
 
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 
   op2 = ROR(temp&255, amount);
   // why isn't this more clear in the data sheet? grr...
@@ -704,9 +715,15 @@ void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   if (inst.dp.s) { ZNFLAGS; }
 
   if (inst.dp.rd==15 && (affectrd & (1<<inst.dp.opcode)))
+  {
     reg->r[15]+=INSTSIZE*2;
+    return 1;
+  }
   else
+  {
     INCPC;
+    return 0;
+  }
 }
 
 #endif
@@ -754,10 +771,10 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
   }
 }
 
-void EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -770,12 +787,13 @@ void EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
     if (inst.bra.l) RPUT(14, RGET(15)-INSTSIZE);  // prefetch adjustment
     RPUT(15, RGET(15)+offset);
   }
+  return 1;
 }
 
-void EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -793,12 +811,13 @@ void EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
     if (inst.mul.s) { ZNFLAGS; }
     INCPC;
   }
+  return 0;
 }
 
-void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -921,9 +940,15 @@ void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
 
     // pipelining correction  
     if (inst.sdt.l && inst.sdt.rd==15)
+    {
       reg->r[15]+=INSTSIZE*2;
+      return 1;
+    }
     else
+    {
       INCPC;
+      return 0;
+    }
   }
 }
 
@@ -1025,10 +1050,10 @@ static void restorenew(machineinfo* machine, uint5 mode)
 
 // block data transfer always tries to use ready-translated address unless
 // straddling a page boundary
-void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -1187,9 +1212,15 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 
     // pipeline correction, or just next instruction
     if (inst.bdt.l && (inst.bdt.reglist & (1<<15)))
+    {
       reg->r[15]+=INSTSIZE*2;
+      return 1;
+    }
     else
+    {
       INCPC;
+      return 0;
+    }
   }
 }
 
@@ -1198,10 +1229,10 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 #define write(A,B,C) printf("fwrite(%x,%x,%x,%x)\n", (A),(B),(C),(D))
 */
 
-void EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -1214,28 +1245,31 @@ void EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   
     INCPC;
   }
+  return 1;
 }
 
-void EXECUTEFN(exec_cdt)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_cdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 //  fprintf(stderr, "Error: unimplemented instruction (cdt)\n");
   processor_und(machine);
+  return 1;
 }
 
-void EXECUTEFN(exec_cdo)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_cdo)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 //  fprintf(stderr, "Error: unimplemented instruction (cdo)\n");
   processor_und(machine);
+  return 1;
 }
 
-void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
@@ -1243,7 +1277,7 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
     if ((mem->currentmode & 15) == pm_USR26)
     {
       processor_und(machine);
-      return;
+      return 1;
     }
     /*fprintf(stderr, "Error: unimplemented instruction (crt)\n");
     exit(1);*/
@@ -1267,6 +1301,7 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0x8: case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xd: case 0xe: case 0xf:
                 processor_und(machine);
+                return 1;
               }
             }
             break;
@@ -1314,7 +1349,7 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                     }
 /*                    machine->trace = 1;*/
                     mem->mmucontrol = newstate;
-                    return;
+                    return 1;
                   }
                   mem->mmucontrol = newstate;
                 }
@@ -1365,6 +1400,7 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0xc: case 0xd: case 0xe:
                 fprintf(stderr, "------> Throwing undefined instruction\n");
                 processor_und(machine);
+                return 1;
                 break;
                 
                 case 0xf:
@@ -1389,29 +1425,32 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
     }
     INCPC;
   }
+  return 0;
 }
 
-void EXECUTEFN(exec_sds)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_sds)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   // unimplemented
   fprintf(stderr, "Error: unimplemented instruction (sds)\n");
   exit(1);
+  return 0;
 }
 
-void EXECUTEFN(exec_und)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_und)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   // unimplemented
   fprintf(stderr, "Warning: undefined instruction\n");
   processor_und(machine);
+  return 1;
 }
 
 #ifdef ARMTHUMB
 
-void EXECUTEFN(exec_thumbl)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_thumbl)(machineinfo* machine, instructionformat inst,
   void* null)
 {
   registerinfo* reg = machine->reg;
@@ -1419,6 +1458,7 @@ void EXECUTEFN(exec_thumbl)(machineinfo* machine, instructionformat inst,
   {
     // part 1, latch low bits
     reg->r[14] = PCADDR + ((inst.instruction & 0x07ff)<<12);
+    return 0;
   }
   else
   {
@@ -1427,6 +1467,7 @@ void EXECUTEFN(exec_thumbl)(machineinfo* machine, instructionformat inst,
     newaddr = (newaddr<<8)>>8;
     reg->r[15] += newaddr;
     reg->r[14] = oldpc-2;
+    return 1;
   }
 }
 

@@ -176,19 +176,20 @@ extern void				pseudo_condition(machineinfo*, uint5 cond, psblock*);
 extern void       pseudo_reconstitutepc(machineinfo* machine, uint5 sflag,
                                         psblock* psb, sint5* tc, sint5 offset);
 extern void       pseudo_jmp(machineinfo*, uint5 cond, uint5* dest, psblock*);
-extern void				pseudo_dp(machineinfo*, instructionformat, void*);
-extern void				pseudo_dp_imm(machineinfo*, instructionformat, void*);
+
+extern int 				pseudo_dp(machineinfo*, instructionformat, void*);
+extern int 				pseudo_dp_imm(machineinfo*, instructionformat, void*);
 extern void				pseudo_dp_guts(machineinfo*, instructionformat, void*,
                                  uint5, sint5*);
-extern void				pseudo_bra(machineinfo*, instructionformat, void*);
-extern void				pseudo_mul(machineinfo*, instructionformat, void*);
-extern void				pseudo_sdt(machineinfo*, instructionformat, void*);
-extern void				pseudo_bdt(machineinfo*, instructionformat, void*);
-extern void				pseudo_swi(machineinfo*, instructionformat, void*);
-extern void				pseudo_cdt(machineinfo*, instructionformat, void*);
-extern void				pseudo_cdo(machineinfo*, instructionformat, void*);
-extern void				pseudo_crt(machineinfo*, instructionformat, void*);
-extern void				pseudo_sds(machineinfo*, instructionformat, void*);
-extern void				pseudo_und(machineinfo*, instructionformat, void*);
+extern int 				pseudo_bra(machineinfo*, instructionformat, void*);
+extern int 				pseudo_mul(machineinfo*, instructionformat, void*);
+extern int 				pseudo_sdt(machineinfo*, instructionformat, void*);
+extern int 				pseudo_bdt(machineinfo*, instructionformat, void*);
+extern int 				pseudo_swi(machineinfo*, instructionformat, void*);
+extern int 				pseudo_cdt(machineinfo*, instructionformat, void*);
+extern int 				pseudo_cdo(machineinfo*, instructionformat, void*);
+extern int 				pseudo_crt(machineinfo*, instructionformat, void*);
+extern int 				pseudo_sds(machineinfo*, instructionformat, void*);
+extern int 				pseudo_und(machineinfo*, instructionformat, void*);
 
 #endif
