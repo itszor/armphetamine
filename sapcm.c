@@ -15,6 +15,7 @@ void sa1100_serial_initialise(meminfo* mem)
   char ptyname[40];
   int namelen;
   int devno;
+  struct termios tt;
 
   if (openpty(&mem->sapcm.amaster, &mem->sapcm.aslave, ptyname,
     NULL, NULL) == -1)
@@ -23,24 +24,31 @@ void sa1100_serial_initialise(meminfo* mem)
     return errno;
   }
   
+  /* mostly stolen from User Mode Linux */
+  tcgetattr(mem->sapcm.aslave, &tt);
+  tcsetattr(mem->sapcm.aslave, TCSADRAIN, &tt);
+/*  tcgetattr(mem->sapcm.aslave, &tt);*/
+  cfmakeraw(&tt);
+  tcsetattr(mem->sapcm.aslave, TCSANOW, &tt);
+  
   namelen = strlen(ptyname);
 /*  fprintf(stderr, "ptyname=%s\n", ptyname);*/
   for (; ptyname[namelen]!='/'; namelen--);
   sscanf(&ptyname[namelen+1], "%d", &devno);
 /*  fprintf(stderr, "devno=%d\n", devno);*/
-    
+  
   if ((child=fork())==0)
   {
     // we are the child
     char slave[40];
   
+    /* this is so flaky I can hardly believe it works */
     sprintf(slave, "-S%c%c%d", "pqrs"[devno/16], 
       "0123456789abcdef"[devno&15], mem->sapcm.amaster);
   /*  fprintf(stderr, "Using slave %s\n", slave);*/
     execlp("/usr/X11/bin/xterm", "/usr/X11/bin/xterm", &slave[0], "-T", 
       "VirtuaLART", NULL);
   }
- /* sleep(1);*/
 }
 
 uint5 sa1100_serial_read(meminfo* mem, uint5 physaddress)
