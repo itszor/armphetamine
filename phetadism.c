@@ -80,7 +80,6 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
     break;
 
     case ph_SPILL:
-    case ph_CAJMP:
     {
       uint5 reg = instr->data.op.src1;
       fprintf(f, "%-10s%%%d", opname[opcode], reg);
@@ -197,6 +196,7 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
     case ph_RLX:
     case ph_MOV:
     case ph_NOT:
+    case ph_CAJMP:
     {
       uint5 op1 = instr->data.op.dest;
       uint5 op2 = instr->data.op.src1;

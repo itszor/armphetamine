@@ -1809,13 +1809,20 @@ void genx86_complete_alloc(pheta_chunk* chunk)
 void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
 {
   list* scan;
+  const uint5 offset[] = {
+    0, 4, 8, 12,
+    16, 20, 24, 28,
+    32, 36, 40, 44,
+    48, 52, 56, 60,
+    60, 60, offsetof(registerinfo, cpsr), offsetof(registerinfo, cpsr)
+  };
   
   for (scan=buf->fetch; scan; scan=scan->prev)
   {
     genx86_delayedfetchcommit* dfc = scan->data;
     if (dfc->var->type==pal_IREG)
     {
-      genx86_operand* mem = genx86_makebaseoffset(chunk, dfc->src*4, 
+      genx86_operand* mem = genx86_makebaseoffset(chunk, offset[dfc->src], 
         gowidth_DWORD);
       fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->info.ireg.num);
       genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, dfc->var->slot, mem, 0);
@@ -1831,7 +1838,7 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
       case pal_CONST:
       case pal_CONSTB:
       {
-        genx86_operand* mem = genx86_makebaseoffset(chunk, dfc->src*4, 
+        genx86_operand* mem = genx86_makebaseoffset(chunk, offset[dfc->src], 
           gowidth_DWORD);
         fprintf(stderr, "Commit %d to %d\n", dfc->var->info.ireg.num,
           dfc->src);
