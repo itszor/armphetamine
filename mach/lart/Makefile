@@ -13,7 +13,8 @@ INCLUDE :=	-I. -I$(APBASEDIR)/libjtype -I$(APBASEDIR)/core \
                 -I/usr/include -I/usr/local/include \
                 -I/usr/include/readline
 
-CFLAGS :=	-g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DEMULART -DRECOMPILE
+CFLAGS :=        -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DEMULART \
+		-DRECOMPILE
 
 OBJ :=	        $(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) \
                 $(DEBUGOBJS)
