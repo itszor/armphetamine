@@ -94,6 +94,7 @@ typedef struct pheta_basicblock_t {
   struct pheta_basicblock_t* trueblk;
   struct pheta_basicblock_t* falseblk;
   struct pheta_basicblock_t* parent;
+  list* predecessor;  // flag resolution needs all predecessors for a block
   char* comment;
   bset_info* active;
   sint5 lbuf[ph_NUMREG];
@@ -197,6 +198,10 @@ extern void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
                           uint5* numsrc, uint5 src[]);
 extern void pheta_dfs_visit(pheta_basicblock* blk);
 extern void pheta_dfs(pheta_chunk* chunk);
+
+extern void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
+  uint5 needpred, uint5 needflag);
+extern void pheta_fixup_flags(pheta_chunk* chunk);
 
 extern uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno);
 

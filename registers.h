@@ -17,6 +17,7 @@ typedef struct {
   uint5 t[6];       // temporary cache
   // expanded out in dynarec code...
   uint3 cflag, vflag, zflag, nflag;
+  uint3 predbuf[16];  // probably only need to be 14 really
   uint5 base, scratch;
   uint5 mode, intmask;
   psrinfo cpsr;

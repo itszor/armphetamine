@@ -1092,10 +1092,11 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_FCOMMIT:
       {
-        uint5 commask = blk->base[i+1];
+        uint5 needmask = blk->base[i+2];
+        uint5 pred = blk->base[i+3] | (blk->base[i+4]<<8);
         palloc_info off;
         off.type = pal_RFILE;
-        if (commask & ph_C)
+        if (needmask & ph_C)
         {
           off.info.value = offsetof(registerinfo, cflag);
           if (nat->beenset & ph_IC)
@@ -1105,20 +1106,39 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
           else
             assert(!"Carry flag has not been set");
         }
-        if (commask & ph_V)
+        if (needmask & ph_V)
         {
           off.info.value = offsetof(registerinfo, vflag);
           genx86_out(nat, ab_SETO, &off, &nul, &nul, line);
         }
-        if (commask & ph_N)
+        if (needmask & ph_N)
         {
           off.info.value = offsetof(registerinfo, nflag);
           genx86_out(nat, ab_SETS, &off, &nul, &nul, line);
         }
-        if (commask & ph_Z)
+        if (needmask & ph_Z)
         {
           off.info.value = offsetof(registerinfo, zflag);
           genx86_out(nat, ab_SETE, &off, &nul, &nul, line);
+        }
+        if (pred)
+        {
+          uint5 j;
+          const static predset[] =
+          {
+            ab_SETE, ab_SETNE, ab_SETB, ab_SETAE,
+            ab_SETS, ab_SETNS, ab_SETO, ab_SETNO,
+            ab_SETA, ab_SETBE, ab_SETGE, ab_SETL,
+            ab_SETG, ab_SETLE
+          };
+          for (j=0; j<14; j++)
+          {
+            if (pred & (1<<j))
+            {
+              off.info.value = offsetof(registerinfo, predbuf[j]);
+              genx86_out(nat, predset[j], &off, &nul, &nul, line);
+            }
+          }
         }
         nat->expecting = 0;
       }

@@ -61,6 +61,26 @@ const uint3 pheta_instlength[] = {
   1   /* rts */
 };
 
+const static uint5 ccflags[] =
+{
+  /* eq */ ph_Z,
+  /* ne */ ph_Z,
+  /* cs */ ph_C,
+  /* cc */ ph_C,
+  /* mi */ ph_N,
+  /* pl */ ph_N,
+  /* vs */ ph_V,
+  /* vc */ ph_V,
+  /* hi */ ph_C | ph_Z,
+  /* ls */ ph_C | ph_Z,
+  /* ge */ ph_N | ph_V,
+  /* lt */ ph_N | ph_V,
+  /* gt */ ph_Z | ph_N | ph_V,
+  /* le */ ph_Z | ph_N | ph_V,
+  /* al */ 0,
+  /* nv */ 0
+};
+
 pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
 {
   pheta_chunk* p = cnew(pheta_chunk);
@@ -92,6 +112,7 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   b->trueblk = 0;
   b->falseblk = 0;
   b->parent = 0;
+  b->predecessor = 0;
   b->srcstart = startaddr;
   b->live = pqueue_new();
   b->required = 0;
@@ -181,7 +202,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       else chunk->currentblock = chunk->root;
     }
 
-    // ew, this is pretty shaky...    
+    // ew, this is pretty shaky...
     if (inst.generic.cond==cc_AL || inst.bra.ident==5)
     {
       dispatch(machine, inst, &phet4, chunk);
@@ -524,7 +545,7 @@ void pheta_dfs(pheta_chunk* chunk)
     if (blk->marker==col_WHITE) pheta_dfs_visit(blk);
   }
 }
-  
+
 void pheta_dfs_visit(pheta_basicblock* blk)
 {
   blk->marker = col_GREY;
@@ -541,10 +562,45 @@ void pheta_dfs_visit(pheta_basicblock* blk)
   blk->marker = col_BLACK;
 }
 
+void pheta_predecessor(pheta_chunk* chunk)
+{
+  list* scanblock;
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
+  {
+    pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
+    if (blk->trueblk)
+    {
+      list* seek;
+      uint5 there = 0;
+      for (seek=blk->trueblk->predecessor; seek; seek=seek->prev)
+        if (seek->data==blk) there = 1;
+      if (!there)
+      {
+        list_add(&blk->trueblk->predecessor);
+        blk->trueblk->predecessor->data = blk;
+      }
+    }
+    if (blk->falseblk)
+    {
+      list* seek;
+      uint5 there = 0;
+      for (seek=blk->falseblk->predecessor; seek; seek=seek->prev)
+        if (seek->data==blk) there = 1;
+      if (!there)
+      {
+        list_add(&blk->falseblk->predecessor);
+        blk->falseblk->predecessor->data = blk;
+      }
+    }
+  }
+}
+
 void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag)
 {
   sint5 i;
+  
+  if (needpred==ph_AL || needpred==ph_NV) needpred = -1;
   
   for (i=blk->length-1; i>=0; i--)
   {
@@ -554,10 +610,48 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
     switch (opcode)
     {
       case ph_SYNC:
+      needflag |= ph_C | ph_V | ph_N | ph_Z;
       break;
+      
+/*      case ph_FEXPECT:
+      case ph_NFEXPECT:
+      // these might chop some flags out but it'd only be a minor optimisation
+      // in case some better code could be generated without setting flags,
+      // eg LEA vs ADD or perhaps some RSB variants. Probably not worth the
+      // effort though.
+      break;*/
       
       case ph_FCOMMIT:
       case ph_NFCOMMIT:
+      {
+        uint5 have = blk->base[inststart+1];
+        uint5 need = blk->base[inststart+2];
+        uint5 pred = blk->base[inststart+3] | (blk->base[inststart+4]<<8);
+        // flag stuff only for ARM state affecting variant
+        if (opcode==ph_FCOMMIT)
+        {
+          need |= (needflag & have);
+          needflag &= ~need;
+        }
+        if (needpred != -1)
+        {
+          if ((ccflags[needpred] & have) == ccflags[needpred])
+          {
+            fprintf(stderr, "Fully satisfied predicate flags for %x\n", blk);
+            pred |= 1<<needpred;
+//            need |= ccflags[needpred];
+            needpred = -1;
+          }
+          else
+          {
+            fprintf(stderr, "Partially satisfied predicate flags, fix it\n");
+            abort();
+          }
+        }
+        blk->base[inststart+2] = need;
+        blk->base[inststart+3] = pred & 0xff;
+        blk->base[inststart+4] = (pred>>8) & 0xff;
+      }
       break;
     
       default:
@@ -565,6 +659,19 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
     } // switch (opcode)
     
     i = inststart;
+  }
+  if (needflag != 0 || needpred != -1)
+  {
+    list* l;
+    uint5 i;
+    fprintf(stderr, "Trying next level up\n");
+
+    for (l=blk->predecessor; l; l=l->prev)
+    {
+      pheta_basicblock* pre = l->data;
+      fprintf(stderr, "-- trying %x\n", pre);
+      pheta_fixup_flags_inner(pre, blktag, needpred, needflag);
+    }
   }
 }
 
@@ -578,7 +685,7 @@ void pheta_fixup_flags(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev, tag++)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
-    palloc_fixup_flags_inner(blk, tag);
+    pheta_fixup_flags_inner(blk, tag, blk->predicate, 0);
   }
 }
 

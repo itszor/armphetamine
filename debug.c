@@ -534,6 +534,10 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Commit shuffling\n");
   palloc_shufflecommit(mychunk);
   phetadism_chunk(mychunk);
+  fprintf(stderr, "Getting predecessors\n");
+  pheta_predecessor(mychunk);
+  fprintf(stderr, "Fixing up flags & predicates\n");
+  pheta_fixup_flags(mychunk);
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
