@@ -1,0 +1,10 @@
+load armtest 0xc0008000
+# disassemble 0xc0008238 0xc000826c
+# setreg 13 0x10009000
+# phetatrans 0xc0008238 0xc000826c
+setreg 14 0xc000826c
+# breakset 0xc000826c
+setreg 13 0xc0009000
+trace on
+run 0xc0008238
+registers

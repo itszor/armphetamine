@@ -1,0 +1,4 @@
+load dhry/dhry-emu 0x10000000
+disassemble 0x10000074 0x100000d0
+setreg 13 0x101d0000
+run STARTADDR
