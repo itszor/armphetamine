@@ -162,6 +162,10 @@ typedef struct {
   uint5 regno;
   pqueue* active;
   list* assoc;
+  hashtable* constantpool;
+  hashtable* registerpool;
+  list* miscoperand;
+  machineinfo* parentmachine;
 } pheta_chunk;
 
 /*

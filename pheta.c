@@ -45,6 +45,8 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->predno = 1;
   p->currentblock = 0;
   p->assoc = 0;
+  p->constantpool = hash_new(32);
+  p->registerpool = hash_new(8);
     
   return p;
 }
@@ -533,8 +535,33 @@ void pheta_scc(pheta_chunk* chunk)
 void pheta_scc_visit(pheta_basicblock* blk)
 {
   clist* walk;
+  clist* decreasing = clist_new(), *scan, *at;
   blk->marker = col_GREY;
   for (walk=blk->predecessor->next; walk->data; walk=walk->next)
+  {
+    pheta_basicblock* parent = walk->data;
+    clist* posn = decreasing;
+    for (scan=decreasing->next; scan->data; scan=scan->next)
+    {
+      pheta_basicblock* here = scan->data;
+      if (here->finishtime < parent->finishtime)
+      {
+        posn = scan;
+        break;
+      }
+    }
+    at = clist_append(posn);
+    at->data = parent;
+  }
+
+  for (walk=decreasing->next; walk->data; walk=walk->next)
+  {
+    pheta_basicblock* x = walk ? walk->data : 0;
+    fprintf(stderr, "%d ", x ? x->finishtime : -1);
+  }
+  fprintf(stderr, "\n");
+  
+  for (walk=decreasing->next; walk->data; walk=walk->next)
   {
     pheta_basicblock* parent = walk->data;
     if (parent->marker==col_WHITE)

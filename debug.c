@@ -568,6 +568,7 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
 /*  fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);*/
 
+  mychunk->parentmachine = machine;
   palloc_linearscan(mychunk, machine->mem);
   pqueue_delete(mychunk->active);
   fprintf(stderr, "Inserting register load/store code\n");

@@ -4,7 +4,7 @@
         .type    simple,function
 
 simple:
-	mov r0,#1024
-	mov r2,#5
+	strb r0,[r2]
+	movs r2,r3,lsl #5
 	ldr r1,[r0,#12]!
-	add r2,r2,r2
+	addeq r2,r2,r2

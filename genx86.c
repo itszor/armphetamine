@@ -12,822 +12,7 @@
 #include "phetadism.h"
 #include "relocate.h"
 #include "cnew.h"
-
-static const genx86_variant genx86_tab[] =
-{
-  /* shl */ { NULL,
-              NULL,
-              &rtasm_shl_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_shl_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V|ph_N|ph_Z
-            },
-  /* shr */ { NULL,
-              NULL,
-              &rtasm_shr_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_shr_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V|ph_N|ph_Z
-            },
-  /* sar */ { NULL,
-              NULL,
-              &rtasm_sar_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_sar_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V|ph_N|ph_Z
-            },
-  /* ror */ { NULL,
-              NULL,
-              &rtasm_ror_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_ror_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V
-            },
-  /* rol */ { NULL,
-              NULL,
-              &rtasm_rol_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_rol_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V
-            },
-  /* and */ { &rtasm_and_r32_rm32,
-              &rtasm_and_rm32_r32,
-              &rtasm_and_rm32_imm8,
-              &rtasm_and_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_N|ph_Z, ph_C|ph_V
-            },
-  /* or */  { &rtasm_or_r32_rm32,
-              &rtasm_or_rm32_r32,
-              &rtasm_or_rm32_imm8,
-              &rtasm_or_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_N|ph_Z, ph_C|ph_V
-            },
-  /* xor */ { &rtasm_xor_r32_rm32,
-              &rtasm_xor_rm32_r32,
-              &rtasm_xor_rm32_imm8,
-              &rtasm_xor_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_N|ph_Z, ph_C|ph_V
-            },
-  /* add */ { &rtasm_add_r32_rm32,
-              &rtasm_add_rm32_r32,
-              &rtasm_add_rm32_imm8,
-              &rtasm_add_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C|ph_V|ph_N|ph_Z, 0
-            },
-  /* adc */ { &rtasm_adc_r32_rm32,
-              &rtasm_adc_rm32_r32,
-              &rtasm_adc_rm32_imm8,
-              &rtasm_adc_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C|ph_V|ph_N|ph_Z, 0
-            },
-  /* sub */ { &rtasm_sub_r32_rm32,
-              &rtasm_sub_rm32_r32,
-              &rtasm_sub_rm32_imm8,
-              &rtasm_sub_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_IC|ph_V|ph_N|ph_Z, 0
-            },
-  /* sbb */ { &rtasm_sbb_r32_rm32,
-              &rtasm_sbb_rm32_r32,
-              &rtasm_sbb_rm32_imm8,
-              &rtasm_sbb_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_IC|ph_V|ph_N|ph_Z, 0
-            },
-  /* imul */{ &rtasm_imul_r32_rm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_imul_r32_rm32_imm8,
-              &rtasm_imul_r32_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              0, ph_C|ph_V|ph_N|ph_Z
-            },
-  /* lea */ { &rtasm_lea_r32_m32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-  /* mov */ { &rtasm_mov_r32_rm32,
-              &rtasm_mov_rm32_r32,
-              NULL,
-              &rtasm_mov_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-  /* not */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_not_rm32,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-  /* push */{ NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_push_rm32,
-              &rtasm_push_imm8,
-              &rtasm_push_imm32,
-              NULL,
-              0, 0
-            },
-  /* pop */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_pop_rm32,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-  /* rcr */ { NULL,
-              NULL,
-              &rtasm_rcr_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_rcr_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V
-            },
-  /* rcl */ { NULL,
-              NULL,
-              &rtasm_rcl_rm32_imm8,
-              NULL,
-              NULL,
-              &rtasm_rcl_rm32_cl,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, ph_V
-            },
-  /* test */{ NULL,
-              &rtasm_test_rm32_r32,
-              NULL,
-              &rtasm_test_rm32_imm32,
-              &rtasm_test_rm8_imm8,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_N|ph_Z, ph_C|ph_V
-            },
-  /* cmp */ { &rtasm_cmp_r32_rm32,
-              &rtasm_cmp_rm32_r32,
-              NULL,
-              &rtasm_cmp_rm32_imm32,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_IC|ph_V|ph_N|ph_Z, 0
-            },
-  /* ret */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_ret,
-              0, 0
-            },
- /* seto */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_seto_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setno */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setno_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
- /* setb */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setb_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setae */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setae_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
- /* sete */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_sete_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setne */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setne_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setbe */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setbe_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
- /* seta */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_seta_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
- /* sets */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_sets_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setns */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setns_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
- /* setl */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setl_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setge */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setge_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-/* setle */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setle_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
- /* setg */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_setg_rm8,
-              NULL,
-              NULL,
-              NULL,
-              0, 0
-            },
-   /* jo */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jo_rel8,
-              &rtasm_jo_rel32,
-              NULL,
-              0, 0
-            },
-  /* jno */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jno_rel8,
-              &rtasm_jno_rel32,
-              NULL,
-              0, 0
-            },
-   /* jb */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jb_rel8,
-              &rtasm_jb_rel32,
-              NULL,
-              0, 0
-            },
-  /* jae */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jae_rel8,
-              &rtasm_jae_rel32,
-              NULL,
-              0, 0
-            },
-   /* je */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_je_rel8,
-              &rtasm_je_rel32,
-              NULL,
-              0, 0
-            },
-  /* jne */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jne_rel8,
-              &rtasm_jne_rel32,
-              NULL,
-              0, 0
-            },
-  /* jbe */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jbe_rel8,
-              &rtasm_jbe_rel32,
-              NULL,
-              0, 0
-            },
-   /* ja */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_ja_rel8,
-              &rtasm_ja_rel32,
-              NULL,
-              0, 0
-            },
-   /* js */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_js_rel8,
-              &rtasm_js_rel32,
-              NULL,
-              0, 0
-            },
-  /* jns */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jns_rel8,
-              &rtasm_jns_rel32,
-              NULL,
-              0, 0
-            },
-   /* jl */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jl_rel8,
-              &rtasm_jl_rel32,
-              NULL,
-              0, 0
-            },
-  /* jge */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jge_rel8,
-              &rtasm_jge_rel32,
-              NULL,
-              0, 0
-            },
-  /* jle */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jle_rel8,
-              &rtasm_jle_rel32,
-              NULL,
-              0, 0
-            },
-   /* jg */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jg_rel8,
-              &rtasm_jg_rel32,
-              NULL,
-              0, 0
-            },
-  /* jmp */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jmp_rm32,
-              &rtasm_jmp_rel8,
-              &rtasm_jmp_rel32,
-              NULL,
-              0, 0
-            },
- /* call */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_call_rel32,
-              NULL,
-              0, ph_C|ph_V|ph_N|ph_Z
-            },
-/* jecxz */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_jecxz_rel8,
-              NULL,
-              NULL,
-              0, 0
-            },
-   /* bt */ { NULL,
-              &rtasm_bt_rm32_r32,
-              &rtasm_bt_rm32_imm8,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              ph_C, 0
-            },
-  /* cmc */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_cmc,
-              ph_C, 0
-            },
-  /* stc */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_stc,
-              ph_C, 0
-            },
-  /* clc */ { NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              NULL,
-              &rtasm_clc,
-              ph_C, 0
-            }
-};
+#include "genx86_tab.h"
 
 static const char* allocname[] = {
   "unset", "constb", "const", "rfile", "ireg",
@@ -2425,6 +1610,63 @@ void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
   }
 }
 
+genx86_operand* genx86_makeconstant(pheta_chunk* chunk, uint5 value)
+{
+  hashentry* e;
+  genx86_operand* op;
+  
+  if ((e = hash_lookup(chunk->constantpool, value)))
+  {
+    return e->data;
+  }
+  
+  e = hash_insert(chunk->constantpool, value);
+  op = e->data = cnew(genx86_operand);
+  
+  op->type = gotype_IMMEDIATE;
+  op->width = value < 128 ? gowidth_BYTE : gowidth_DWORD;
+  op->data.imm = value;
+  
+  return op;
+}
+
+genx86_operand* genx86_makeregister(pheta_chunk* chunk, uint5 reg)
+{
+  hashentry* e;
+  genx86_operand* op;
+  
+  if ((e = hash_lookup(chunk->registerpool, reg)))
+  {
+    return e->data;
+  }
+  
+  e = hash_insert(chunk->registerpool, reg);
+  op = e->data = cnew(genx86_operand);
+  
+  op->type = gotype_REGISTER;
+  op->width = gowidth_DWORD;
+  op->data.reg = reg;
+  
+  return op;
+}
+
+void genx86_call_function(genx86_buffer* buf, pheta_chunk* chunk, void* func)
+{
+  genx86_operand* blank;
+  hashentry* entry;
+  reloc_record* reloc;
+  
+  blank = genx86_makeconstant(chunk, 0);
+  genx86_append(chunk, buf, ab_CALL, blank, 0, 0);
+  
+  entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+  reloc = entry->data = cnew(reloc_record);
+  reloc->value = (uint5)func;
+  reloc->offset = 0;
+  reloc->size = relsize_WORD;
+  reloc->type = reloc_RELATIVE;
+}
+
 uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
   pheta_basicblock* blk, pheta_instr* instr, meminfo* mem)
 {
@@ -2687,10 +1929,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
-      genx86_operand* one = cnew(genx86_operand);
-      one->type = gotype_IMMEDIATE;
-      one->width = gowidth_BYTE;
-      one->data.imm = 1;
+      genx86_operand* one = genx86_makeconstant(chunk, 1);
       genx86_move(chunk, buf, dest, src);
       genx86_append(chunk, buf, ab_RCR, genx86_findoperand(chunk, dest), one, 
         0);
@@ -2701,10 +1940,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
-      genx86_operand* one = cnew(genx86_operand);
-      one->type = gotype_IMMEDIATE;
-      one->width = gowidth_BYTE;
-      one->data.imm = 1;
+      genx86_operand* one = genx86_makeconstant(chunk, 1);
       genx86_move(chunk, buf, dest, src);
       genx86_append(chunk, buf, ab_RCL, genx86_findoperand(chunk, dest), one, 
         0);
@@ -2885,10 +2121,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           off->width = gowidth_DWORD;
           off->data.regdisp.base = EBP;
           off->data.regdisp.disp = offsetof(registerinfo, cflag);
-          zero = cnew(genx86_operand);
-          zero->type = gotype_IMMEDIATE;
-          zero->width = gowidth_BYTE;
-          zero->data.imm = 0;
+          zero = genx86_makeconstant(chunk, 0);
           genx86_append(chunk, buf, ab_BT, off, zero, 0);
           if (mask==ph_IC)
           {
@@ -2911,25 +2144,24 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     }
     break;
 
+    case ph_LDB:
     case ph_LDW:
     {
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       genx86_operand* odest = genx86_findoperand(chunk, dest);
       genx86_operand* os1 = genx86_findoperand(chunk, src1);
-      genx86_operand* regeax;
+      genx86_operand* regeax, *regesp;
       genx86_operand* memop;
-      genx86_operand* rel;
+      genx86_operand* rel, *misc;
       hashentry* entry;
       reloc_record* reloc;
       uint5 preserve_eax = chunk->reguse[EAX] && dest->type==pal_IREG
                            && dest->info.ireg.num!=EAX;
       void* jecxzloc;
 
-      regeax = cnew(genx86_operand);
-      regeax->type = gotype_REGISTER;
-      regeax->width = gowidth_DWORD;
-      regeax->data.reg = EAX;
+      regeax = genx86_makeregister(chunk, EAX);
+      regesp = genx86_makeregister(chunk, ESP);
 
       /*  memory structure base
        *  address
@@ -2947,29 +2179,18 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       
       genx86_append(chunk, buf, ab_PUSH, os1, 0, 0);
 
-      memop = cnew(genx86_operand);
-      memop->type = gotype_IMMEDIATE;
-      memop->width = gowidth_DWORD;
-      memop->data.imm = mem;
+      memop = genx86_makeconstant(chunk, (uint5)mem);
       genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
 
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_DWORD;
-      rel->data.imm = 0;
-      genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
+      if (instr->opcode == ph_LDW)
+        genx86_call_function(buf, chunk, (void*)memory_readdataword);
+      else
+        genx86_call_function(buf, chunk, (void*)memory_readbyte);
 
-      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-      reloc = entry->data = cnew(reloc_record);
-      reloc->value = (uint5)&memory_readdataword;
-      reloc->offset = 0;
-      reloc->size = relsize_WORD;
-      reloc->type = reloc_RELATIVE;
+      misc = genx86_makeconstant(chunk, 8);      
+      genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
       
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_BYTE;
-      rel->data.imm = 0;
+      rel = genx86_makeconstant(chunk, 0);
       genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
 
       entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
@@ -2981,19 +2202,13 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
       jecxzloc = buf->buffer->prev;
 
-      genx86_recover(buf, chunk);
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_DWORD;
-      rel->data.imm = 0;
-      genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
+      misc = genx86_makeconstant(chunk, (uint5)chunk->parentmachine);
+      genx86_append(chunk, buf, ab_PUSH, misc, 0, 0);
 
-      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-      reloc = entry->data = cnew(reloc_record);
-      reloc->value = (uint5)&processor_dataabort;
-      reloc->offset = 0;
-      reloc->size = relsize_WORD;
-      reloc->type = reloc_RELATIVE;
+      genx86_call_function(buf, chunk, (void*)processor_dataabort);
+      
+      misc = genx86_makeconstant(chunk, 4);
+      genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
 
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
 
@@ -3013,56 +2228,83 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     }
     break;
 
-    case ph_LDB:
-    {
-      genx86_operand* rel;
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_DWORD;
-      rel->data.imm = 0;
-      /*  memory structure base
-       *  address
-       */
-      genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_BYTE;
-      rel->data.imm = 0;
-      genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
-      genx86_recover(buf, chunk);
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_DWORD;
-      rel->data.imm = 0;
-      genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
-      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
-    }
-    break;
-
     case ph_STW:
     case ph_STB:
     {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_operand* os1 = genx86_findoperand(chunk, src1);
+      genx86_operand* os2 = genx86_findoperand(chunk, src2);
+      genx86_operand* regeax, *regesp;
+      genx86_operand* memop;
       genx86_operand* rel;
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_DWORD;
-      rel->data.imm = 0;
-      /*  memory structure base
-       *  address
-       */
-      genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_BYTE;
-      rel->data.imm = 0;
+      genx86_operand* misc;
+      hashentry* entry;
+      reloc_record* reloc;
+      uint5 preserve_eax = chunk->reguse[EAX];
+      void* jecxzloc;
+
+      regeax = genx86_makeregister(chunk, EAX);
+      regesp = genx86_makeregister(chunk, ESP);
+
+      if (chunk->reguse[EAX])
+      {
+        preserve_eax |= palloc_evict_ireg(chunk, blk, EAX, 
+                                          (1<<EAX)|(1<<ECX)|(1<<EDX));
+      }
+      
+      if (preserve_eax)
+      {
+        genx86_append(chunk, buf, ab_PUSH, regeax, 0, 0);
+      }
+      
+      genx86_append(chunk, buf, ab_PUSH, os2, 0, 0);
+      genx86_append(chunk, buf, ab_PUSH, os1, 0, 0);
+
+      memop = genx86_makeconstant(chunk, (uint5)mem);
+      genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
+
+      if (instr->opcode == ph_STW)
+        genx86_call_function(buf, chunk, (void*)memory_writeword);
+      else
+        genx86_call_function(buf, chunk, (void*)memory_writebyte);
+
+      misc = genx86_makeconstant(chunk, 12);
+      genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
+      
+      rel = genx86_makeconstant(chunk, 0);
       genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
-      genx86_recover(buf, chunk);
-      rel = cnew(genx86_operand);
-      rel->type = gotype_IMMEDIATE;
-      rel->width = gowidth_DWORD;
-      rel->data.imm = 0;
-      genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
+
+      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = cnew(reloc_record);
+      reloc->value = 0;
+      reloc->offset = 0;
+      reloc->size = relsize_BYTE;
+      reloc->type = reloc_PLACEHOLDER;
+
+      jecxzloc = buf->buffer->prev;
+
+      misc = genx86_makeconstant(chunk, (uint5)chunk->parentmachine);
+      genx86_append(chunk, buf, ab_PUSH, misc, 0, 0);
+
+      genx86_call_function(buf, chunk, (void*)processor_dataabort);
+
+      misc = genx86_makeconstant(chunk, 4);
+      genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
+
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
+
+      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = cnew(reloc_record);
+      reloc->value = (uint5)jecxzloc;
+      reloc->offset = 0;
+      reloc->size = relsize_BYTE;
+      reloc->type = reloc_FORWARD;
+
+      if (preserve_eax)
+      {
+        genx86_append(chunk, buf, ab_POP, regeax, 0, 0);
+      }
     }
     break;
 
@@ -3099,10 +2341,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       dest->width = gowidth_DWORD;
       dest->data.regdisp.base = EBP;
       dest->data.regdisp.disp = 15*4;
-      c8 = cnew(genx86_operand);
-      c8->type = gotype_IMMEDIATE;
-      c8->width = gowidth_BYTE;
-      c8->data.imm = 8;
+      c8 = genx86_makeconstant(chunk, 8);
       genx86_append(chunk, buf, ab_ADD, dest, c8, 0);
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
@@ -3252,8 +2491,11 @@ void genx86_flatten_code(pheta_chunk* chunk)
 {
   list* scanblock;
   
+  palloc_clearmarkers(chunk);
+  
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
-    genx86_flatten_code_inner((pheta_basicblock*)scanblock->data);
+    pheta_basicblock* blk = scanblock->data;
+    genx86_flatten_code_inner(blk);
   }
 }
