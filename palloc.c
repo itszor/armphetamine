@@ -400,7 +400,6 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
   if ((rstart = pqueue_extract(blk->live)))
   {
     range = (palloc_liverange*) rstart->data;
-
   }
   else range = 0;
 

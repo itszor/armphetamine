@@ -40,9 +40,15 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <h1><a name="news">News</a></h1>
 
+<h3>24 June 2001</h3>
+
+<p>OK, I think I might have this code generation thingy sorted. The problem is that the compilation mechanism (register allocation, code generation, exception handling) seems to need to know everything at once. By producing a list of pseudo target instructions with mutable slots where the operands should be, I <i>think</i> I can get closer to that. Each virtual register in the intermediate code corresponds to one of these slots, so each use of that register can be reallocated somewhere else by just changing the value in one slot. This should enable code generation at the same time as register allocation, which makes the exception stuff easier and also since variable lifetimes are known at that point it's easier to allocate temporaries, etc.
+
+<p>That probably doesn't make a lot of sense, sorry. I guess I'll have to explain it properly at some point (if it works, anyway).
+
 <h3>21 June 2001</h3>
 
-<p>Some messy internals are getting far too messy. Time for yet <i>another</i> rethink of the whole code generation thing I think. Disconnected some obsolete code from the Makefile though, and that's about as productive as it gets.
+<p>Some messy internals are getting far too messy. Time for yet <i>another</i> rethink of the whole code generation thing I think. Disconnected some obsolete code from the Makefile though, and that's about as productive as I get right now.
 
 <h3>30 May 2001</h3>
 
