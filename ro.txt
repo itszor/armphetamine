@@ -1,0 +1,4 @@
+romload Rom 0
+breakset 5c
+trace off
+run 0
