@@ -43,6 +43,6 @@ void x86dism_partblock(nativeblockinfo* nat, uint5 start, uint5 length)
 	      "--architecture=i386", "--disassemble-all",
         template, 0);
 	*/
-  execl("/usr/local/bin/ndisasm", "", "-a", "-b", "32", "-o", startaddrstring,
+  execlp("ndisasm", "ndisasm", "-a", "-b", "32", "-o", startaddrstring,
     "-p", "intel", template, 0);
 }

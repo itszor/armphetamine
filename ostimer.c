@@ -49,12 +49,12 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       case 0x14:
       /* clears bits set to one in data */
       mem->ostimer->ossr &= ~data;
-      if (!mem->ostimer->ossr)
+/*      if (!mem->ostimer->ossr)
       {
         fprintf(stderr, "Stripping int bits\n");
         mem->intctrl->icip &= ~0x3c000000;
         mem->intctrl->icfp &= ~0x3c000000;
-      }
+      }*/
       break;
 
       case 0x18:
@@ -196,16 +196,22 @@ void ostimer_clock(machineinfo* machine)
     return;*/
   }
 
+  intctrl_blank(machine, 26);
+
   for (i=0; i<4; i++)
   {
     if (clk==oti->osmr[i])
     {
       /* set corresponding bit in status register */
       fprintf(stderr, "clk matched %d at time %x\n", i, clk);
+      fprintf(stderr, "OIER bit=%s\n", (1<<i) & oti->oier ? "true" : "false");
       oti->ossr |= (1<<i) & oti->oier;
-      intctrl_fire(machine, 26+i);
     }
   }
+
+  intctrl_add(machine, (oti->ossr&0xf)<<26);
+  
+  intctrl_fire(machine);
 }
 
 #endif

@@ -24,7 +24,7 @@ const char* modename_st[] =
 };
 
 // Switch the current processor mode
-void processor_mode(machineinfo* machine, uint5 newmode)
+void processor_mode(machineinfo* machine, uint5 newmode, uint5 copycpsr)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
@@ -33,16 +33,17 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   uint5 increasemode = omode<16 && newmode>=16;
   uint5 instaddr = PCADDR-8;
   instructionformat inst;
+  psrinfo spsr = reg->spsr[reg->spsr_current];
 
   if (omode!=newmode)
   {
     fprintf(stderr, "Switching mode from %s to %s\n",
-      modename_st[reg->cpsr.flag.mode], modename_st[newmode]);
+      modename_st[omode], modename_st[newmode]);
 
     if (instaddr<0xffffff00)
     {
       int i;
-      if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
+      if (omode<16) instaddr = instaddr & ~0xfc000003;
 
       fprintf(stderr, "Disassembling around %.8x\n", instaddr);
 
@@ -57,8 +58,8 @@ void processor_mode(machineinfo* machine, uint5 newmode)
           machine->detracecounter = 6;
         }*/
 
-        machine->trace = 1;
-        machine->detracecounter = 0;
+/*        machine->trace = 1;
+        machine->detracecounter = 0;*/
 
         fprintf(stderr, "+ %.8x : %.8x : ", instaddr+i, inst.instruction);
         dispatch(machine, inst, &diss, (void*)(instaddr+i));
@@ -67,42 +68,43 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     }
   }
 
+  if ((newmode&15)>0 && copycpsr)
+  {
+    fprintf(stderr, "Storing cpsr %.8x to spsr[%d]\n", reg->cpsr,
+      newmode&15);
+    reg->spsr[newmode&15] = reg->cpsr;
+  }
+
   switch (omode)
   {
     case pm_USR32:
-    reg->spsr[0] = reg->cpsr;
     case pm_USR26:
     for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
     break;
 
     case pm_FIQ32:
-    reg->spsr[1] = reg->cpsr;
     case pm_FIQ26:
     for (i=8; i<=14; i++) reg->fiq[i-8] = reg->r[i];
     break;
 
     case pm_IRQ32:
-    reg->spsr[2] = reg->cpsr;
     case pm_IRQ26:
     for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->irq[i-13] = reg->r[i];
     break;
 
     case pm_SVC32:
-    reg->spsr[3] = reg->cpsr;
     case pm_SVC26:
     for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->svc[i-13] = reg->r[i];
     break;
 
     case pm_ABT32:
-    reg->spsr[4] = reg->cpsr;
     for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->abt[i-13] = reg->r[i];
     break;
 
     case pm_UND32:
-    reg->spsr[5] = reg->cpsr;
     for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
     for (i=13; i<=14; i++) reg->und[i-13] = reg->r[i];
     break;
@@ -111,7 +113,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   switch (newmode)
   {
     case pm_USR32:
-    reg->cpsr = reg->spsr[0];
     case pm_USR26:
     for (i=8; i<=14; i++) reg->r[i] = reg->usr[i-8];
     // ignore bits 0,1,26,27 on LDM {...pc...}^
@@ -120,7 +121,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     break;
   
     case pm_FIQ32:
-    reg->cpsr = reg->spsr[1];
     case pm_FIQ26:
     for (i=8; i<=14; i++) reg->r[i] = reg->fiq[i-8];
     reg->pcmask = 0x0;
@@ -128,7 +128,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     break;
   
     case pm_IRQ32:
-    reg->cpsr = reg->spsr[2];
     case pm_IRQ26:
     for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
     for (i=13; i<=14; i++) reg->r[i] = reg->irq[i-13];
@@ -137,7 +136,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     break;
 
     case pm_SVC32:
-    reg->cpsr = reg->spsr[3];
     case pm_SVC26:
     for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
     for (i=13; i<=14; i++) reg->r[i] = reg->svc[i-13];
@@ -146,7 +144,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     break;
 
     case pm_ABT32:
-    reg->cpsr = reg->spsr[4];
     for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
     for (i=13; i<=14; i++) reg->r[i] = reg->abt[i-13];
     reg->pcmask = 0x0;
@@ -154,7 +151,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     break;
 
     case pm_UND32:
-    reg->cpsr = reg->spsr[5];
     for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
     for (i=13; i<=14; i++) reg->r[i] = reg->und[i-13];
     reg->pcmask = 0x0;
@@ -168,8 +164,9 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   
   machine->exectab = newmode<16 ? &exec26 : &exec32;
 
-  if (newmode==24) machine->trace = 1;
+/*  if (newmode==24) machine->trace = 1;*/
 
+#ifdef PROBABLY_BROKEN
   if (reducemode)
   {
     // absolutely no idea if this is right
@@ -188,6 +185,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     reg->cpsr.value = (reg->cpsr.value & ~0x000000c0)
                     | ((reg->r[15]>>20) & 0xc0);
   }
+#endif
   
 /*  if (increasemode)
   {
@@ -225,7 +223,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
 void processor_fiq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_FIQ32);
+  processor_mode(machine, pm_FIQ32, 1);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 3;  // disable fiq, irq
   reg->r[15] = 0x1C+8;
@@ -234,52 +232,52 @@ void processor_fiq(machineinfo* machine)
 void processor_irq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_IRQ32);
+  processor_mode(machine, pm_IRQ32, 1);
   reg->r[14] = reg->r[15];
-  reg->cpsr.flag.interrupt = 2;  // disable irq
+  reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x18+8;
 }
 
 void processor_prefetchabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_ABT32);
+  processor_mode(machine, pm_ABT32, 1);
   reg->r[14] = reg->r[15]-4;    /* +/- 4 */
-  reg->cpsr.flag.interrupt = 2;  // disable irq
+  reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x0C+8;
 }
 
 void processor_dataabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_ABT32);
+  processor_mode(machine, pm_ABT32, 1);
   reg->r[14] = reg->r[15];  /* +/- 4 */
-  reg->cpsr.flag.interrupt = 2;  // disable irq
+  reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x10+8;
 }
 
 void processor_swi(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_SVC32);
+  processor_mode(machine, pm_SVC32, 1);
   reg->r[14] = reg->r[15]-4;
-  reg->cpsr.flag.interrupt = 2;  // disable irq
+  reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x08+8;
 }
 
 void processor_und(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_UND32);
+  processor_mode(machine, pm_UND32, 1);
   reg->r[14] = reg->r[15]-4;
-  reg->cpsr.flag.interrupt = 2;  // disable irq
+  reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x04+8;
 }
 
 void processor_reset(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
-  processor_mode(machine, pm_SVC32);
+  processor_mode(machine, pm_SVC32, 1);
   reg->r[14] = reg->r[15];
   reg->cpsr.flag.interrupt = 3;  // disable fiq+irq
   reg->r[15] = 0x00+8;

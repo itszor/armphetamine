@@ -747,8 +747,9 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   }
 
   if ((mem->mmucontrol & 2) && (virtualaddress & 3)) {
-//    fprintf(stderr, "Alignment fault!\n");
-    mem->memoryfault = 1;
+  /* !!! ok, this is disabled 'cos it triggers on bytes, which is stupid */
+ /*   fprintf(stderr, "Alignment fault!\n");
+    mem->memoryfault = 1;*/
   }
 
   tableindex = virtualaddress >> 20;
@@ -761,7 +762,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     case 0:  // fault
     case 3:
     {
-//      fprintf(stderr, "Section translation fault\n");
+      fprintf(stderr, "Section translation fault\n");
       mem->memoryfault = 1;
     }
     break;
@@ -776,7 +777,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
       if (domainaccess==0 || domainaccess==2)
       {
-//        fprintf(stderr, "Page domain fault!\n");
+        fprintf(stderr, "Page domain fault!\n");
         mem->memoryfault = 1;
       }
 
@@ -785,7 +786,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
         case 0:  // page translation fault
         case 3:
         {
-//          fprintf(stderr, "Page translation fault!\n");
+          fprintf(stderr, "Page translation fault!\n");
           mem->memoryfault = 1;
         }
         break;  
@@ -895,7 +896,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
       if (domainaccess==0 || domainaccess==2)
       {
-        // fprintf(stderr, "Section domain fault\n");
+        fprintf(stderr, "Section domain fault\n");
         mem->memoryfault = 1;
       }
       

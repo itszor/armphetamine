@@ -17,7 +17,11 @@ typedef struct intctrl_registers intctrl_registers;
 
 extern intctrl_registers* intctrl_new(void);
 
-extern void intctrl_fire(machineinfo* machine, uint5 intsrc);
+extern void intctrl_blank(machineinfo* machine, uint5 unit);
+
+extern void intctrl_add(machineinfo* machine, uint5 intsrc);
+
+extern void intctrl_fire(machineinfo* machine);
 
 extern void intctrl_pending(machineinfo* machine);
 

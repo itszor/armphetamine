@@ -13,6 +13,7 @@
 #include "fakesys.h"
 #include "decode.h"
 #include "debug.h"
+#include "intctrl.h"
 
 /* nzcv eq ne cs cc mi pl vs vc hi ls ge lt gt le al nv
  * 1111 1  0  1  0  1  0  1  0  0  1  1  0  1  0  1  0
@@ -808,13 +809,12 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     else
     {
       uint5 interrupt = 0;
-      reg->cpsr.value &= ~field;
-      reg->cpsr.value |= val & field;
+      uint5 before = reg->cpsr.flag.interrupt & 0x2;
 
       /* control fields updated? */
       if (field & 0xff)
       {
-        processor_mode(machine, val & 0x1f);
+        processor_mode(machine, val & 0x1f, 1);
 
         if (!(reg->cpsr.flag.interrupt & 0x2))
         {
@@ -823,17 +823,20 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
         }
         else
         {
-          fprintf(stderr, "-- IRQ Disabled\n");
+          if (!before) fprintf(stderr, "-- IRQ Disabled\n");
         }
 
-        INCPC;
+        reg->cpsr.value &= ~field;
+        reg->cpsr.value |= val & field;
+
+      /*  INCPC;
 
         if (interrupt)
         {
-          intctrl_pending(machine);
+          intctrl_fire(machine);
           return 1;
         }
-        else return 0;
+        else return 0;*/
       }
     }
   }
@@ -1298,22 +1301,25 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     registerinfo* reg = machine->reg;
     meminfo* mem = machine->mem;
     uint5 base = RGET(inst.bdt.rn);
-    int i;
+    sint5 i;
     uint5 originalmode = reg->cpsr.flag.mode;
+    uint5 oldpc = reg->r[15];
 
 #ifdef ARM26BIT
     if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
     {
-      fprintf(stderr, "Hatted LDM/STM in 26-bit mode, forcing user "
-                      "bank transfer\n");
+      fprintf(stderr, "Hatted %s in 26-bit mode, forcing user "
+                      "bank transfer\n", inst.bdt.l ? "LDM" : "STM");
       savecurrent(machine, originalmode);
       restorenew(machine, pm_USR26);
     }
 #else
     if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
     {
-      fprintf(stderr, "Hatted LDM/STM in 32-bit mode, forcing user "
-                      "bank transfer\n");
+      fprintf(stderr, "Hatted %s in 32-bit mode, forcing user "
+                      "bank transfer\n", inst.bdt.l ? "LDM" : "STM");
+      fprintf(stderr, "PC %sincluded\n",
+        (inst.bdt.reglist & (1<<15)) ? "" : "not ");
       savecurrent(machine, originalmode);
       restorenew(machine, pm_USR32);
     }
@@ -1427,8 +1433,12 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 
     if (inst.bdt.s && inst.bdt.l && (inst.bdt.reglist & (1<<15)))
     {
-      fprintf(stderr, "Unimplemented mode change in LDM!\n");
-      abort();
+      fprintf(stderr, "Potential trouble spot (LDM)\n");
+      fprintf(stderr, "Address = %.8x\n", oldpc-8);
+/*      machine->trace = 1;*/
+    /*  reg->cpsr.flag.interrupt &= 1;*/
+     /* fprintf(stderr, "Unimplemented mode change in LDM!\n");
+      abort();*/
     }
 
     // pipeline correction, or just next instruction
@@ -1696,8 +1706,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0xf:
                 {
                   fprintf(stderr, "> Test, Clock, Idle ctrl (SA)\n");
-                  machine->trace = 1;
-                  machine->detracecounter = 4;
+           /*       machine->trace = 1;
+                  machine->detracecounter = 4;*/
                 }
                 break;
               }
