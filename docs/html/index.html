@@ -18,6 +18,8 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <p>To try the new stuff: symlink "Rom" to a copy of RISC OS 3.70, run the emulator, and type <tt>script ro.txt</tt>.
 
+<p>CVS repository is now on Sourceforge.
+
 <p>Oh yeah, some thoughts about precise exceptions and register rollback, but I'm not sure if it'd work or be efficient enough. The basic idea is this: allocate two copies of the register bank, with the lower aligned at twice the minimum power of two which will wholly contain one copy of the register bank, the second aligned above it in memory in such a way that the two copies can be flipped between by simply changing one bit of the address.
 
 <p>Define a 'rollback unit' as being (something like) the minimum of a basic block and the gap between memory accesses. Start a rollback unit reading from the lower bank of registers, then with each write do a bitwise OR on the address used to access that register, so that write and subsequent reads will access the upper copy not the lower. Multiple ORs are no-ops. Upper registers are committed to lower registers after the end of the rollback unit if no exception occurs. If an exception does occur, we can easily recover the state at the beginning of the rollback unit just by using the lower register bank and falling back to the emulator.
