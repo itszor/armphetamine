@@ -18,13 +18,10 @@ typedef enum {
   ph_FEXPECT,
   ph_FCOMMIT,
   ph_FENSURE,
-  ph_SETPRED,
   ph_NFEXPECT,
   ph_NFCOMMIT,
   ph_NFENSURE,
-  ph_NSETPRED,
   ph_FWRITE,
-  ph_XJMP,
   ph_LSL,
   ph_LSR,
   ph_ASR,
@@ -53,7 +50,10 @@ typedef enum {
   ph_SWI,
   ph_UNDEF,
   ph_SYNC,
-  ph_END
+  ph_XJMP,
+  ph_UKJMP,
+  ph_CAJMP,
+  ph_RTS
 } pheta_opcode;
 
 typedef enum {
@@ -88,8 +88,7 @@ typedef struct pheta_basicblock_t {
   uint5 size;
   uint5 cycles;
   uint5 srcstart;
-  uint3 predicate;
-  uint3 marker;
+  uint5 marker;
   uint5 required;
   uint5 set;
   struct pheta_basicblock_t* trueblk;
@@ -100,6 +99,7 @@ typedef struct pheta_basicblock_t {
   sint5 lbuf[ph_NUMREG];
   uint3 dirtybuf[ph_NUMREG];
   pqueue* live;
+  uint3 predicate;
 } pheta_basicblock;
 
 struct palloc_info;
@@ -151,28 +151,28 @@ typedef enum {
   ph_NV
 } pheta_condition_code;
 
-#define ph_EQ 0x0001
-#define ph_NE 0x0002
-#define ph_CS 0x0004
-#define ph_CC 0x0008
-#define ph_MI 0x0010
-#define ph_PL 0x0020
-#define ph_VS 0x0040
-#define ph_VC 0x0080
-#define ph_HI 0x0100
-#define ph_LS 0x0200
-#define ph_GE 0x0400
-#define ph_LT 0x0800
-#define ph_GT 0x1000
-#define ph_LE 0x2000
-#define ph_AL 0x4000
-#define ph_NV 0x8000
+#define bitcc_EQ 0x0001
+#define bitcc_NE 0x0002
+#define bitcc_CS 0x0004
+#define bitcc_CC 0x0008
+#define bitcc_MI 0x0010
+#define bitcc_PL 0x0020
+#define bitcc_VS 0x0040
+#define bitcc_VC 0x0080
+#define bitcc_HI 0x0100
+#define bitcc_LS 0x0200
+#define bitcc_GE 0x0400
+#define bitcc_LT 0x0800
+#define bitcc_GT 0x1000
+#define bitcc_LE 0x2000
+#define bitcc_AL 0x4000
+#define bitcc_NV 0x8000
 
-#define ph_Z  ph_EQ
-#define ph_C  ph_CS
-#define ph_IC ph_CC
-#define ph_N  ph_MI
-#define ph_V  ph_VS
+#define ph_Z  0x01
+#define ph_C  0x02
+#define ph_N  0x04
+#define ph_V  0x08
+#define ph_IC 0x10
 
 #define ph_ALWAYS 0
 

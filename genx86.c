@@ -1145,8 +1145,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       case ph_SYNC:
       break;
       
-      case ph_END:
-      break;
+      // !!! things missing
     }
     
     i += pheta_instlength[opcode];

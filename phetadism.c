@@ -6,17 +6,17 @@
 #include "pheta.h"
 #include "phetadism.h"
 
-static const char* opname[] = { "const", "constb", "fetch", "commit", "spill", 
-  "reload", "fexpect",
-  "fcommit", "fensure", "setpred", "nfexpect", "nfcommit", "nfensure",
-  "nsetpred", "fwrite", "xjmp", "lsl", "lsr", "asr", "ror", "rol", "rrx",
-  "rlx", "mov", "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub",
-  "sbc", "cmp", "cmn", "mul", "ldw", "ldb", "stw", "stb", "swi", "undef",
-  "sync", "end" };
+static const char* opname[] = { "const", "constb", "fetch", "commit", "spill",
+  "reload", "fexpect", "fcommit", "fensure", "nfexpect", "nfcommit", "nfensure",
+  "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", "rlx", "mov", "not",
+  "and", "or", "eor", "teq", "tst", "add", "adc", "sub", "sbc", "cmp", "cmn",
+  "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", "sync", "xjmp", "ukjmp",
+  "cajmp", "rts" };
 
 static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
                             "hi","ls","ge","lt","gt","le","al","nv"};
 
+static const char* txtflag[] = {"z", "c", "n", "v", "i"};
 
 void phetadism_chunk(pheta_chunk* chunk)
 {
@@ -24,6 +24,15 @@ void phetadism_chunk(pheta_chunk* chunk)
 
   for (; walk; walk = walk->prev)
     phetadism_block((pheta_basicblock*) walk->data);
+}
+
+static void writeflags(uint5 flags)
+{
+  uint5 j;
+  
+  for (j=0; j<5; j++)
+    if (flags & (1<<j))
+      printf("%s", txtflag[j]);
 }
 
 void phetadism_block(pheta_basicblock* blk)
@@ -82,28 +91,16 @@ void phetadism_block(pheta_basicblock* blk)
       break;
 
       case ph_FEXPECT:
-      case ph_FCOMMIT:
       case ph_FENSURE:
       case ph_NFEXPECT:
-      case ph_NFCOMMIT:
       case ph_NFENSURE:
       {
         uint5 mask = blk->base[i++], first=1;
         uint5 j;
-        mask |= blk->base[i++]<<8;
         
-        printf("%-10s", opname[opcode]);
-        
-        for (j=0; j<16; j++)
-        {
-          if (mask & (1<<j))
-          {
-            printf(first ? "%s" : ", %s", txtcc[j]);
-            first = 0;
-          }
-        }
-
-        printf("\n");
+        printf("%-10s[", opname[opcode]);
+        writeflags(mask);
+        printf("]\n");
         
 /*        if (mask & ph_C) strcat(flags, (first=0, "c"));
         if (mask & ph_V) strcat(flags, first ? (first=0, "v") : ",v");
@@ -114,14 +111,39 @@ void phetadism_block(pheta_basicblock* blk)
       }
       break;
 
-      case ph_SETPRED:
+      case ph_FCOMMIT:
+      case ph_NFCOMMIT:
+      {
+        uint5 have = blk->base[i++], first=1, j;
+        uint5 need = blk->base[i++];
+        uint5 pred = blk->base[i++];
+        pred |= blk->base[i++]<<8;
+        
+        printf("%-10s[", opname[opcode]);
+        writeflags(have);
+        printf("], [");
+        writeflags(need);
+        printf("], [");
+        for (j=0; j<16; j++)
+        {
+          if (pred & (1<<j))
+          {
+            printf(first ? "%s" : " %s", txtcc[j]);
+            first = 0;
+          }
+        }
+        printf("]\n");
+      }
+      break;
+
+/*      case ph_SETPRED:
       case ph_NSETPRED:
       {
         uint5 pno = blk->base[i++];
         uint5 ptype = blk->base[i++];
         printf("%-10sp%d, %s\n", opname[opcode], pno, txtcc[ptype]);
       }
-      break;
+      break;*/
 
       case ph_FWRITE:
       {
@@ -191,8 +213,11 @@ void phetadism_block(pheta_basicblock* blk)
       break;
 
       case ph_SWI:
+      case ph_UNDEF:
       case ph_SYNC:
-      case ph_END:
+      case ph_UKJMP:
+      case ph_CAJMP:
+      case ph_RTS:
       {
         printf("%-10s\n", opname[opcode]);
       }
@@ -206,10 +231,7 @@ void phetadism_block(pheta_basicblock* blk)
       break;
     }
   }
-  printf("Block predicate: p%d%s\n  True block: %x\n  False block: %x\n"
+  printf("Block predicate: %s\n  True block: %x\n  False block: %x\n"
          "  Parent block: %x\n\n",
-         blk->predicate,
-         blk->predicate==0 ? " (al)" :
-         blk->predicate==255 ? " (unset)" : "",
-         blk->trueblk, blk->falseblk, blk->parent);
+         txtcc[blk->predicate], blk->trueblk, blk->falseblk, blk->parent);
 }

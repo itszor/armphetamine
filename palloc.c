@@ -247,7 +247,7 @@ void palloc_fetchmem(pheta_chunk* chunk)
       uint5 opcode = blk->base[i];
       switch (opcode)
       {
-/*        case ph_FETCH:
+/*      case ph_FETCH:
         {
           uint5 dest = blk->base[i+1];
           uint5 armreg = blk->base[i+2];

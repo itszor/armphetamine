@@ -2,7 +2,7 @@
 <body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
 
 <center><h1>The Design of ARMphetamine 2</h1></center>
-<p align=center>Julian Brown, 27 March 2001
+<p align=center>Julian Brown, 27 March 2001. Modified 25 April 2001.
 
 <h3>Background: Accelerated Virtual Machines</h3>
 
@@ -309,6 +309,14 @@
 <h5>Summary of "Active Hashing"</h5>
 
 <p>At this time, the method described has not been tested. I currently envisage using it in conjunction with a global hash-table based on a balanced binary tree, which if designed properly should allow power-of-two sized sections of code to be invalidated by doing a simple tree walk, and could probably be augmented to allow for LRU code-block replacement.
+
+<h3>Return Target Buffer/Shadow Stack</h3>
+
+<p>As an extension of the above mechanism, a heuristic could be used to trap the ARM <tt>bl</tt> and <tt>mov[s] pc,lr</tt>/<tt>ldmfd r13!,{...pc}</tt> instructions used in function calls and push and pop appropriate x86 addresses onto a shadow stack. This is not robust on its own of course, but pushing the ARM program counter too and using a simple comparison to ensure the destination pc so obtained is the correct one would probably suffice to make things work.
+
+<p>If this was <i>not</i> done, the tables mentioned above could get prohibitively large for the return addresses of functions which are used a lot.
+
+<p>This requires an extra ph2 instruction, say <tt>RTS</tt>, to generate code in the appropriate place.
 
 <h3>Interrupts &amp; Precise Exceptions in Recompiled Code</h3>
 
