@@ -1365,6 +1365,19 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       // information isn't available here... damn.
       break;
       
+      // !!! this will actually have to do other stuff instead, esp. in
+      // 26-bit mode.
+      case ph_CAJMP:
+      {
+        palloc_info dest, c8;
+        dest.type = pal_RFILE;
+        dest.info.value = 15*4;
+        c8.type = pal_CONSTB;
+        c8.info.value = 8;
+        genx86_out(nat, ab_ADD, &dest, &c8, &nul, line);
+        genx86_out(nat, ab_RET, &nul, &nul, &nul, line);
+      }
+      break;
       // !!! things missing
     }
     
