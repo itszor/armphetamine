@@ -7,8 +7,8 @@ simple:
 	movs r1,#1024
 	beq true
 false:
-	mla r2,r1,r1,r2
-	bal done
+	str r2,[r1]
+	b done
 true:
 	subs r1,r1,#1
 done:

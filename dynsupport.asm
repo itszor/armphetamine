@@ -32,11 +32,10 @@ global dynsupport_readbank%1:function
 dynsupport_readbank%1
         mov eax,[esp+4]  ; meminfo* mem
         mov ecx,[esp+8]  ; phys address
-        and ecx,0xfffffc
         mov edx,[eax+meminfo_bank%1]
+        and ecx,0xfffffc
         mov eax,[edx+ecx]
         xor ecx,ecx
-        leave
         ret
 %endmacro
 
@@ -48,13 +47,13 @@ dynsupport_readbank%1
 %macro writebank 1
 global dynsupport_writebank%1:function
 dynsupport_writebank%1
-        mov eax,[esp+4]  ; meminfo* mem
-        mov ecx,[esp+8]  ; phys address
+        mov eax,[esp+4]   ; meminfo* mem
+        mov ecx,[esp+12]  ; phys address
         and ecx,0xfffffc
         mov edx,[eax+meminfo_bank%1]
+        mov eax,[esp+8]   ; word to write
         mov [edx+ecx],eax
         xor ecx,ecx
-        leave
         ret
 %endmacro
 
@@ -64,6 +63,7 @@ dynsupport_writebank%1
         writebank 3
 
 ; duplicating this functionality is stupid, but hey
+
 global dynsupport_readdataword:function
 dynsupport_readdataword:
         push esi
@@ -75,24 +75,28 @@ dynsupport_readdataword:
 
         mov ebx,[edx+tlbentry.modestamp]
         cmp ebx,[eax+meminfo_currentmode]
-        je tlbmiss
+        je rdw_tlbmiss
         
-        not esi
-        and ecx,esi
-        or ecx,[edx+tlbentry.physical]
-
         mov ebx,ecx
         mov esi,[edx+tlbentry.mask]
         and ebx,esi
         cmp ebx,[edx+tlbentry.virtual]
-        je tlbmiss
+        je rdw_tlbmiss
+
+        not esi
+        and ecx,esi
+        or ecx,[edx+tlbentry.physical]
 
         push ecx  ; phys addr
         push eax  ; meminfo
-        push ebp
-        jmp [edx+tlbentry.rdword]
+        call [edx+tlbentry.rdword]
+        add esp,8
+        pop ebx
+        pop edi
+        pop esi
+        ret
         
-tlbmiss:
+rdw_tlbmiss:
         mov esi,eax  ; memoryinfo
         mov edi,ebx  ; physical address
         push edx
@@ -100,9 +104,66 @@ tlbmiss:
         push eax
         call memory_virtualtophysical
         add esp,12
+        push edi  ; phys address
+        push esi  ; meminfo
+        call [edx+tlbentry.rdword]
+        add esp,8
+        pop ebx
+        pop edi
+        pop esi
+        ret
+
+global dynsupport_writeword:function
+dynsupport_writeword:
         push esi
         push edi
-        push ebp
-        jmp [edx+tlbentry.rdword]
+        push ebx
+        mov eax,[esp+16]  ; eax contains memoryinfo*
+        mov ecx,[esp+20]  ; ecx contains address
+        mov edx,[esp+28]  ; edx contains tlb entry
+
+        mov esi,[edx+tlbentry.modestamp]
+        cmp esi,[eax+meminfo_currentmode]
+        je ww_tlbmiss
+        
+        mov esi,[edx+tlbentry.mask]
+        and edi,esi
+        cmp edi,[edx+tlbentry.virtual]
+        je ww_tlbmiss
+
+        not esi
+        and ecx,esi
+        or ecx,[edx+tlbentry.physical]
+
+        mov ebx,[esp+24]  ; ebx contains word to write
+
+        push ebx  ; data
+        push ecx  ; phys addr
+        push eax  ; meminfo
+        call [edx+tlbentry.wrword]
+        add esp,12
+        pop ebx
+        pop edi
+        pop esi
+        ret
+        
+ww_tlbmiss:
+        mov esi,eax  ; memoryinfo
+        mov edi,ecx  ; physical address
+        push edx  ; tlb
+        push ecx  ; phys address
+        push eax  ; memoryinfo
+        call memory_virtualtophysical
+        add esp,12
+        mov ebx,[esp+24]  ; ebx contains word to write
+        push ebx  ; data
+        push edi  ; phys address
+        push esi  ; meminfo
+        call [edx+tlbentry.wrword]
+        add esp,12
+        pop ebx
+        pop edi
+        pop esi
+        ret
 .end:
 

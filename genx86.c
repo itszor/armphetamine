@@ -13,6 +13,7 @@
 #include "relocate.h"
 #include "cnew.h"
 #include "genx86_tab.h"
+#include "dynsupport.h"
 
 static const char* allocname[] = {
   "unset", "constb", "const", "rfile", "ireg",
@@ -684,6 +685,14 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                                 inst->op[1]->data.imm);
                             }
                             break;
+
+                            case gotype_ADDRESS:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, rtasm_addr(
+                                  inst->op[0]->data.addr),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
                             
                             default:
                             ERR;
@@ -749,10 +758,18 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                             {
                               genx86_tab[opcode].rm32_i8(nat, rtasm_scind32(
-                                inst->op[0]->data.regscaledisp.base,
-                                inst->op[0]->data.regscaledisp.index,
-                                inst->op[0]->data.regscaledisp.scale,
-                                inst->op[0]->data.regscaledisp.offset),
+                                  inst->op[0]->data.regscaledisp.base,
+                                  inst->op[0]->data.regscaledisp.index,
+                                  inst->op[0]->data.regscaledisp.scale,
+                                  inst->op[0]->data.regscaledisp.offset),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_ADDRESS:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, rtasm_addr(
+                                  inst->op[0]->data.addr),
                                 inst->op[1]->data.imm);
                             }
                             break;
@@ -832,7 +849,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                           inst->op[1]->data.imm);
                       }
                       break;
-                      
+                                            
                       default:
                       ERR;
                       break;
@@ -2253,7 +2270,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
 
       if (instr->opcode == ph_LDW)
-        genx86_call_function(buf, chunk, (void*)memory_readdataword);
+        genx86_call_function(buf, chunk, (void*)dynsupport_readdataword);
       else
         genx86_call_function(buf, chunk, (void*)memory_readbyte);
 
@@ -2335,15 +2352,23 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
 
       if (instr->opcode == ph_STW)
-        genx86_call_function(buf, chunk, (void*)memory_writeword);
+        genx86_call_function(buf, chunk, (void*)dynsupport_writeword);
       else
         genx86_call_function(buf, chunk, (void*)memory_writebyte);
 
       misc = genx86_makeconstant(chunk, 12);
       genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
+            
+      misc = cnew(genx86_op);
+      misc->type = gotype_ADDRESS;
+      misc->width = gowidth_BYTE;
+      misc->data.addr = (uint5)mem + offsetof(meminfo, memoryfault);
+      
+      rel = genx86_makeconstant(chunk, 1);
+      genx86_append(chunk, buf, ab_TEST, misc, rel, 0);
       
       rel = genx86_makeconstant(chunk, 0);
-      genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
+      genx86_append(chunk, buf, ab_JE, rel, 0, 0);
 
       entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
       reloc = entry->data = cnew(reloc_record);
