@@ -6,6 +6,7 @@
 #include "iomd.h"
 #include "keyboard.h"
 #include "mouse.h"
+#include "machine.h"
 
 void iomd_writebyte(meminfo* mem, uint5 address, uint5 data)
 {
@@ -94,6 +95,7 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     case 0x4c:  // Timer 0 Latch command
     mem->io.t0lolat = mem->io.timer0 & 0xff;
     mem->io.t0hilat = (mem->io.timer0 >> 8) & 0xff;
+    if (data==1) ((machineinfo*)mem->parent)->trace = 1;
     break;
     
     case 0x50:  // Timer 1 LOW bits

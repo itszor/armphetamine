@@ -58,16 +58,29 @@
 #  define PCADDR (reg->r[15] & ~0xfc000003)
 #  define PCSETADDR(X) reg->r[15] = (reg->r[15] & 0xfc000003) | ((X) & \
                                      ~0xfc000003)
-#  define PCSETADFL(X) { \
+/*
+#  define PCSETADFL(X) do { \
             reg->r[15] = (reg->r[15] & reg->pcmask) | ((X) & ~reg->pcmask); \
-            processor_mode(machine, (X) & 0x1f); \
-          }
-            
+            processor_mode(machine, reg->r[15] & 0x3); \
+          } while (0);
+*/
+
+#  define PCSETADFL(X) do { \
+            reg->r[15] = (X); \
+           /* reg->cpsr = reg->spsr[reg->spsr_current];*/ \
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
+          } while (0);
+
+
 #else
 #  define PCADDR (reg->r[15])
 #  define PCSETADDR(X) reg->r[15] = (X)
 // also do (somethingorother) with CPSR...
-#  define PCSETADFL(X) reg->r[15] = (X);
+#  define PCSETADFL(X) do { \
+            reg->r[15] = (X); \
+           /* reg->cpsr = reg->spsr[reg->spsr_current];*/ \
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
+          } while (0);
 #endif
 
 #ifdef ARM26BIT

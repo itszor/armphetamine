@@ -46,7 +46,7 @@ main.o: main.c cnew.h defs.h machine.h processor.h registers.h \
  pseudo.h codegen.h allocate.h x86asm.h analyse.h generators.h \
  riscos.h execute.h pqueue.h debug.h
 memory.o: memory.c defs.h cnew.h memory.h keyboard.h mouse.h \
- processor.h vidc20.h iomd.h
+ processor.h vidc20.h iomd.h machine.h registers.h hash.h list.h
 nativesupport.o: nativesupport.c defs.h registers.h processor.h \
  memory.h keyboard.h mouse.h nativesupport.h x86asm.h hash.h list.h \
  machine.h execute.h decode.h fakesys.h block.h pseudo.h codegen.h \
@@ -94,5 +94,5 @@ debug.o: debug.c defs.h machine.h processor.h registers.h memory.h \
 bset.o: bset.c defs.h bset.h cnew.h
 asmalutab.o: asmalutab.c defs.h asmalu.h
 fifo.o: fifo.c fifo.h defs.h cnew.h
-mouse.o: mouse.c mouse.h
+mouse.o: mouse.c mouse.h defs.h
 keyboard.o: keyboard.c keyboard.h defs.h

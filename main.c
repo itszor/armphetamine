@@ -125,6 +125,7 @@ int main(void)
   machine = machine_create(4*1024*1024);
   mem = machine->mem;
   reg = machine->reg;
+  mem->parent = machine;
 
 #ifdef VIDCSUPPORT
   fprintf(stderr, "Initialising VIDC20\n");

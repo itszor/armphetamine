@@ -6,6 +6,7 @@
 #include "processor.h"
 #include "vidc20.h"
 #include "iomd.h"
+#include "machine.h"
 
 meminfo* memory_initialise(uint5 bytes)
 {
@@ -240,8 +241,9 @@ uint5 memory_readfault(meminfo* mem, uint5 physaddress)
   fprintf(stderr, "Read fault at %x. Mode=%s\n", physaddress, 
     modename_st[mem->currentmode]);
   mem->memoryfault = 1;
+/*  ((machineinfo*)mem->parent)->trace = 1;*/
  /* exit(1);*/
-  return 0;
+  return 0x0c0ffee0;
 }
 
 void memory_nullwrite(meminfo* mem, uint5 physaddress, uint5 data)

@@ -29,6 +29,7 @@ typedef struct {
   uint5 abt[2];		  // saved 'abt' registers
   uint5 und[2];		  // saved 'und' registers
   psrinfo spsr[5];
+  uint5 spsr_current;
 } registerinfo;
 
 extern registerinfo* registers_new(void);

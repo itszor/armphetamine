@@ -460,7 +460,7 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
           reg->r[15] &= ~reg->pcmask;
           reg->r[15] |= rd & reg->pcmask;
           #else
-          if (mem->currentmode) reg->cpsr = reg->spsr[mem->currentmode];
+          if (mem->currentmode) reg->cpsr = reg->spsr[reg->spsr_current];
           #endif
         }
       }
@@ -480,7 +480,7 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
           reg->r[15] &= ~reg->pcmask;
           reg->r[15] |= rd & reg->pcmask;
           #else
-          if (mem->currentmode) reg->cpsr = reg->spsr[mem->currentmode];
+          if (mem->currentmode) reg->cpsr = reg->spsr[reg->spsr_current];
           #endif
         }
       }
@@ -719,29 +719,32 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
   
   if (inst.mrs.ident==0 && inst.mrs.ident2==15 && inst.mrs.ident3==2)
   {
-    PUT(inst.mrs.rd, inst.mrs.ps ? reg->spsr[mem->currentmode].value
+    PUT(inst.mrs.rd, inst.mrs.ps ? reg->spsr[reg->spsr_current].value
                                  : reg->cpsr.value);
   }
   else if (inst.msr.ident==0x29f00 && inst.msr.ident2==2)
   {
     if (inst.msr.pd)
     {
-      reg->spsr[mem->currentmode].value = GET(inst.msr.rm);
+      reg->spsr[reg->spsr_current].value = GET(inst.msr.rm);
     }
     else
     {
       psrinfo newpsr;
+      uint5 temp;
       newpsr.value = GET(inst.msr.rm);
       processor_mode(machine, newpsr.flag.mode);
+      temp = reg->cpsr.flag.mode;
       reg->cpsr.value = newpsr.value;
+      reg->cpsr.flag.mode = temp;  // urgh
     }
   }
   else if (inst.msrf.ident==0x28f && inst.msrf.ident2==2 && inst.msrf.ident3==0)
   {
     if (inst.msrf.pd)
     {
-      reg->spsr[mem->currentmode].value &= 0x0fffffff;
-      reg->spsr[mem->currentmode].value |= val & 0xf0000000;
+      reg->spsr[reg->spsr_current].value &= 0x0fffffff;
+      reg->spsr[reg->spsr_current].value |= val & 0xf0000000;
     }
     else
     {
@@ -950,6 +953,16 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     uint5 base = RGET(inst.bdt.rn);
     int i;
 
+#ifndef ARM26BIT
+    psrinfo currentcpsr;
+    if (inst.bdt.s)
+    {
+      fprintf(stderr, "Hatted LDM/STM in 32-bit mode!\n");
+      currentcpsr = reg->cpsr;
+      processor_mode(machine, pm_USR32);
+    }
+#endif
+
     if (inst.bdt.u)    // transfer registers upwards in memory
     {
       // uint5 *prev, *physbase = (uint5*)((uint5)memory_lookup(mem, base)&~3);
@@ -969,6 +982,12 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           INC;
           PCTRANSFER;
+#ifndef ARM26BIT
+          if (inst.bdt.l) // load
+          {
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+          }
+#endif
         }
       }
       else  // postincrement
@@ -987,6 +1006,12 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           PCTRANSFER;
           INC;
+#ifndef ARM26BIT
+          if (inst.bdt.l) // load
+          {
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+          }
+#endif
         }
       }
     }
@@ -1000,6 +1025,12 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           DEC;
           PCTRANSFER;
+#ifndef ARM26BIT
+          if (inst.bdt.l) // load
+          {
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+          }
+#endif
         }
         for (i=14; i>=0; i--)
         {
@@ -1018,6 +1049,12 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           PCTRANSFER;
           DEC;
+#ifndef ARM26BIT
+          if (inst.bdt.l) // load
+          {
+            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+          }
+#endif
         }
         for (i=14; i>=0; i--)
         {
@@ -1045,6 +1082,13 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
       mem->memoryfault = 0;
       return;
     }
+
+#ifndef ARM26BIT
+    if (inst.bdt.s)
+    {
+      processor_mode(machine, currentcpsr.flag.mode);
+    }
+#endif
 
     // pipeline correction, or just next instruction
     if (inst.bdt.l && (inst.bdt.reglist & (1<<15)))
@@ -1218,6 +1262,7 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0x8:
                 {
                   fprintf(stderr, "------> TLB operation (SA)\n");
+/*                  machine->trace = 1;*/
                 }
                 break;
                 

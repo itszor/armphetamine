@@ -90,6 +90,7 @@ struct meminfo {
   int writetag;
   uint3 currentmode;
   uint3 memoryfault;
+  void* parent;
 };
 
 typedef struct meminfo meminfo;

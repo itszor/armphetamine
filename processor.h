@@ -69,8 +69,8 @@ typedef enum {
 	pm_FIQ32,
 	pm_IRQ32,
 	pm_SVC32,
-	pm_ABT32,
-	pm_UND32
+	pm_ABT32=23,
+	pm_UND32=27
 } modenumber;
 
 struct machineinfo;
