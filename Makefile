@@ -27,6 +27,8 @@ SRC =	asmalutab.c cnew.c decode.c \
 	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c decodet.c \
 	executethm.c clist.c relocate.c structsupport.c genx86_tab.c
 
+TESTS =	divide simple armtest
+
 LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
 
 .PHONY:	clean cleaner package webpkg romdump
@@ -34,10 +36,10 @@ LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
 all:	.depend emulate simple divide armtest
 
 clean:
-	rm -f *.o emulate simple divide
+	rm -f *.o emulate $(TESTS)
 
 cleaner:
-	rm -f *.o emulate rtasm_fns.c rtasm_fns.h .depend
+	rm -f *.o emulate $(TESTS) rtasm_fns.c rtasm_fns.h .depend
 
 dynsupport.asm:	structsupport memory.h structsupport.inc
 execute26.c:	execute.inc.c

@@ -1703,11 +1703,27 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     case ph_FETCH:
     {
       genx86_delayedfetchcommit* dfc;
-      list_add(&buf->fetch);
-      buf->fetch->data = dfc = cnew(genx86_delayedfetchcommit);
-      dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.dest)];
-      dfc->src = instr->data.op.src1;
-      dfc->loc = buf->buffer->prev;
+      if (instr->data.op.src1 < 15)
+      {
+        list_add(&buf->fetch);
+        buf->fetch->data = dfc = cnew(genx86_delayedfetchcommit);
+        dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.dest)];
+        dfc->src = instr->data.op.src1;
+        dfc->loc = buf->buffer->prev;
+      }
+      else
+      {
+        fprintf(stderr, "Special fetch\n");
+        if (instr->data.op.src1==ph_R15_ADDR || 
+            instr->data.op.src1==ph_R15_FULL)
+        {
+          palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+          genx86_operand* src = genx86_makeconstant(chunk,
+            chunk->virtualaddress);
+          genx86_append(chunk, buf, ab_MOV, genx86_findoperand(chunk, dest),
+            src, 0);
+        }
+      }
 
   // no point in doing this?
   /* chunk->alloc[instr->data.op.dest].arm_affiliation = instr->data.op.src1;*/
@@ -1741,13 +1757,20 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     case ph_COMMIT:
     {
       genx86_delayedfetchcommit* dfc;
-      list_add(&buf->commit);
-      buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
-      dfc->src = instr->data.op.dest;
-      dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
-      dfc->loc = buf->buffer->prev;
-      fprintf(stderr, "Storing commit %d to %d\n", instr->data.op.src1,
-        instr->data.op.dest);
+      if (instr->data.op.dest<15)
+      {
+        list_add(&buf->commit);
+        buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
+        dfc->src = instr->data.op.dest;
+        dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
+        dfc->loc = buf->buffer->prev;
+        fprintf(stderr, "Storing commit %d to %d\n", instr->data.op.src1,
+          instr->data.op.dest);
+      }
+      else
+      {
+        fprintf(stderr, "Special commit\n");
+      }
 /*
       uint5 armdest = instr->data.op.dest;
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
@@ -1774,6 +1797,13 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     case ph_ASSOC:
     {
       chunk->alloc[instr->data.op.src1].arm_affiliation = instr->data.op.dest;
+    }
+    break;
+
+    case ph_ADDRESS:
+    {
+      chunk->virtualaddress = instr->data.imm;
+      fprintf(stderr, "Found address: %x\n", chunk->virtualaddress);
     }
     break;
 

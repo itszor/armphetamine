@@ -374,6 +374,11 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     instr->data.imm = va_arg(ap, uint5);
     break;
     
+    // this is a "#line" equivalent directive sort of
+    case ph_ADDRESS:
+    instr->data.imm = va_arg(ap, uint5);
+    break;
+    
     default:
     break;
   }
@@ -1046,6 +1051,9 @@ void pheta_cull_unused_nodes(pheta_chunk* chunk)
 
 uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno)
 {
+  if (regno==ph_R15_FULL || regno==ph_R15_ADDR)
+    pheta_emit(chunk, ph_ADDRESS, chunk->virtualaddress);
+  
   if (chunk->currentblock->lbuf[regno] != -1)
     return chunk->currentblock->lbuf[regno];
   else
@@ -1810,7 +1818,18 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   
   if (dest != -1)
   {
-    pheta_lcommit(chunk, inst.dp.rd, dest);
+    uint5 destr = inst.dp.rd;
+    if (destr==15)
+    {
+      destr = inst.dp.s ? ph_R15_FULL : ph_R15_ADDR;
+    }
+    pheta_lcommit(chunk, destr, dest);
+    if (inst.dp.rd==15)
+    {
+      pheta_emit(chunk, ph_SYNC);
+      // sometimes this should be a RTS
+      pheta_emit(chunk, ph_CAJMP);
+    }
   }
   return 0;
 }
@@ -2005,10 +2024,13 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   }
   else  // 'i' bit zero, immediate offset
   {
-    if (inst.sdt.u)
-      offsetreg = pheta_emit(chunk, ph_CONST, inst.sdt.offset);
-    else
-      offsetreg = pheta_emit(chunk, ph_CONST, -inst.sdt.offset);
+    if (inst.sdt.offset != 0)
+    {
+      if (inst.sdt.u)
+        offsetreg = pheta_emit(chunk, ph_CONST, inst.sdt.offset);
+      else
+        offsetreg = pheta_emit(chunk, ph_CONST, -inst.sdt.offset);
+    }
   }
   
   if (inst.sdt.p && offsetreg != -1)  // pre-indexed if 1
@@ -2018,24 +2040,26 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   
   if (inst.sdt.l)  // load
   {
+    uint5 destr = inst.sdt.rd==15 ? ph_R15_ADDR : inst.sdt.rd;
     if (inst.sdt.b)  // it's a byte!
     {
       int load = pheta_emit(chunk, ph_LDB, basereg);
-      pheta_lcommit(chunk, inst.sdt.rd, load);
+      pheta_lcommit(chunk, destr, load);
     }
     else  // it's a word!
     {
       int load = pheta_emit(chunk, ph_LDW, basereg);
-      pheta_lcommit(chunk, inst.sdt.rd, load);
+      pheta_lcommit(chunk, destr, load);
     }
     setpc = 1;
     pheta_cycles(chunk, 3);
   }
   else  // save (pc+12 issue!)
   {
+    uint5 srcr = inst.sdt.rd==15 ? ph_R15_ADDR : inst.sdt.rd;
     if (inst.sdt.b) // byte
     {
-      int store = pheta_lfetch(chunk, inst.sdt.rd);
+      int store = pheta_lfetch(chunk, srcr);
       if (inst.sdt.rd==15)
       {
         store = pheta_emit(chunk, ph_ADD, chunk,
@@ -2045,7 +2069,7 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
     }
     else  // word
     {
-      int store = pheta_lfetch(chunk, inst.sdt.rd);
+      int store = pheta_lfetch(chunk, srcr);
       if (inst.sdt.rd==15)
       {
         store = pheta_emit(chunk, ph_ADD, chunk,

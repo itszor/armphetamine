@@ -4,14 +4,15 @@
         .type    simple,function
 
 simple:
-	movs r1,#1024
-	beq true
-false:
-	str r2,[r1]
+	add pc,pc,r1,lsl #2
+	mov r0,r0
+	b one
+	b two
+one:
+	mov r5,#7
 	b done
-true:
-	subs r1,r1,#1
+two:
+	mov r5,#13
 done:
-	rsb r8,r8,#0
 	mov pc,r14
 

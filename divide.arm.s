@@ -25,7 +25,7 @@ divloop:
         subge r1,r1,r3
         addge r2,r2,#1
         subs r0,r0,#1
-        bne divloop - .
+        bne divloop
         cmp r4,#0
         rsbne r2,r2,#0
         mov r0,r2

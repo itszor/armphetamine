@@ -12,7 +12,7 @@ const char* opname[] = { "const", "constb", "fetch", "commit", "assoc",
   "nfcommit", "nfensure", "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", 
   "rlx", "mov", "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub", 
   "sbc", "cmp", "cmn", "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", 
-  "state", "sync", "xjmp", "ukjmp", "cajmp", "rts" };
+  "state", "sync", "xjmp", "ukjmp", "cajmp", "rts", "address" };
 
 const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
                      "hi","ls","ge","lt","gt","le","al","nv"};
@@ -164,9 +164,10 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
     break;
 
     case ph_XJMP:
+    case ph_ADDRESS:
     {
       uint5 word = instr->data.imm;
-      fprintf(f, "xjmp      #%.8x", word);
+      fprintf(f, "%-10s#0x%.8x", opname[opcode], word);
     }
     break;
 

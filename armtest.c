@@ -6,7 +6,7 @@ int testfunc(void)
 
   for (i=0; i<100; i++)
     for (j=0; j<100; j++)
-      if ((j^17)==(i^3))
+      if ((i^3)==1)
         k += i*j;
 
   return k;
