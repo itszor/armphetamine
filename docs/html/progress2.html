@@ -78,6 +78,26 @@
 
 <p>ph2 instructions are grouped into blocks. There is no explicit branch instruction, but instead each block has a condition type, and pointers to a 'true' block and a 'false' block. It is not necessary to exactly mirror all of the condition-code flags which the source machine code used, since the host machine's native control-flow logic is used instead. Of course, flags must be calculated correctly before control returns to the interpretive emulator.
 
+<p>In more detail, on the ARM (as in many) architecture, flow control is achieved using condition codes, which are combinations of particular flags. For example, a piece of code might want to jump somewhere if one register is greater than or equal to another register:
+<pre>
+        <b>cmp</b> r4,r5
+        <b>bge</b> somewhere
+</pre>
+<p>The first instruction sets four flags, named Z (zero), N (negative), V (overflow) and C (carry). The second tests a combination of those flags for the "greater-than or equal" condition, which is defined by "N set and V set, or N clear and V clear", or more concisely as "N==V".
+
+<p>The two architectures in question (ARM and IA-32) both employ flags for controlling flow like this, but have quite different semantics for setting and testing those flags. On the ARM for example, setting flags is optional for ALU operations, and any instruction may be conditionally executed. In IA-32, virtually all instructions unconditionally set (or corrupt) the processor flags. Nevertheless, we can still utilise the native processor's flag-calculation logic in recompiled code, although great care must be taken.
+
+<p>One approach (that used in ARMphetamine v1), is to save and restore flags individually, on-demand, in recompiled code. This was proven to work adequately, but produced bulky and slow code. The reason is mainly a shortcoming of IA-32, which makes it particularly difficult to alter individual bits corresponding to the S, Z and O flags in the flags register. The code sequence used - not necessarily the best - took between 9 and 18 instructions to restore between one and four bits. When this was multiplied by the number of times such an operation was necessary in a chunk of code, this meant a fairly large proportion of code was dedicated to essentially twiddling just a couple of bits.
+
+<p>A better approach is to group flags forming a condition code together, and treat them as an atomic unit (IA-32 provides convenient <tt>set<i>xx</i></tt> instruction which allow you to do just that). This means that the state of the flags is not mirrored exactly in recompiled code, and the on-demand scheme can no longer be utilised. Trivially, when we encounter a conditional branch (say), we scan the ph2 representation backwards (over block boundaries if necessary) until we find the instruction which last altered the flags correponding to the relevent condition code. Then we insert an instruction which saves that condition code into a predicate buffer, and use that value rather than the condition flags when we decide whether to take the branch or not. The assembly-language programmer or wizard compiler-writer is capable of writing perfectly legal but nasty code like this:
+<pre>
+        <b>movs</b> r0,r1,ror #3   <i># sets C,N,Z flags</i>
+        <b>add</b> r0,r0,r3        <i># sets nothing, IA-32 add destroys C,V,N,Z equivalents</i>
+        <b>tst</b> r0,r2           <i># sets N,Z flags</i>
+        <b>bhi</b> somewhere       <i># depends on C,Z (unsigned higher)</i>
+</pre>
+<p>Inserting an instruction in the ph2 representation of this to save the "hi" condition after the <tt>tst</tt> instruction will lead to different results from the original code, since the C flag from the <tt>add</tt> rather than the rotation in the <tt>movs</tt> instruction will erroneously be used. This isn't insurmountable obviously, but hopefully illustrates that the successful implementation of this algorithm would be a bit tricky. This is mainly why ph2 has such a verbose syntax for "expecting" and "committing" flags.
+
 <h3>Modified Linear Scan</h3>
 
 <p>Linear Scan is a fast register allocation technique developed by Poletto and Sarkar. Unfortunately in its basic form it is inconvenient for use in a dynamic recompilation system since information it requires whilst working is useful during other stages of code generation. First I'll explain how it normally works, then I'll describe my modification.
@@ -193,26 +213,7 @@
 
 <h5>Condition-Code Abstraction</h5>
 
-<p>One of the driving forces behind the design of ph2 is its amenability to abstracting condition flags and flow control out of the original binary code. On the ARM (as in many) architecture, flow control is achieved using condition codes, which are combinations of particular flags. For example, a piece of code might want to jump somewhere if one register is greater than or equal to another register:
-<pre>
-        <b>cmp</b> r4,r5
-        <b>bge</b> somewhere
-</pre>
-<p>The first instruction sets four flags, named Z (zero), N (negative), V (overflow) and C (carry). The second tests a combination of those flags for the "greater-than or equal" condition, which is defined by "N set and V set, or N clear and V clear", or more concisely as "N==V".
-
-<p>The two architectures in question (ARM and IA-32) both employ flags for controlling flow like this, but have quite different semantics for setting and testing those flags. On the ARM for example, setting flags is optional for ALU operations, and any instruction may be conditionally executed. In IA-32, virtually all instructions unconditionally set (or corrupt) the processor flags. Nevertheless, we can still utilise the native processor's flag-calculation logic in recompiled code, although great care must be taken.
-
-<p>One approach (that used in ARMphetamine v1), is to save and restore flags individually, on-demand, in recompiled code. This was proven to work adequately, but produced bulky and slow code. The reason is mainly a shortcoming of IA-32, which makes it particularly difficult to alter individual bits corresponding to the S, Z and O flags in the flags register. The code sequence used - not necessarily the best - took between 9 and 18 instructions to restore between one and four bits. When this was multiplied by the number of times such an operation was necessary in a chunk of code, this meant a fairly large proportion of code was dedicated to essentially twiddling just a couple of bits.
-
-<p>A better approach is to group flags forming a condition code together, and treat them as an atomic unit (IA-32 provides convenient <tt>set<i>xx</i></tt> instruction which allow you to do just that). This means that the state of the flags is not mirrored exactly in recompiled code, and the on-demand scheme can no longer be utilised. Trivially, when we encounter a conditional branch (say), we scan the ph2 representation backwards (over block boundaries if necessary) until we find the instruction which last altered the flags correponding to the relevent condition code. Then we insert an instruction which saves that condition code into a predicate buffer, and use that value rather than the condition flags when we decide whether to take the branch or not. The assembly-language programmer or wizard compiler-writer is capable of writing perfectly legal but nasty code like this:
-<pre>
-        <b>movs</b> r0,r1,ror #3   <i># sets C,N,Z flags</i>
-        <b>add</b> r0,r0,r3        <i># sets nothing, IA-32 add destroys C,V,N,Z equivalents</i>
-        <b>tst</b> r0,r2           <i># sets N,Z flags</i>
-        <b>bhi</b> somewhere       <i># depends on C,Z (unsigned higher)</i>
-</pre>
-<p>Inserting an instruction in the ph2 representation of this to save the "hi" condition after the <tt>tst</tt> instruction will lead to different results from the original code, since the C flag from the <tt>add</tt> rather than the rotation in the <tt>movs</tt> instruction will erroneously be used. This isn't insurmountable obviously, but hopefully illustrates that the successful implementation of this algorithm would be a bit tricky. This is mainly why ph2 has such a verbose syntax for "expecting" and "committing" flags.
-
+<p>One of the driving forces behind the design of ph2 is its amenability to abstracting condition flags and flow control out of the original binary code. 
 <h5>Summary of ph2</h5>
 
 <p>ph2 is essentially a form of register-transfer language. The translation stage from ARM code to ph2 performs <b>register renaming</b> in much the same way as many modern superscalar processors, which aids register allocation later by splitting the liveness of registers in many fragments of ARM code into smaller pieces, which overlap less and thus ease the allocation of registers on the register-starved IA-32 architecture.
