@@ -85,8 +85,6 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       case 0x20:
       fprintf(stderr, "Writing to icpr\n");
       mem->intctrl->icpr &= ~data;
-      mem->intctrl->icfp &= ~data;
-      mem->intctrl->icip &= ~data;
       break;
 
       case 0x0c:
