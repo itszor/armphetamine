@@ -226,7 +226,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->bank1 = cnewarray(uint5, BANK1RAM/4);
   mem->bank2 = cnewarray(uint5, BANK2RAM/4);
   mem->bank3 = cnewarray(uint5, BANK3RAM/4);
-  mem->rom0 = cnewarray(uint5, 4*1024*1024/4);
+  mem->rom0 = cnewarray(uint5, 16*1024*1024/4);
   mem->rom1 = cnewarray(uint5, 16*1024*1024/4); // hello, I'm flash
   mem->vram = VRAM ? cnewarray(uint5, VRAM/4) : 0;
   mem->currentmode = 0;
@@ -734,7 +734,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 //  user  super
 //  r  w  r  w
     0, 0, 0, 0,  // ap = 00, r = 0, s = 0
-    0, 0, 1, 0,  // ap = 00, r = 0, s = 1
+    0, 0, 1, 1,  // ap = 00, r = 0, s = 1
     1, 0, 1, 0,  // ap = 00, r = 1, s = 0
     0, 0, 0, 0,  // ap = 00, r = 1, s = 1
     
@@ -778,7 +778,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     case 0:  // fault
     case 3:
     {
-      fprintf(stderr, "Section translation fault\n");
+      fprintf(stderr, "Section translation fault at %.8x\n", virtualaddress);
       mem->memoryfault = 1;
     }
     break;
