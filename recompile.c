@@ -1,6 +1,8 @@
 #include "recompile.h"
 #include "pheta.h"
 #include "machine.h"
+#include "palloc.h"
+#include "genx86.h"
 #include "x86asm.h"
 
 pheta_chunk* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)

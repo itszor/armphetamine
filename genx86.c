@@ -972,6 +972,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.dest)];
         dfc->src = instr->data.op.src1;
         dfc->loc = buf->buffer->prev;
+        fprintf(stderr, "Fetch %d to %d\n",
+          palloc_close(chunk, instr->data.op.dest), dfc->src);
       }
       else
       {
@@ -1867,18 +1869,6 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
     60, 60, offsetof(registerinfo, cpsr), offsetof(registerinfo, cpsr)
   };
   
-  for (scan=buf->fetch; scan; scan=scan->prev)
-  {
-    genx86_delayedfetchcommit* dfc = scan->data;
-    if (dfc->var->type==pal_IREG)
-    {
-      genx86_operand* mem = genx86_makebaseoffset(chunk, offset[dfc->src], 
-        gowidth_DWORD);
-      fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->info.ireg.num);
-      genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, dfc->var->slot, mem, 0);
-    }
-  }
-  
   for (scan=buf->commit; scan; scan=scan->prev)
   {
     genx86_delayedfetchcommit* dfc = scan->data;
@@ -1910,6 +1900,18 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
       
       default:
       break;
+    }
+  }
+
+  for (scan=buf->fetch; scan; scan=scan->prev)
+  {
+    genx86_delayedfetchcommit* dfc = scan->data;
+    if (dfc->var->type==pal_IREG)
+    {
+      genx86_operand* mem = genx86_makebaseoffset(chunk, offset[dfc->src], 
+        gowidth_DWORD);
+      fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->info.ireg.num);
+      genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, dfc->var->slot, mem, 0);
     }
   }
 }

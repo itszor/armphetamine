@@ -1,13 +1,13 @@
 load divide 0x10000000
 disassemble 0x10000074 0x100000d0
-setreg 0 144
-setreg 1 12
+setreg 0 0x144
+setreg 1 0x12
 setreg 13 0x10000200
 setreg 14 0x100000d0
 phetatrans 0x10000074 0x100000d0
 registers
-setreg 0 144
-setreg 1 12
+setreg 0 0x144
+setreg 1 0x12
 setreg 13 0x10000200
 setreg 14 0x100000d0
 breakset 0x100000cc
