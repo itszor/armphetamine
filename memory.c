@@ -37,11 +37,12 @@ void memory_invalidatetlb(tlbentry* tlb)
   tlb->modestamp = -1;  // there isn't a mode -1
 }
 
-// I don't know if this is sensible.
+/* This wasn't sensible
 void memory_setmapping(meminfo* mem, uint5 from, uint5 to)
 {
   // blah
 }
+*/
 
 #ifdef VIRTUALFRAMEBUFFER
 // screen might need updating (efficiency, efficiency...)
