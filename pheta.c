@@ -541,6 +541,47 @@ void pheta_dfs_visit(pheta_basicblock* blk)
   blk->marker = col_BLACK;
 }
 
+void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
+  uint5 needpred, uint5 needflag)
+{
+  sint5 i;
+  
+  for (i=blk->length-1; i>=0; i--)
+  {
+    uint5 inststart = i-blk->base[i]+1;
+    uint5 opcode = blk->base[inststart];
+    
+    switch (opcode)
+    {
+      case ph_SYNC:
+      break;
+      
+      case ph_FCOMMIT:
+      case ph_NFCOMMIT:
+      break;
+    
+      default:
+      // do nothing
+    } // switch (opcode)
+    
+    i = inststart;
+  }
+}
+
+void pheta_fixup_flags(pheta_chunk* chunk)
+{
+  list* scanblock;
+  uint5 tag=0;
+  
+  palloc_clearmarkers(chunk);
+  
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev, tag++)
+  {
+    pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
+    palloc_fixup_flags_inner(blk, tag);
+  }
+}
+
 uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno)
 {
   if (chunk->currentblock->lbuf[regno] != -1)
