@@ -86,7 +86,8 @@ typedef enum {
   gowidth_BYTE,
   gowidth_WORD,
   gowidth_DWORD,
-  gowidth_QWORD
+  gowidth_QWORD,
+  gowidth_NUMWIDTHS
 } genx86_operand_width;
 
 typedef enum {

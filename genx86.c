@@ -53,11 +53,469 @@ static const char* otype[] = { "empty", "partial", "immediate", "register",
 #define COMPOUND3(A,B,C) \
   ((A)*gotype_NUMTYPES*gotype_NUMTYPES+(B)*gotype_NUMTYPES+(C))
 
+#define SIZEDTYPE(T,S) ((T)*gowidth_NUMWIDTHS+(S))
+
 #define ERR { fprintf(stderr, "Broke at line %d\n" \
   "Operator=%s op[0]=%s op[1]=%s op[2]=%s\n", __LINE__, abname[inst->operator],\
    inst->op[0] ? otype[inst->op[0]->type] : "(nil)", \
    inst->op[1] ? otype[inst->op[1]->type] : "(nil)", \
    inst->op[2] ? otype[inst->op[2]->type] : "(nil)"); abort(); }
+
+static void genx86_asm_r32_2(nativeblockinfo* nat, genx86_op* inst,
+  uint5 opcode, uint5 ops, uint5 reg)
+{
+  rtasm_mtype arg2_mtype;
+
+  switch SIZEDTYPE(inst->op[1]->type, inst->op[1]->width)
+  {
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_DWORD):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].r32_i32)
+        {
+          genx86_tab[opcode].r32_i32(nat, reg, inst->op[1]->data.imm);
+        }
+        else if (genx86_tab[opcode].rm8_i8)
+        {
+          genx86_tab[opcode].rm32_i32(nat, rtasm_reg(reg), 
+            inst->op[1]->data.imm);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_REGISTER, gowidth_DWORD):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].r32_rm32)
+        {
+          genx86_tab[opcode].r32_rm32(nat, reg, 
+            rtasm_reg(inst->op[1]->data.reg));
+        }
+        else if (genx86_tab[opcode].rm32_r32)
+        {
+          genx86_tab[opcode].rm32_r32(nat, rtasm_reg(reg), 
+            inst->op[1]->data.reg);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_INDREG, gowidth_DWORD):
+    arg2_mtype = rtasm_ind(inst->op[0]->data.reg);
+    goto r32_m32_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSDISP8, gowidth_DWORD):
+    arg2_mtype = rtasm_ind8(inst->op[0]->data.regdisp.base,
+                            inst->op[0]->data.regdisp.disp);
+    goto r32_m32_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSDISP32, gowidth_DWORD):
+    arg2_mtype = rtasm_ind32(inst->op[0]->data.regdisp.base,
+                             inst->op[0]->data.regdisp.disp);
+    goto r32_m32_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREG, gowidth_DWORD):
+    arg2_mtype = rtasm_scind(inst->op[0]->data.regscale.base,
+                             inst->op[0]->data.regscale.index,
+                             inst->op[0]->data.regscale.scale);
+    goto r32_m32_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP8, gowidth_DWORD):
+    arg2_mtype = rtasm_scind8(inst->op[0]->data.regscaledisp.base,
+                              inst->op[0]->data.regscaledisp.index,
+                              inst->op[0]->data.regscaledisp.scale,
+                              inst->op[0]->data.regscaledisp.offset);
+    goto r32_m32_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP32, gowidth_DWORD):
+    arg2_mtype = rtasm_scind32(inst->op[0]->data.regscaledisp.base,
+                               inst->op[0]->data.regscaledisp.index,
+                               inst->op[0]->data.regscaledisp.scale,
+                               inst->op[0]->data.regscaledisp.offset);
+    goto r32_m32_wotsit;
+    
+    case SIZEDTYPE(gotype_ADDRESS, gowidth_DWORD):
+    arg2_mtype = rtasm_addr(inst->op[0]->data.addr);
+
+    r32_m32_wotsit:
+    
+    if (ops==2)
+    {
+      if (genx86_tab[opcode].r32_rm32)
+      {
+        genx86_tab[opcode].r32_rm32(nat, reg, arg2_mtype);
+      }
+      else ERR;
+    }
+    else ERR;
+  }
+}
+
+static void genx86_asm_m32_2(nativeblockinfo* nat, genx86_op* inst,
+  uint5 opcode, uint5 ops, rtasm_mtype* arg1)
+{
+  switch SIZEDTYPE(inst->op[1]->type, inst->op[1]->width)
+  {
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_BYTE):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].rm32_i8)
+        {
+          genx86_tab[opcode].rm32_i8(nat, *arg1, inst->op[1]->data.imm);
+        }
+      }
+      else ERR;
+    }
+    break;
+  
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_DWORD):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].rm32_i32)
+        {
+          genx86_tab[opcode].rm32_i32(nat, *arg1, inst->op[1]->data.imm);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_REGISTER, gowidth_DWORD):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].rm32_r32)
+        {
+          genx86_tab[opcode].rm32_r32(nat, *arg1, inst->op[1]->data.reg);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+        
+    default:
+    ERR;
+  }
+}
+
+static void genx86_asm_r8_2(nativeblockinfo* nat, genx86_op* inst, uint5 opcode,
+  uint5 ops, uint5 reg)
+{
+  rtasm_mtype arg2_mtype;
+
+  switch SIZEDTYPE(inst->op[1]->type, inst->op[1]->width)
+  {
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_BYTE):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].r8_i8)
+        {
+          genx86_tab[opcode].r8_i8(nat, reg, inst->op[1]->data.imm);
+        }
+        else if (genx86_tab[opcode].rm8_i8)
+        {
+          genx86_tab[opcode].rm8_i8(nat, rtasm_reg(reg), inst->op[1]->data.imm);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_REGISTER, gowidth_BYTE):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].r8_rm8)
+        {
+          genx86_tab[opcode].r8_rm8(nat, reg, rtasm_reg(inst->op[1]->data.reg));
+        }
+        else if (genx86_tab[opcode].rm8_r8)
+        {
+          genx86_tab[opcode].rm8_r8(nat, rtasm_reg(reg), inst->op[1]->data.reg);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_INDREG, gowidth_BYTE):
+    arg2_mtype = rtasm_ind(inst->op[0]->data.reg);
+    goto r8_m8_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSDISP8, gowidth_BYTE):
+    arg2_mtype = rtasm_ind8(inst->op[0]->data.regdisp.base,
+                            inst->op[0]->data.regdisp.disp);
+    goto r8_m8_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSDISP32, gowidth_BYTE):
+    arg2_mtype = rtasm_ind32(inst->op[0]->data.regdisp.base,
+                             inst->op[0]->data.regdisp.disp);
+    goto r8_m8_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREG, gowidth_BYTE):
+    arg2_mtype = rtasm_scind(inst->op[0]->data.regscale.base,
+                             inst->op[0]->data.regscale.index,
+                             inst->op[0]->data.regscale.scale);
+    goto r8_m8_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP8, gowidth_BYTE):
+    arg2_mtype = rtasm_scind8(inst->op[0]->data.regscaledisp.base,
+                              inst->op[0]->data.regscaledisp.index,
+                              inst->op[0]->data.regscaledisp.scale,
+                              inst->op[0]->data.regscaledisp.offset);
+    goto r8_m8_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP32, gowidth_BYTE):
+    arg2_mtype = rtasm_scind32(inst->op[0]->data.regscaledisp.base,
+                               inst->op[0]->data.regscaledisp.index,
+                               inst->op[0]->data.regscaledisp.scale,
+                               inst->op[0]->data.regscaledisp.offset);
+    goto r8_m8_wotsit;
+    
+    case SIZEDTYPE(gotype_ADDRESS, gowidth_BYTE):
+    arg2_mtype = rtasm_addr(inst->op[0]->data.addr);
+
+    r8_m8_wotsit:
+    
+    if (ops==2)
+    {
+      if (genx86_tab[opcode].r8_rm8)
+      {
+        genx86_tab[opcode].r8_rm8(nat, reg, arg2_mtype);
+      }
+      else ERR;
+    }
+    else ERR;
+  }
+}
+
+static void genx86_asm_m8_2(nativeblockinfo* nat, genx86_op* inst, uint5 opcode,   uint5 ops, rtasm_mtype* arg1)
+{
+  switch SIZEDTYPE(inst->op[1]->type, inst->op[1]->width)
+  {
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_BYTE):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].rm8_i8)
+        {
+          genx86_tab[opcode].rm8_i8(nat, *arg1, inst->op[1]->data.imm);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_REGISTER, gowidth_BYTE):
+    {
+      if (ops==2)
+      {
+        if (genx86_tab[opcode].rm8_r8)
+        {
+          genx86_tab[opcode].rm8_r8(nat, *arg1, inst->op[1]->data.reg);
+        }
+        else ERR;
+      }
+      else ERR;
+    }
+    break;
+        
+    default:
+    ERR;
+  }
+}
+
+static void genx86_asm_1(nativeblockinfo* nat, genx86_op* inst, uint5 opcode, 
+  uint5 ops)
+{
+  rtasm_mtype arg1_mtype;
+
+  switch (SIZEDTYPE(inst->op[0]->type, inst->op[0]->width))
+  {
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_BYTE):
+    {
+      if (genx86_tab[opcode].i8)
+      {
+        genx86_tab[opcode].i8(nat, inst->op[0]->data.imm);
+      }
+      else if (genx86_tab[opcode].i32)
+      {
+        genx86_tab[opcode].i32(nat, inst->op[0]->data.imm);
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_IMMEDIATE, gowidth_DWORD):
+    {
+      if (genx86_tab[opcode].i32)
+      {
+        genx86_tab[opcode].i32(nat, inst->op[0]->data.imm);
+      }
+      else ERR;
+    }
+    break;
+    
+    case SIZEDTYPE(gotype_REGISTER, gowidth_BYTE):
+    {
+      if (ops==1)
+      {
+        if (genx86_tab[opcode].rm8)
+        {
+          genx86_tab[opcode].rm8(nat, rtasm_reg(inst->op[0]->data.reg));
+        }
+        else ERR;
+      }
+      else genx86_asm_r8_2(nat, inst, opcode, ops, inst->op[0]->data.reg);
+    }
+    break;
+
+    case SIZEDTYPE(gotype_REGISTER, gowidth_DWORD):
+    {
+      if (ops==1)
+      {
+        if (genx86_tab[opcode].rm32)
+        {
+          genx86_tab[opcode].rm8(nat, rtasm_reg(inst->op[0]->data.reg));
+        }
+        else ERR;
+      }
+      else genx86_asm_r32_2(nat, inst, opcode, ops, inst->op[0]->data.reg);
+    }
+    break;
+
+    case SIZEDTYPE(gotype_INDREG, gowidth_BYTE):
+    arg1_mtype = rtasm_ind(inst->op[0]->data.reg);
+    goto rm8_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSDISP8, gowidth_BYTE):
+    arg1_mtype = rtasm_ind8(inst->op[0]->data.regdisp.base,
+                            inst->op[0]->data.regdisp.disp);
+    goto rm8_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSDISP32, gowidth_BYTE):
+    arg1_mtype = rtasm_ind32(inst->op[0]->data.regdisp.base,
+                             inst->op[0]->data.regdisp.disp);
+    goto rm8_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREG, gowidth_BYTE):
+    arg1_mtype = rtasm_scind(inst->op[0]->data.regscale.base,
+                             inst->op[0]->data.regscale.index,
+                             inst->op[0]->data.regscale.scale);
+    goto rm8_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP8, gowidth_BYTE):
+    arg1_mtype = rtasm_scind8(inst->op[0]->data.regscaledisp.base,
+                              inst->op[0]->data.regscaledisp.index,
+                              inst->op[0]->data.regscaledisp.scale,
+                              inst->op[0]->data.regscaledisp.offset);
+    goto rm8_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP32, gowidth_BYTE):
+    arg1_mtype = rtasm_scind32(inst->op[0]->data.regscaledisp.base,
+                               inst->op[0]->data.regscaledisp.index,
+                               inst->op[0]->data.regscaledisp.scale,
+                               inst->op[0]->data.regscaledisp.offset);
+    goto rm8_wotsit;
+    
+    case SIZEDTYPE(gotype_ADDRESS, gowidth_BYTE):
+    arg1_mtype = rtasm_addr(inst->op[0]->data.addr);
+
+    rm8_wotsit:
+
+    if (ops==1)
+    {
+      if (genx86_tab[opcode].rm8)
+      {
+        genx86_tab[opcode].rm8(nat, arg1_mtype);
+      }
+      else ERR;
+    }
+    else genx86_asm_m8_2(nat, inst, opcode, ops, &arg1_mtype);
+    break;
+
+    case SIZEDTYPE(gotype_INDREG, gowidth_DWORD):
+    arg1_mtype = rtasm_ind(inst->op[0]->data.reg);
+    goto rm32_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSDISP8, gowidth_DWORD):
+    arg1_mtype = rtasm_ind8(inst->op[0]->data.regdisp.base,
+                            inst->op[0]->data.regdisp.disp);
+    goto rm32_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSDISP32, gowidth_DWORD):
+    arg1_mtype = rtasm_ind32(inst->op[0]->data.regdisp.base,
+                             inst->op[0]->data.regdisp.disp);
+    goto rm32_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREG, gowidth_DWORD):
+    arg1_mtype = rtasm_scind(inst->op[0]->data.regscale.base,
+                             inst->op[0]->data.regscale.index,
+                             inst->op[0]->data.regscale.scale);
+    goto rm32_wotsit;
+
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP8, gowidth_DWORD):
+    arg1_mtype = rtasm_scind8(inst->op[0]->data.regscaledisp.base,
+                              inst->op[0]->data.regscaledisp.index,
+                              inst->op[0]->data.regscaledisp.scale,
+                              inst->op[0]->data.regscaledisp.offset);
+    goto rm32_wotsit;
+    
+    case SIZEDTYPE(gotype_INDREGPLUSSCALEDREGPLUSDISP32, gowidth_DWORD):
+    arg1_mtype = rtasm_scind32(inst->op[0]->data.regscaledisp.base,
+                               inst->op[0]->data.regscaledisp.index,
+                               inst->op[0]->data.regscaledisp.scale,
+                               inst->op[0]->data.regscaledisp.offset);
+    goto rm32_wotsit;
+    
+    case SIZEDTYPE(gotype_ADDRESS, gowidth_DWORD):
+    arg1_mtype = rtasm_addr(inst->op[0]->data.addr);
+
+    rm32_wotsit:
+
+    if (ops==1)
+    {
+      if (genx86_tab[opcode].rm32)
+      {
+        genx86_tab[opcode].rm32(nat, arg1_mtype);
+      }
+      else ERR;
+    }
+    else genx86_asm_m32_2(nat, inst, opcode, ops, &arg1_mtype);
+    break;
+
+    default:
+    ERR;
+  }
+}
+
+static void genx86_asm_0(nativeblockinfo* nat, genx86_op* inst, uint5 opcode, 
+  uint5 ops)
+{
+  if (ops==0)
+  {
+    if (genx86_tab[opcode].narg)
+    {
+      genx86_tab[opcode].narg(nat);
+    }
+  }
+  else genx86_asm_1(nat, inst, opcode, ops);
+}
 
 void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
 {
@@ -67,957 +525,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
   if (inst->op[1]) ops++;
   if (inst->op[2]) ops++;
 
-  if (ops==0)
-  {
-    if (genx86_tab[opcode].narg)
-    {
-      genx86_tab[opcode].narg(nat);
-    }
-    else ERR;
-  }
-  else
-  {
-    switch (inst->op[0]->type)
-    {
-      case gotype_IMMEDIATE:
-      {
-        if (ops==1)
-        {
-          switch (inst->op[0]->width)
-          {
-            case gowidth_BYTE:
-            {
-              if (genx86_tab[opcode].i8)
-              {
-                genx86_tab[opcode].i8(nat, inst->op[0]->data.imm);
-              }
-              else if (genx86_tab[opcode].i32)
-              {
-                genx86_tab[opcode].i32(nat, inst->op[0]->data.imm);
-              }
-              else ERR;
-            }
-            break;
-
-            case gowidth_DWORD:
-            {
-              if (genx86_tab[opcode].i32)
-              {
-                genx86_tab[opcode].i32(nat, inst->op[0]->data.imm);
-              }
-              else ERR;
-            }
-            break;
-
-            default:
-            ERR;
-            break;
-          }
-        }
-      }
-      break;  // immediate
-
-      case gotype_REGISTER:
-      {
-        switch (ops)
-        {
-          case 1:
-          {
-            if (genx86_tab[opcode].rm32)
-            {
-              genx86_tab[opcode].rm32(nat, rtasm_reg(inst->op[0]->data.reg));
-            }
-            else ERR;
-          }
-          break;
-          
-          case 2:
-          {
-            switch (inst->op[1]->type)
-            {
-              case gotype_REGISTER:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  // dirty or wot
-                  if (!(opcode==ab_MOV &&
-                      inst->op[1]->data.reg==inst->op[0]->data.reg))
-                  {
-                    genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                      rtasm_reg(inst->op[1]->data.reg));
-                  }
-                }
-                else if (genx86_tab[opcode].rm32_r32)
-                {
-                  genx86_tab[opcode].rm32_r32(nat, 
-                    rtasm_reg(inst->op[0]->data.reg), inst->op[1]->data.reg);
-                }
-                else if (inst->op[1]->data.reg==ECX && 
-                         genx86_tab[opcode].rm32_c)
-                {
-                  genx86_tab[opcode].rm32_c(nat,
-                    rtasm_reg(inst->op[0]->data.reg));
-                }
-                else ERR;
-              }
-              break;
-              
-              case gotype_IMMEDIATE:
-              {
-                switch (inst->op[1]->width)
-                {
-                  case gowidth_BYTE:
-                  {
-                    if (genx86_tab[opcode].rm32_i8)
-                    {
-                      genx86_tab[opcode].rm32_i8(nat,
-                        rtasm_reg(inst->op[0]->data.reg), 
-                        inst->op[1]->data.imm);
-                    }
-                    else if (genx86_tab[opcode].rm32_i32)
-                    {
-                      genx86_tab[opcode].rm32_i32(nat,
-                        rtasm_reg(inst->op[0]->data.reg),
-                        inst->op[1]->data.imm);
-                    }
-                    else ERR;
-                  }
-                  break;
-                  
-                  case gowidth_DWORD:
-                  {
-                    if (genx86_tab[opcode].rm32_i32)
-                    {
-                      genx86_tab[opcode].rm32_i32(nat,
-                        rtasm_reg(inst->op[0]->data.reg),
-                        inst->op[1]->data.imm);
-                    }
-                    else ERR;
-                  }
-                  break;
-                  
-                  default: ERR;
-                  break;
-                }
-              }
-              break;
-              
-              case gotype_INDREG:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                    rtasm_ind(inst->op[1]->data.reg));
-                }
-              }
-              break;
-              
-              case gotype_INDREGPLUSDISP8:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                    rtasm_ind8(inst->op[1]->data.regdisp.base,
-                    inst->op[1]->data.regdisp.disp));
-                }
-              }
-              break;
-              
-              case gotype_INDREGPLUSDISP32:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                    rtasm_ind32(inst->op[1]->data.regdisp.base,
-                    inst->op[1]->data.regdisp.disp));
-                }
-              }
-              break;
-              
-              case gotype_INDREGPLUSSCALEDREG:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                    rtasm_scind(inst->op[1]->data.regscale.base,
-                    inst->op[1]->data.regscale.index,
-                    inst->op[1]->data.regscale.scale));
-                }
-              }
-              break;
-              
-              case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                    rtasm_scind8(inst->op[1]->data.regscaledisp.base,
-                    inst->op[1]->data.regscaledisp.index,
-                    inst->op[1]->data.regscaledisp.scale,
-                    inst->op[1]->data.regscaledisp.offset));
-                }
-              }
-              break;
-              
-              case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-              {
-                if (genx86_tab[opcode].r32_rm32)
-                {
-                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                    rtasm_scind32(inst->op[1]->data.regscaledisp.base,
-                    inst->op[1]->data.regscaledisp.index,
-                    inst->op[1]->data.regscaledisp.scale,
-                    inst->op[1]->data.regscaledisp.offset));
-                }
-              }
-              break;
-              
-              default:
-              ERR;
-              break;
-            }  // switch (op[1]->type)
-          }
-          break;
-          
-          case 3:
-          {
-            switch (inst->op[2]->type)
-            {
-              case gotype_IMMEDIATE:
-              {
-                switch (inst->op[2]->width)
-                {
-                  case gowidth_BYTE:
-                  {
-                    switch (inst->op[1]->type)
-                    {
-                      case gotype_REGISTER:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_reg(inst->op[1]->data.reg),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREG:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_ind(inst->op[1]->data.reg),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSDISP8:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_ind8(inst->op[1]->data.regdisp.base,
-                              inst->op[1]->data.regdisp.disp),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSDISP32:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_ind32(inst->op[1]->data.regdisp.base,
-                              inst->op[1]->data.regdisp.disp),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREG:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_scind(inst->op[1]->data.regscale.base,
-                              inst->op[1]->data.regscale.index,
-                              inst->op[1]->data.regscale.scale),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_scind8(inst->op[1]->data.regscaledisp.base,
-                              inst->op[1]->data.regscaledisp.index,
-                              inst->op[1]->data.regscaledisp.scale,
-                              inst->op[1]->data.regscaledisp.offset),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i8(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_scind32(inst->op[1]->data.regscaledisp.base,
-                              inst->op[1]->data.regscaledisp.index,
-                              inst->op[1]->data.regscaledisp.scale,
-                              inst->op[1]->data.regscaledisp.offset),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      default:
-                      ERR;
-                      break;
-                    }  // switch (op1 type)
-                  }
-                  break;
-
-                  case gowidth_DWORD:
-                  {
-                    switch (inst->op[1]->type)
-                    {
-                      case gotype_REGISTER:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_reg(inst->op[1]->data.reg),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREG:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_ind(inst->op[1]->data.reg),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSDISP8:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_ind8(inst->op[1]->data.regdisp.base,
-                              inst->op[1]->data.regdisp.disp),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSDISP32:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_ind32(inst->op[1]->data.regdisp.base,
-                              inst->op[1]->data.regdisp.disp),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREG:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_scind(inst->op[1]->data.regscale.base,
-                              inst->op[1]->data.regscale.index,
-                              inst->op[1]->data.regscale.scale),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_scind8(inst->op[1]->data.regscaledisp.base,
-                              inst->op[1]->data.regscaledisp.index,
-                              inst->op[1]->data.regscaledisp.scale,
-                              inst->op[1]->data.regscaledisp.offset),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                      {
-                        if (genx86_tab[opcode].r32_rm32)
-                        {
-                          genx86_tab[opcode].r32_rm32_i32(nat, 
-                            inst->op[0]->data.reg,
-                            rtasm_scind32(inst->op[1]->data.regscaledisp.base,
-                              inst->op[1]->data.regscaledisp.index,
-                              inst->op[1]->data.regscaledisp.scale,
-                              inst->op[1]->data.regscaledisp.offset),
-                            inst->op[2]->data.imm);
-                        }
-                      }
-                      break;
-
-                      default:
-                      ERR;
-                      break;
-                    }  // switch (op1 type)
-                  }
-                  break;
-
-                  default:
-                  ERR;
-                  break;
-                }
-                break;
-                
-                case gotype_REGISTER:
-                {
-                  if (opcode==ab_LEA)
-                  {
-                    if (inst->op[2]->width==gowidth_DWORD)
-                    {
-                      genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
-                        rtasm_scind(inst->op[1]->data.reg,
-                        inst->op[2]->data.reg, scale_1));
-                    }
-                    else ERR;
-                  }
-                  else ERR;
-                }
-                break;
-                
-                default:
-                ERR;
-                break;
-              }  // switch (op2 type)
-            }
-          }
-          break;
-          
-          default:
-          ERR;
-          break;
-        }  // switch (ops)
-      }
-      break;
-
-      case gotype_INDREG:
-      case gotype_INDREGPLUSDISP8:
-      case gotype_INDREGPLUSDISP32:
-      case gotype_INDREGPLUSSCALEDREG:
-      case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-      case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-      case gotype_ADDRESS:
-      {
-        switch (ops)
-        {
-          case 1:
-          {
-            if (genx86_tab[opcode].rm32)
-            {
-              switch (inst->op[0]->type)
-              {
-                case gotype_INDREG:
-                {
-                  genx86_tab[opcode].rm32(nat, 
-                    rtasm_ind(inst->op[0]->data.reg));
-                }
-                break;
-
-                case gotype_INDREGPLUSDISP8:
-                {
-                  genx86_tab[opcode].rm32(nat, 
-                    rtasm_ind8(inst->op[0]->data.regdisp.base, 
-                    inst->op[0]->data.regdisp.disp));
-                }
-                break;
-                
-                case gotype_INDREGPLUSDISP32:
-                {
-                  genx86_tab[opcode].rm32(nat, 
-                    rtasm_ind32(inst->op[0]->data.regdisp.base, 
-                    inst->op[0]->data.regdisp.disp));
-                }
-                break;
-                
-                case gotype_INDREGPLUSSCALEDREG:
-                {
-                  genx86_tab[opcode].rm32(nat, 
-                    rtasm_scind(inst->op[0]->data.regscale.base,
-                    inst->op[0]->data.regscale.index,
-                    inst->op[0]->data.regscale.scale));
-                }
-                break;
-                
-                case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                {
-                  genx86_tab[opcode].rm32(nat, rtasm_scind8(
-                    inst->op[0]->data.regscaledisp.base,
-                    inst->op[0]->data.regscaledisp.index,
-                    inst->op[0]->data.regscaledisp.scale,
-                    inst->op[0]->data.regscaledisp.offset));
-                }
-                break;
-
-                case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                {
-                  genx86_tab[opcode].rm32(nat, rtasm_scind32(
-                    inst->op[0]->data.regscaledisp.base,
-                    inst->op[0]->data.regscaledisp.index,
-                    inst->op[0]->data.regscaledisp.scale,
-                    inst->op[0]->data.regscaledisp.offset));
-                }
-                break;
-                
-                default:
-                ERR;
-                break;
-              }
-            }
-            else ERR;
-          }
-          break;
-          
-          case 2:
-          {
-            switch (inst->op[1]->type)
-            {
-              case gotype_IMMEDIATE:
-              {
-                switch (inst->op[1]->width)
-                {
-                  case gowidth_BYTE:
-                  {
-                    switch (inst->op[0]->width)
-                    {
-                      case gowidth_BYTE:
-                      {
-                        if (genx86_tab[opcode].rm8_i8)
-                        {
-                          switch (inst->op[0]->type)
-                          {
-                            case gotype_INDREG:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, 
-                                rtasm_ind(inst->op[0]->data.reg), 
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSDISP8:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, 
-                                rtasm_ind8(inst->op[0]->data.regdisp.base, 
-                                inst->op[0]->data.regdisp.disp),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSDISP32:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, 
-                                rtasm_ind32(inst->op[0]->data.regdisp.base, 
-                                inst->op[0]->data.regdisp.disp),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSSCALEDREG:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, 
-                                rtasm_scind(inst->op[0]->data.regscale.base,
-                                inst->op[0]->data.regscale.index,
-                                inst->op[0]->data.regscale.scale),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, rtasm_scind8(
-                                inst->op[0]->data.regscaledisp.base,
-                                inst->op[0]->data.regscaledisp.index,
-                                inst->op[0]->data.regscaledisp.scale,
-                                inst->op[0]->data.regscaledisp.offset),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, rtasm_scind32(
-                                inst->op[0]->data.regscaledisp.base,
-                                inst->op[0]->data.regscaledisp.index,
-                                inst->op[0]->data.regscaledisp.scale,
-                                inst->op[0]->data.regscaledisp.offset),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_ADDRESS:
-                            {
-                              genx86_tab[opcode].rm8_i8(nat, rtasm_addr(
-                                  inst->op[0]->data.addr),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-                            
-                            default:
-                            ERR;
-                            break;
-                          }
-                        }  // if (tab[])
-                      }
-                      break;
-                    
-                      case gowidth_DWORD:
-                      {
-                        if (genx86_tab[opcode].rm32_i8)
-                        {
-                          switch (inst->op[0]->type)
-                          {
-                            case gotype_INDREG:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, 
-                                rtasm_ind(inst->op[0]->data.reg), 
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSDISP8:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, 
-                                rtasm_ind8(inst->op[0]->data.regdisp.base, 
-                                inst->op[0]->data.regdisp.disp),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSDISP32:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, 
-                                rtasm_ind32(inst->op[0]->data.regdisp.base, 
-                                inst->op[0]->data.regdisp.disp),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSSCALEDREG:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, 
-                                rtasm_scind(inst->op[0]->data.regscale.base,
-                                inst->op[0]->data.regscale.index,
-                                inst->op[0]->data.regscale.scale),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, rtasm_scind8(
-                                inst->op[0]->data.regscaledisp.base,
-                                inst->op[0]->data.regscaledisp.index,
-                                inst->op[0]->data.regscaledisp.scale,
-                                inst->op[0]->data.regscaledisp.offset),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, rtasm_scind32(
-                                  inst->op[0]->data.regscaledisp.base,
-                                  inst->op[0]->data.regscaledisp.index,
-                                  inst->op[0]->data.regscaledisp.scale,
-                                  inst->op[0]->data.regscaledisp.offset),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-
-                            case gotype_ADDRESS:
-                            {
-                              genx86_tab[opcode].rm32_i8(nat, rtasm_addr(
-                                  inst->op[0]->data.addr),
-                                inst->op[1]->data.imm);
-                            }
-                            break;
-                            
-                            default:
-                            ERR;
-                            break;
-                          }
-                        }
-                        else goto promote_rm32_i8_to_rm32_i32;
-                      }
-                      break;
-                    }  // switch (op[0]->width)
-                  }  // op[1]->width == byte
-                  break;
-                
-                  // nasty nasty nasty
-                  promote_rm32_i8_to_rm32_i32:
-                  case gowidth_DWORD:
-                  {
-                    switch (inst->op[0]->type)
-                    {
-                      case gotype_INDREG:
-                      {
-                        genx86_tab[opcode].rm32_i32(nat, 
-                          rtasm_ind(inst->op[0]->data.reg), 
-                          inst->op[1]->data.imm);
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSDISP8:
-                      {
-                        genx86_tab[opcode].rm32_i32(nat, 
-                          rtasm_ind8(inst->op[0]->data.regdisp.base, 
-                          inst->op[0]->data.regdisp.disp),
-                          inst->op[1]->data.imm);
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSDISP32:
-                      {
-                        genx86_tab[opcode].rm32_i32(nat, 
-                          rtasm_ind32(inst->op[0]->data.regdisp.base, 
-                          inst->op[0]->data.regdisp.disp),
-                          inst->op[1]->data.imm);
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREG:
-                      {
-                        genx86_tab[opcode].rm32_i32(nat, 
-                          rtasm_scind(inst->op[0]->data.regscale.base,
-                          inst->op[0]->data.regscale.index,
-                          inst->op[0]->data.regscale.scale),
-                          inst->op[1]->data.imm);
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                      {
-                        genx86_tab[opcode].rm32_i32(nat, rtasm_scind8(
-                          inst->op[0]->data.regscaledisp.base,
-                          inst->op[0]->data.regscaledisp.index,
-                          inst->op[0]->data.regscaledisp.scale,
-                          inst->op[0]->data.regscaledisp.offset),
-                          inst->op[1]->data.imm);
-                      }
-                      break;
-
-                      case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                      {
-                        genx86_tab[opcode].rm32_i32(nat, rtasm_scind32(
-                          inst->op[0]->data.regscaledisp.base,
-                          inst->op[0]->data.regscaledisp.index,
-                          inst->op[0]->data.regscaledisp.scale,
-                          inst->op[0]->data.regscaledisp.offset),
-                          inst->op[1]->data.imm);
-                      }
-                      break;
-                                            
-                      default:
-                      ERR;
-                      break;
-                    }
-                  }
-                  break;
-                  
-                  default:
-                  ERR;
-                  break;
-                }
-              }
-              break;
-              
-              case gotype_REGISTER:
-              {
-                if (genx86_tab[opcode].rm32_r32)
-                {
-                  switch (inst->op[0]->type)
-                  {
-                    case gotype_INDREG:
-                    {
-                      genx86_tab[opcode].rm32_r32(nat, 
-                        rtasm_ind(inst->op[0]->data.reg), 
-                        inst->op[1]->data.reg);
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSDISP8:
-                    {
-                      genx86_tab[opcode].rm32_r32(nat, 
-                        rtasm_ind8(inst->op[0]->data.regdisp.base, 
-                        inst->op[0]->data.regdisp.disp),
-                        inst->op[1]->data.reg);
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSDISP32:
-                    {
-                      genx86_tab[opcode].rm32_r32(nat, 
-                        rtasm_ind32(inst->op[0]->data.regdisp.base, 
-                        inst->op[0]->data.regdisp.disp),
-                        inst->op[1]->data.reg);
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSSCALEDREG:
-                    {
-                      genx86_tab[opcode].rm32_r32(nat, 
-                        rtasm_scind(inst->op[0]->data.regscale.base,
-                        inst->op[0]->data.regscale.index,
-                        inst->op[0]->data.regscale.scale),
-                        inst->op[1]->data.reg);
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                    {
-                      genx86_tab[opcode].rm32_r32(nat, rtasm_scind8(
-                        inst->op[0]->data.regscaledisp.base,
-                        inst->op[0]->data.regscaledisp.index,
-                        inst->op[0]->data.regscaledisp.scale,
-                        inst->op[0]->data.regscaledisp.offset),
-                        inst->op[1]->data.reg);
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                    {
-                      genx86_tab[opcode].rm32_r32(nat, rtasm_scind32(
-                        inst->op[0]->data.regscaledisp.base,
-                        inst->op[0]->data.regscaledisp.index,
-                        inst->op[0]->data.regscaledisp.scale,
-                        inst->op[0]->data.regscaledisp.offset),
-                        inst->op[1]->data.reg);
-                    }
-                    break;
-                    
-                    default:
-                    ERR;
-                    break;
-                  }
-                }
-                else if (inst->op[1]->data.reg==ECX &&
-                         genx86_tab[opcode].rm32_c)
-                {
-                  switch (inst->op[0]->type)
-                  {
-                    case gotype_INDREG:
-                    {
-                      genx86_tab[opcode].rm32_c(nat, 
-                        rtasm_ind(inst->op[0]->data.reg));
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSDISP8:
-                    {
-                      genx86_tab[opcode].rm32_c(nat, 
-                        rtasm_ind8(inst->op[0]->data.regdisp.base, 
-                        inst->op[0]->data.regdisp.disp));
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSDISP32:
-                    {
-                      genx86_tab[opcode].rm32_c(nat, 
-                        rtasm_ind32(inst->op[0]->data.regdisp.base, 
-                        inst->op[0]->data.regdisp.disp));
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSSCALEDREG:
-                    {
-                      genx86_tab[opcode].rm32_c(nat, 
-                        rtasm_scind(inst->op[0]->data.regscale.base,
-                        inst->op[0]->data.regscale.index,
-                        inst->op[0]->data.regscale.scale));
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
-                    {
-                      genx86_tab[opcode].rm32_c(nat, rtasm_scind8(
-                        inst->op[0]->data.regscaledisp.base,
-                        inst->op[0]->data.regscaledisp.index,
-                        inst->op[0]->data.regscaledisp.scale,
-                        inst->op[0]->data.regscaledisp.offset));
-                    }
-                    break;
-
-                    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
-                    {
-                      genx86_tab[opcode].rm32_c(nat, rtasm_scind32(
-                        inst->op[0]->data.regscaledisp.base,
-                        inst->op[0]->data.regscaledisp.index,
-                        inst->op[0]->data.regscaledisp.scale,
-                        inst->op[0]->data.regscaledisp.offset));
-                    }
-                    break;
-                    
-                    default:
-                    ERR;
-                    break;
-                  }
-                }
-              }
-              break;
-              
-              default:
-              ERR;
-              break;
-            }  // switch (op1 type)
-          }
-          break;
-          
-          default:
-          ERR;
-          break;
-        }
-      }
-      break;
-      
-      default:
-      ERR;
-      break;
-    }
-  }
+  genx86_asm_0(nat, inst, opcode, ops);
 }
 
 #undef COMPOUND2

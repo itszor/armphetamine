@@ -25,7 +25,7 @@ SRC =	asmalutab.c cnew.c decode.c \
 	pseudodism.c registers.c riscos.c rtasm.c vidc20.c x86dism.c \
 	rtasm.c flush.c pheta.c phetadism.c vidc20.c iomd.c debug.c bset.c \
 	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c decodet.c \
-	executethm.c clist.c relocate.c structsupport.c genx86_tab.c
+	executethm.c clist.c relocate.c structsupport.c
 
 TESTS =	divide simple armtest
 
