@@ -31,10 +31,10 @@ LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
 
 .PHONY:	clean cleaner package webpkg romdump
 
-all:	.depend emulate simple divide
+all:	.depend emulate simple divide armtest
 
 clean:
-	rm -f *.o emulate
+	rm -f *.o emulate simple divide
 
 cleaner:
 	rm -f *.o emulate rtasm_fns.c rtasm_fns.h .depend
@@ -46,11 +46,21 @@ execute32.c:	execute.inc.c
 emulate: $(OBJ)
 	$(CC) -o emulate $(OBJ) $(LDFLAGS) $(LIBS) 
 
-simple:	simple.arm.s
+simple.o:	simple.arm.s
 	arm-linux-as $< -o $@
 
-divide:	divide.arm.s
+divide.o:	divide.arm.s
 	arm-linux-as $< -o $@
+
+simple:	simple.o
+	arm-linux-ld simple.o -o simple
+
+divide:	divide.o
+	arm-linux-ld divide.o -o divide
+
+armtest:	armtest.c testtmpl.txt Makefile
+	arm-linux-gcc -static -O2 armtest.c -o armtest
+	./subst.sh
 
 package:	cleaner
 	tar -c -v -z -C .. -f ../armphetamine-0.2.tar.gz armphetamine

@@ -1,0 +1,3 @@
+load armtest 0x10008000
+disassemble start-addr end-addr
+phetatrans start-addr end-addr

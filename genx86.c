@@ -2171,8 +2171,9 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
     case ph_FWRITE:
     {
-      palloc_info* src = &chunk->alloc[instr->data.op.src1];
-      if (src->type==pal_CONST && src->type==pal_CONSTB)
+      palloc_info* src =
+        &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
+      if (src->type==pal_CONST || src->type==pal_CONSTB)
       {
         switch (src->info.value)
         {
@@ -2184,6 +2185,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           else
           {
             fprintf(stderr, "Can't write to that flag\n");
+            exit(1);
           }
           break;
           
@@ -2195,16 +2197,19 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           else
           {
             fprintf(stderr, "Can't write to that flag\n");
+            exit(1);
           }
           break;
           
           default:
           fprintf(stderr, "Can only write 0 or 1 to a flag\n");
+          exit(1);
         }
       }
       else
       {
         fprintf(stderr, "Write register to flag not supported yet\n");
+        exit(1);
       }
     }
     break;

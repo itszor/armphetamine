@@ -8,9 +8,10 @@ simple:
 	beq true
 false:
 	mla r2,r1,r1,r2
-	b done
+	bal done
 true:
 	subs r1,r1,#1
 done:
 	rsb r8,r8,#0
 	mov pc,r14
+
