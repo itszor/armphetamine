@@ -279,10 +279,15 @@ void processor_dataabort(machineinfo* machine)
 void processor_swi(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
+  instructionformat inst;
   reg->spsr[pm_SVC32&15] = reg->cpsr;
   fprintf(stderr, "SWI! (vectorbase=%.8x)\n", reg->vectorbase);
   processor_mode(machine, pm_SVC32);
   reg->r[14] = reg->r[15]-4;
+  fprintf(stderr, "insn: ");
+  inst.instruction = memory_readinstword(machine->mem, reg->r[15]-8);
+  dispatch(machine, inst, &diss, (void*)(reg->r[15]-8));
+  fprintf(stderr, "\n");
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x08+8;
 }

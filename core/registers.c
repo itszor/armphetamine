@@ -17,6 +17,28 @@ registerinfo* registers_new(void)
   reg->spsr_current = 3;
   reg->vectorbase = 0;
 
+  for (i=0; i<5; i++)
+  {
+    reg->spsr[i].value = 0;
+  }
+
+  for (i=0; i<7; i++)
+  {
+    reg->usr[i] = 0;
+    reg->fiq[i] = 0;
+  }
+
+  for (i=0; i<2; i++)
+  {
+    reg->irq[i] = 0;
+    reg->svc[i] = 0;
+    reg->abt[i] = 0;
+    reg->und[i] = 0;
+  }
+
+  reg->mode = reg->intmask = 0;
+  reg->process_id = 0;
+
 //	fprintf(stderr, "Initialised register bank\n");
 	
 	return reg;

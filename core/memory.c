@@ -13,6 +13,8 @@
 #include "mach/riscpc/iomd.h"
 #endif
 
+#define USETLB 1
+
 const mem_writebank mem_wfault =
 {
   memory_writefault,
@@ -52,8 +54,8 @@ meminfo* memory_initialise(uint5 bytes)
   mem->vram = VRAM ? jt_newarray(uint5, VRAM/4) : 0;
   mem->currentmode = 0;
   mem->memoryfault = 0;
-  memory_invalidatetlb(&mem->insttlb);
-  memory_invalidatetlb(&mem->datatlb);
+  memory_inittlb(&mem->insttlb);
+  memory_inittlb(&mem->datatlb);
 
   // start off with MMU disabled
   mem->mmuactive = 0;
@@ -134,6 +136,16 @@ void memory_diff(meminfo* a, meminfo* b)
   BOMB(a->domainaccesscontrol, b->domainaccesscontrol);
   BOMB(a->faultstatus, b->faultstatus);
   BOMB(a->faultaddress, b->faultaddress);
+}
+
+void memory_inittlb(tlbentry* tlb)
+{
+  tlb->modestamp = -1;
+  tlb->virtual = 0;
+  tlb->physical = 0;
+  tlb->mask = 0;
+  tlb->write = mem_wnull;
+  tlb->read = mem_rnull;
 }
 
 void memory_invalidatetlb(tlbentry* tlb)
@@ -338,7 +350,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
       fprintf(stderr, "Translation base=%.8x\n", mem->translationbase);
       fprintf(stderr, "Table index=%.8x\n", tableindex);
       
-      diss_around_pc(mem->parent);
+  /*  diss_around_pc(mem->parent);*/
       
       mem->memoryfault = 1;
     }
@@ -526,17 +538,21 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 uint5 memory_readdataword(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress, data;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 4);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   data = mem->datatlb.read.word(mem, physaddress);
 /*  fprintf(stderr, "Read data word %.8x from virtual addr %.8x\n", 
     data, virtualaddress);*/
@@ -546,17 +562,21 @@ uint5 memory_readdataword(meminfo* mem, uint5 virtualaddress)
 uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress;
+#ifdef USETLB
   if (mem->insttlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->insttlb.mask) != mem->insttlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->insttlb, 4);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->insttlb.physical |
                   (virtualaddress & ~mem->insttlb.mask);
   }
+#endif
   return mem->insttlb.read.word(mem, physaddress);
 }
 
@@ -566,11 +586,14 @@ void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
   static int dec = 9;
 /*  fprintf(stderr, "Write data word %.8x to virtual addr %.8x\n", data, 
           virtualaddress);*/
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif  
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 4);
+#ifdef USETLB
   }
   else
   {
@@ -581,40 +604,49 @@ void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
     fprintf(stderr, "Writing %.8x to %.8x\n", data, physaddress);
     if (!--dec) ((machineinfo*)mem->parent)->trace = 1;
   }
+#endif
   mem->datatlb.write.word(mem, physaddress, data);
 }
 
 uint5 memory_readbyte(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 1);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   return mem->datatlb.read.byte(mem, physaddress);
 }
 
 uint5 memory_readhalf(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 2);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   return mem->datatlb.read.half(mem, physaddress);
 }
 
@@ -622,17 +654,21 @@ uint5 memory_readsbyte(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress;
   uint5 data;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 1);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   data = mem->datatlb.read.byte(mem, physaddress);
   if (data & 0x80) data |= 0xffffff00;
   return data;
@@ -642,17 +678,21 @@ uint5 memory_readshalf(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress;
   uint5 data;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 2);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   data = mem->datatlb.read.half(mem, physaddress);
   if (data & 0x8000) data |= 0xffff0000;
   return data;
@@ -661,34 +701,42 @@ uint5 memory_readshalf(meminfo* mem, uint5 virtualaddress)
 void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 1);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   mem->datatlb.write.byte(mem, physaddress, data);
 }
 
 void memory_writehalf(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
+#ifdef USETLB
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
+#endif
     physaddress = memory_virtualtophysical(mem, virtualaddress,
       &mem->datatlb, 2);
+#ifdef USETLB
   }
   else
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
+#endif
   mem->datatlb.write.half(mem, physaddress, data);
 }
 

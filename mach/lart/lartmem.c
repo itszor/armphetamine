@@ -183,6 +183,7 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     break;
     
     case 0x10: // ROM bank 1
+    abort();
     tlb->read = readperm ? mem_rrom1 : mem_rfault;
     tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
@@ -307,7 +308,6 @@ uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
   {
     case READ_ARRAY:
     return mem->rom0[(physaddress & 0xffffff) >> 2];
-    break;
 
     case READ_ID_CODES:
     {
@@ -336,6 +336,7 @@ uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
 
 uint5 memory_readhalfrom0(meminfo* mem, uint5 physaddress)
 {
+  fprintf(stderr, "Read flash halfword at %.8x\n", physaddress);
   if (mem->flashmode==READ_ARRAY)
     return ((uint4*)mem->rom0)[(physaddress & 0xffffff) >> 1];
   else
@@ -360,8 +361,15 @@ void memory_writerom0(meminfo* mem, uint5 addr, uint5 data)
   }
   else if (addr==0x0 && data==DATA_TO_FLASH(READ_ARRAY))
   {
+    int i;
     fprintf(stderr, "FLASH: Array read mode\n");
     mem->flashmode = READ_ARRAY;
+    fprintf(stderr, "First few bytes of initrd:\n");
+    for (i=0; i<10; i++)
+    {
+      fprintf(stderr, "Byte %.8x=%.2x\n", 0x100000+i, 
+                      ((uint3*)mem->rom0)[0x100000+i]);
+    }
   }
  /* else if (data==0x0)
   {

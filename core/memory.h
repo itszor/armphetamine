@@ -148,7 +148,9 @@ extern void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
                                
 extern uint5 memory_readphysicalword(meminfo* mem, uint5 physaddress);
 
+extern void memory_inittlb(tlbentry* tlb);
 extern void memory_invalidatetlb(tlbentry* tlb);
+
 extern __inline__ uint5* memory_lookup(meminfo* mem, uint5* virtualaddress);
 
 void memory_nullwrite(meminfo* mem, uint5 addr, uint5 data);

@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "libjtype/cnew.h"
 #include "libjtype/defs.h"
@@ -67,6 +68,10 @@ int main(int argc, char* argv[])
 #else
   fprintf(stderr, "C ALU\n");
 #endif
+
+  /* minor sanity check */
+  assert(sizeof(instructionformat)==4);
+  assert(sizeof(psrinfo)==4);
 
   machine = machine_create(4*1024*1024);
   mem = machine->mem;

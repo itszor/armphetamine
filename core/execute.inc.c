@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "libjtype/defs.h"
 #include "core/machine.h"
@@ -41,14 +42,6 @@
  * 0000 0  1  0  1  0  1  0  1  0  1  1  0  1  0  1  0
  */
 
-static const uint4 cctable[] =
-{
-  0xf0f0, 0x0f0f, 0xcccc, 0x3333,
-  0xff00, 0x00ff, 0xaaaa, 0x5555,
-  0x0c0c, 0xf3f3, 0xaa55, 0x55aa,
-  0xa005, 0x5ffa, 0xffff, 0x0000
-};                                                                              
-
 /*
     char* ccname[] = {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc",
                     "hi", "ls", "ge", "lt", "gt", "le", "al", "nv"};
@@ -65,7 +58,14 @@ static const uint4 cctable[] =
 
 int EXECUTEFN(exec_condition)(machineinfo* machine, instructionformat inst)
 {
-	registerinfo* reg = machine->reg;
+  static const uint5 cctable[16] =
+  {
+    0xf0f0, 0x0f0f, 0xcccc, 0x3333,
+    0xff00, 0x00ff, 0xaaaa, 0x5555,
+    0x0c0c, 0xf3f3, 0xaa55, 0x55aa,
+    0xa005, 0x5ffa, 0xffff, 0x0000
+  };
+  registerinfo* reg = machine->reg;
   // conditional execution on any instruction
   #if 1
   #  ifdef ARM26BIT
@@ -298,6 +298,14 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   #endif
 
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
+
+  if ((inst.dp.rn==15 || (temp&15)==15) && regshift)
+  {
+    fprintf(stderr, "Found allegedly unpredictable instruction:\n");
+    dispatch(machine, inst, &diss, (void*)reg->r[15]);
+    fprintf(stderr, "\n");
+    abort();
+  }
 
   if (regshift)  // shift by register
   {
@@ -854,8 +862,11 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
 
         if (reg->cpsr.flag.mode != oldmode)
         {
-          reg->spsr[oldmode&15] = oldcpsr;
-          processor_mode(machine, reg->cpsr.flag.mode);
+          int newmode = reg->cpsr.flag.mode;
+          reg->cpsr.flag.mode = oldmode;
+      /*    reg->spsr[oldmode&15] = oldcpsr;*/
+          processor_mode(machine, newmode);
+          abort();
         }
       /*  INCPC;
 
@@ -952,7 +963,7 @@ int EXECUTEFN(exec_mull)(machineinfo* machine, instructionformat inst,
     {
       if (inst.mull.a)  // accumulate
       {
-        result = (uint6)((uint6)RGET(inst.mull.rdlo)
+        result = ((uint6)RGET(inst.mull.rdlo)
                + ((uint6)RGET(inst.mull.rdhi)<<32));
         result += (sint6)op1 * (sint6)op2;
       }
@@ -961,13 +972,13 @@ int EXECUTEFN(exec_mull)(machineinfo* machine, instructionformat inst,
         result = (sint6)op1 * (sint6)op2;
       }
     }
-    else
+    else  // unsigned
     {
       if (inst.mull.a)  // accumulate
       {
-        result = (uint6)((uint6)RGET(inst.mull.rdlo)
+        result = ((uint6)RGET(inst.mull.rdlo)
                + ((uint6)RGET(inst.mull.rdhi)<<32));
-        result += (sint6)op1 * (sint6)op2;
+        result += (uint6)op1 * (uint6)op2;
       }
       else
       {
@@ -1228,16 +1239,26 @@ int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
 // macros relating to block data transfer
 // we're living in a flat address space for now - no overlap testing necessary
 #define TESTOVERLAP 
-#define INC base+=4;
-#define DEC base-=4;
-#define TRANSFER if (inst.bdt.l) RPUT(i, memory_readdataword(mem, base)); \
-                   else memory_writeword(mem, base, RGET(i));
+#define INC do { base+=4; } while (0)
+#define DEC do { base-=4; } while (0)
+#define TRANSFER do { \
+                   if (inst.bdt.l) \
+                     RPUT(i, memory_readdataword(mem, base)); \
+                   else \
+                     memory_writeword(mem, base, RGET(i)); \
+                 } while (0)
 // inst.bdt.s means 'hat'
 // if writing PC, writes *the raw value* (don't know if this is correct)
-#define PCTRANSFER if (inst.bdt.l) { \
-                     if (inst.bdt.s) PCSETADFL(memory_readdataword(mem, base)) \
-                       else PCSETADDR(memory_readdataword(mem, base)); \
-                   } else memory_writeword(mem, base, pcstore);
+#define PCTRANSFER do { \
+                     if (inst.bdt.l) { \
+                       if (inst.bdt.s) \
+                         PCSETADFL(memory_readdataword(mem, base)); \
+                       else \
+                         PCSETADDR(memory_readdataword(mem, base)); \
+                     } else { \
+                       memory_writeword(mem, base, pcstore); \
+                     } \
+                   } while (0)
 
 // block data transfer always tries to use ready-translated address unless
 // straddling a page boundary
@@ -1437,18 +1458,18 @@ int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
-    registerinfo* reg = machine->reg;
+/*    registerinfo* reg = machine->reg;
     uint5 mumble;
-    tlbentry null;
+    tlbentry null;*/
 
   #ifdef FAKESWI
     fake_syscall(machine, inst.swi.number);
   #else
     processor_swi(machine);
   #endif
-    mumble = memory_virtualtophysical(machine->mem, 0xec000030, &null, 4);
+/*    mumble = memory_virtualtophysical(machine->mem, 0xec000030, &null, 4);
     fprintf(stderr, "virtual to physical mapping for %.8x is %.8x\n",
-      0xec000030, mumble);
+      0xec000030, mumble);*/
     
 /*    if (--fire == 0)
     {

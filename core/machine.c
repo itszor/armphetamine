@@ -28,6 +28,7 @@ machineinfo* machine_create(uint5 memory)
   machine->detracecounter = 0;
   machine->pstate = profile_initialise();
   machine->lastfew = jt_newarray(traceback, 1024);
+  machine->exectab = &exec32;
   machine->posn = 0;
   #ifdef EMULART
   sa1100_serial_initialise(machine->mem);
@@ -121,15 +122,15 @@ void machine_start(machineinfo* machine, uint5 cont)
                 LOCALFLAG(v)?'V':'v', LOCALFLAG(n)?'N':'n', 
                 LOCALFLAG(z)?'Z':'z');
       }
+#ifdef RECOMPILE
       if (retcode==1)
       {
         /* Uses instruction ptr in state before execute has mangled it */
-#ifdef RECOMPILE
         profile_feedseqaddr(machine->pstate, instaddr);
         /* make sure next instruction loaded (re-)enables a profile block */
         feednewpc = 1;
-#endif
       }
+#endif
     }
     
     // stop continuing from a breakpoint

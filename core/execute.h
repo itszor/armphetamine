@@ -64,7 +64,7 @@
 
 // raw versions
 #define RGET(X) (reg->r[X])
-#define RPUT(X,V) reg->r[X] = (V)
+#define RPUT(X,V) do { reg->r[X] = (V); } while (0)
 
 #ifdef ARMTHUMB
 #  define INSTSIZE (2)
@@ -72,20 +72,25 @@
 #  define INSTSIZE (4)
 #endif
 
-#define INCPC reg->r[15]+=INSTSIZE
+#define INCPC do { reg->r[15]+=INSTSIZE; } while (0)
 
 #ifdef ARM26BIT
 #  define PCADDR (reg->r[15] & ~0xfc000003)
-#  define PCSETADDR(X) reg->r[15] = (reg->r[15] & 0xfc000003) | ((X) & \
-                                     ~0xfc000003)
-#  define PCSETADFL(X) do { \
-            reg->r[15] = (reg->r[15] & reg->pcmask) | ((X) & ~reg->pcmask); \
-          /*  processor_mode(machine, reg->r[15] & 0x3); */\
-          } while (0);
+
+#  define PCSETADDR(X) \
+     do { \
+       reg->r[15] = (reg->r[15] & 0xfc000003) | ((X) & ~0xfc000003); \
+     } while (0)
+
+#  define PCSETADFL(X) \
+     do { \
+       reg->r[15] = (reg->r[15] & reg->pcmask) | ((X) & ~reg->pcmask); \
+     /*  processor_mode(machine, reg->r[15] & 0x3); */\
+     } while (0)
 
 #else
 #  define PCADDR (reg->r[15])
-#  define PCSETADDR(X) reg->r[15] = (X)
+#  define PCSETADDR(X) do { reg->r[15] = (X); } while (0)
 // also do (somethingorother) with CPSR...
 #  define PCSETADFL(X) do { \
             /*psrinfo spsr = reg->spsr[reg->spsr_current]; */\
@@ -100,13 +105,13 @@
              |* fprintf(stderr, "Unchecked (pcsetadfl)\n"); \
               abort();*| \
             } */\
-          } while (0);
+          } while (0)
 #endif
 
 #ifdef ARM26BIT
-#  define STOREREG(C,V) if ((C)==15) \
+#  define STOREREG(C,V) do { if ((C)==15) \
                           if (inst.dp.s) PCSETADFL(V) else PCSETADDR(V); \
-                        else RPUT((C), V)
+                        else RPUT((C), V); } while (0)
 //#  error "Guess who broke 26-bit mode?"
 #endif
 
