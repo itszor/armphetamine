@@ -216,8 +216,11 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
     }
   }
 
+  /* enable instruction after last one known about */
+  pheta_getbasicblock(chunk, i);
+
   tail = pheta_emit(chunk, ph_CONST, base+i*sizeof(uint5));
-  pheta_emit(chunk, ph_UKJMP);
+  pheta_emit(chunk, ph_UKJMP, tail);
 
   if (chunk->currentblock) pheta_lsync(chunk);
 
@@ -441,6 +444,7 @@ void pheta_getused(pheta_instr* instr, uint5* numdest, uint5 dest[],
     break;
 
     case ph_SPILL:
+    case ph_UKJMP:
     {
       src[(*numsrc)++] = instr->data.op.src1;
     }
@@ -1937,6 +1941,8 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
     // deal with xjmp later
     pctemp = pheta_emit(chunk, ph_CONST,
       (uint5)chunk->virtualaddress + offset*4 + 8);
+    fprintf(stderr, "PC TEMP=%d\n", pctemp);
+    exit(0);
     pheta_emit(chunk, ph_UKJMP, pctemp);
     pheta_link(previous, inst.bra.cond, exitchunk, nottaken->data);
   }
