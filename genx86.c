@@ -829,40 +829,6 @@ static const genx86_variant genx86_tab[] =
             }
 };
 
-void genx86_test(void)
-{
-  nativeblockinfo* nat = rtasm_new();
-  
-  rtasm_opsize16(nat);
-  rtasm_add_ax_imm16(nat, 54);
-  rtasm_opsize16(nat);
-  rtasm_jne_rel16(nat, 0x1234);
-  rtasm_je_rel32(nat, 0x12345678);
-  rtasm_imul_r32_rm32_imm32(nat, ECX, rtasm_ind(EBX), 0x300);
-  rtasm_and_rm32_imm32(nat, rtasm_ind8(EAX,4), 0x123);
-  rtasm_arpl_rm16_r16(nat, rtasm_reg(EAX), EBX);
-  rtasm_bound_r32_m32x2(nat, EDX, rtasm_scind8(EDX, ECX, scale_2, 4));
-  rtasm_bswap_r32(nat, ECX);
-  rtasm_call_rel32(nat, (uint5)genx86_test);
-  rtasm_call_rm32(nat, rtasm_ind8(EBX, 8));
-  rtasm_call_ptr16_32(nat, 13, 0x1234);
-  rtasm_call_m16_32(nat, rtasm_ind8(EBX, 8));
-  rtasm_cmp_rm32_imm32(nat, rtasm_ind8(EBP, 8), 1000);
-  rtasm_cmpxchg_rm32_r32(nat, rtasm_reg(EAX), EBX);
-  rtasm_int_imm8(nat, 0x21);
-  rtasm_lar_r32_rm32(nat, ECX, rtasm_ind(ECX));
-  rtasm_movzx_r32_rm8(nat, EDX, rtasm_ind8(EAX, 4));
-  rtasm_popf(nat);
-  rtasm_push_ss(nat);
-  rtasm_rdtsc(nat);
-  rtasm_fadd_st0_sti(nat, 3);
-  rtasm_fsin(nat);
-  
-  x86dism_block(nat);
-  
-  rtasm_delete(nat);
-}
-
 static const char* allocname[] = {
   "unset", "constb", "const", "rfile", "ireg",
   "stack", "alias", "split"
@@ -2415,6 +2381,7 @@ genx86_buffer* genx86_newbuffer()
   buf->buffer = clist_new();
   buf->fetch = buf->commit = 0;
   buf->expecting = buf->beenset = 0;
+  buf->reloc = hash_new(16);
   
   return buf;
 }
@@ -2953,8 +2920,11 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_operand* regeax;
       genx86_operand* memop;
       genx86_operand* rel;
+      hashentry* entry;
+      reloc_record* reloc;
       uint5 preserve_eax = chunk->reguse[EAX] && dest->type==pal_IREG
                            && dest->info.ireg.num!=EAX;
+      void* jecxzloc;
 
       regeax = cnew(genx86_operand);
       regeax->type = gotype_REGISTER;
@@ -2976,29 +2946,57 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       }
       
       genx86_append(chunk, buf, ab_PUSH, os1, 0, 0);
+
       memop = cnew(genx86_operand);
       memop->type = gotype_IMMEDIATE;
       memop->width = gowidth_DWORD;
       memop->data.imm = mem;
       genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
+
       rel = cnew(genx86_operand);
       rel->type = gotype_IMMEDIATE;
       rel->width = gowidth_DWORD;
       rel->data.imm = 0;
       genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
+
+      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = cnew(reloc_record);
+      reloc->value = (uint5)&memory_readdataword;
+      reloc->offset = 0;
+      reloc->size = relsize_WORD;
+      reloc->type = reloc_RELATIVE;
+      
       rel = cnew(genx86_operand);
       rel->type = gotype_IMMEDIATE;
       rel->width = gowidth_BYTE;
       rel->data.imm = 0;
       genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
+
+      jecxzloc = buf->buffer->prev;
+
       genx86_recover(buf, chunk);
       rel = cnew(genx86_operand);
       rel->type = gotype_IMMEDIATE;
       rel->width = gowidth_DWORD;
       rel->data.imm = 0;
       genx86_append(chunk, buf, ab_CALL, rel, 0, 0);
+
+      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = cnew(reloc_record);
+      reloc->value = (uint5)&processor_dataabort;
+      reloc->offset = 0;
+      reloc->size = relsize_WORD;
+      reloc->type = reloc_RELATIVE;
+
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
       genx86_append(chunk, buf, ab_MOV, odest, regeax, 0);
+
+      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = cnew(reloc_record);
+      reloc->value = (uint5)jecxzloc;
+      reloc->offset = 0;
+      reloc->size = relsize_BYTE;
+      reloc->type = reloc_ABSOLUTE;  // ???
 
       if (preserve_eax)
       {
@@ -3183,6 +3181,12 @@ void genx86_insert_spill_code(pheta_chunk* chunk)
   }
 }
 
+// possibly wrong somehow
+static void killrelocentry(void* data)
+{
+  free(data);
+}
+
 void genx86_flatten_code_inner(pheta_basicblock* blk)
 {
   clist* scancode;
@@ -3191,9 +3195,24 @@ void genx86_flatten_code_inner(pheta_basicblock* blk)
   for (scancode=blk->gxbuffer->buffer->next; scancode->data; 
        scancode=scancode->next)
   {
+    hashentry* e;
     genx86_op* op = scancode->data;
     genx86_asm(nat, op);
+    if ((e = hash_lookup(blk->gxbuffer->reloc, (uint5)scancode)))
+    {
+      reloc_record* rel = e->data;
+      uint5 offset;
+      switch (rel->size)
+      {
+        case relsize_BYTE: offset = nat->length-1; break;
+	case relsize_HALFWORD: offset = nat->length-2; break;
+	case relsize_WORD: offset = nat->length-4; break;
+      }
+      relocate_add(&nat->reloc, rel->value, offset, rel->size, rel->type);
+    }
   }
+  hash_nuke(blk->gxbuffer->reloc, &killrelocentry);
+  relocate_fix(&nat->reloc, nat->base);
   x86dism_block(nat);
 }
 

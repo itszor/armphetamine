@@ -47,10 +47,10 @@ emulate: $(OBJ)
 	$(CC) -o emulate $(OBJ) $(LDFLAGS) $(LIBS) 
 
 simple:	simple.arm.s
-	arm-linux-elf-as $< -o $@
+	arm-linux-as $< -o $@
 
 divide:	divide.arm.s
-	arm-linux-elf-as $< -o $@
+	arm-linux-as $< -o $@
 
 package:	cleaner
 	tar -c -v -z -C .. -f ../armphetamine-0.2.tar.gz armphetamine
@@ -59,7 +59,7 @@ webpkg:
 	tar -c -v -z -C docs -f ../webphetamine.tar.gz html
 
 romdump:
-	arm-linux-elf-objdump --disassemble-all --target=binary \
+	arm-linux-objdump --disassemble-all --target=binary \
 	--architecture=arm Rom | less
 
 #test:

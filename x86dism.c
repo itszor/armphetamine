@@ -19,11 +19,14 @@ void x86dism_partblock(nativeblockinfo* nat, uint5 start, uint5 length)
 {
   char template[] = "/tmp/x86codeXXXXXX";
 	FILE* temp;
+  char startaddrstring[40];
 		
   mkstemp(template);
 	temp = fopen(template, "w+b");
 	fwrite(nat->base+start, sizeof(char), length-start, temp);
 	fclose(temp);
+  
+  sprintf(startaddrstring, "0x%x", nat->base+start);
 
 	fprintf(stderr, "Disassembling x86 code at %x...\n", nat->base);
 	
@@ -35,6 +38,9 @@ void x86dism_partblock(nativeblockinfo* nat, uint5 start, uint5 length)
     return;
   }
 	
-	execl("/usr/bin/objdump", "--full-contents", "--target", "binary",
-	      "--architecture=i386", "--disassemble-all", template, 0);
+/*	execl("/usr/bin/objdump", "--full-contents", "--target", "binary",
+	      "--architecture=i386", "--disassemble-all",
+        template, 0);*/
+  execl("/usr/bin/ndisasm", "", "-b", "32", "-o", startaddrstring,
+    "-p", "intel", template, 0);
 }
