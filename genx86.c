@@ -1714,14 +1714,18 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       else
       {
         fprintf(stderr, "Special fetch\n");
-        if (instr->data.op.src1==ph_R15_ADDR || 
-            instr->data.op.src1==ph_R15_FULL)
+        switch (instr->data.op.src1)
         {
-          palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-          genx86_operand* src = genx86_makeconstant(chunk,
-            chunk->virtualaddress);
-          genx86_append(chunk, buf, ab_MOV, genx86_findoperand(chunk, dest),
-            src, 0);
+          case ph_R15_ADDR:
+          case ph_R15_FULL:
+          {
+            palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+            genx86_operand* src = genx86_makeconstant(chunk,
+              chunk->virtualaddress);
+            genx86_append(chunk, buf, ab_MOV, genx86_findoperand(chunk, dest),
+              src, 0);
+          }
+          break;
         }
       }
 
@@ -1770,6 +1774,15 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       else
       {
         fprintf(stderr, "Special commit\n");
+        switch (instr->data.op.dest)
+        {
+          case ph_R15_ADDR:
+          case ph_R15_FULL:
+          {
+            
+          }
+          break;
+        }
       }
 /*
       uint5 armdest = instr->data.op.dest;

@@ -375,6 +375,17 @@ typedef enum {
 	EDI
 } regfield;
 
+typedef enum {
+  AL,
+  CL,
+  DL,
+  BL,
+  AH,
+  CH,
+  DH,
+  BH
+} byteregfield;
+
 // these scale values multiply index register
 typedef enum {
   scale_1,
