@@ -540,6 +540,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
       case gotype_INDREGPLUSSCALEDREG:
       case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
       case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+      case gotype_ADDRESS:
       {
         switch (ops)
         {
@@ -2277,8 +2278,16 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       misc = genx86_makeconstant(chunk, 8);      
       genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
       
+      misc = cnew(genx86_op);
+      misc->type = gotype_ADDRESS;
+      misc->width = gowidth_BYTE;
+      misc->data.addr = (uint5)mem + offsetof(meminfo, memoryfault);
+      
+      rel = genx86_makeconstant(chunk, 1);
+      genx86_append(chunk, buf, ab_TEST, misc, rel, 0);
+      
       rel = genx86_makeconstant(chunk, 0);
-      genx86_append(chunk, buf, ab_JECXZ, rel, 0, 0);
+      genx86_append(chunk, buf, ab_JE, rel, 0, 0);
 
       entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
       reloc = entry->data = cnew(reloc_record);
