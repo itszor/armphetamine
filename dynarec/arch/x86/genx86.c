@@ -8,7 +8,6 @@
 #include "rtasm.h"
 #include "pheta.h"
 #include "palloc.h"
-#include "pseudo.h"
 #include "phetadism.h"
 #include "relocate.h"
 #include "cnew.h"

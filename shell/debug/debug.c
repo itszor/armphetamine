@@ -18,11 +18,14 @@
 #include "decode.h"
 #include "pheta.h"
 #include "phetadism.h"
-#include "vidc20.h"
-#include "iomd.h"
 #include "palloc.h"
 #include "genx86.h"
 #include "recompile.h"
+
+#ifdef RISCPCEMU
+#include "vidc20.h"
+#include "iomd.h"
+#endif
 
 void debug_shell(machineinfo* machine)
 {

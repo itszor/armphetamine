@@ -7,6 +7,8 @@ AS	= as
 
 LDFLAGS= -g 
 
+VERSION =       0.5
+
 LJT =           libjtype
 
 LJTOBJS =       $(LJT)/bset.o $(LJT)/clist.o $(LJT)/list.o \
@@ -29,51 +31,51 @@ DRX86 =         $(DYNAREC)/arch/x86
 
 DRX86OBJS =     $(DRX86)/genx86.o $(DRX86)/genx86_tab.o \
                 $(DRX86)/nativesupport.o $(DRX86)/rtasm.o \
-                $(DRX86)/x86dism.o
+                $(DRX86)/x86dism.o $(DRX86)/rtasm_fns.o
 
 LART =          mach/lart
 
 LARTOBJS =      $(LART)/fifo.o $(LART)/intctrl.o $(LART)/mexreg.o \
-                $(LART)/ostimer.o $(LART)/ostimer.o $(LART)/sapcm.o \
-                $(LART)/lartmem.o
+                $(LART)/ostimer.o $(LART)/sapcm.o $(LART)/lartmem.o
 
 ROHLE =         mach/rohle
 
-ROHLEOBJS =     $(ROHLE)/fakesys.o $(ROHLE)/riscos.o
+ROHLEOBJS =     $(ROHLE)/fakesys.o $(ROHLE)/riscos.o $(ROHLE)/rohlemem.o
 
 RISCPC =        mach/riscpc
 
 RISCPCOBJS =    $(RISCPC)/iomd.o $(RISCPC)/keyboard.o $(RISCPC)/mouse.o \
-                $(RISCPC)/vidc20.o
+                $(RISCPC)/vidc20.o $(RISCPC)/riscpcmem.o
 
 DEBUG =         shell/debug
 
 DEBUGOBJS =     $(DEBUG)/debug.o $(DEBUG)/main.o
 
-OBJ =	$(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) $(DEBUGOBJS)
 
-LARTINCLUDE =   -I/usr/include -I/usr/local/include -I/usr/include/readline -I. \
-                -Ilibjtype -Icore -Ishell/debug -Imach/lart -Idynarec \
-                -Idynarec/arch/x86
+LARTINCLUDE =   -I. -Ilibjtype -Icore -Ishell/debug -Imach/lart -Idynarec \
+                -Idynarec/arch/x86 -I/usr/include -I/usr/local/include \
+                -I/usr/include/readline
 
-LARTCFLAGS =    -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DEMULART
+LARTCFLAGS =    -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DEMULART
 
-ROHLEINCLUDE =  -I/usr/include -I/usr/local/include -I/usr/include/readline -I. \
-                -Ilibjtype -Icore -Ishell/debug -Imach/rohle -Idynarec \
-                -Idynarec/arch/x86
+ROHLEINCLUDE =  -I. -Ilibjtype -Icore -Ishell/debug -Imach/rohle -Idynarec \
+                -Idynarec/arch/x86 -I/usr/include -I/usr/local/include \
+                -I/usr/include/readline 
 
-ROHLECFLAGS =   -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DROHLE
+ROHLECFLAGS =   -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DROHLE
 
-RISCPCCFLAGS =  -g -O3 -pipe -W -Wall -DVERSION=\"0.4\" -DRISCPCEMU
+RISCPCCFLAGS =  -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DRISCPCEMU
 
-RISCPCINCLUDE = -I/usr/include -I/usr/local/include -I/usr/include/readline -I. \
-                -Ilibjtype -Icore -Ishell/debug -Imach/riscpc -Idynarec \
-                -Idynarec/arch/x86
+RISCPCINCLUDE = -I. -Ilibjtype -Icore -Ishell/debug -Imach/riscpc -Idynarec \
+                -Idynarec/arch/x86 -I/usr/include -I/usr/local/include \
+                -I/usr/include/readline 
 
 # Change these for different machine!
 CFLAGS =        $(LARTCFLAGS)
 
 INCLUDE =       $(LARTINCLUDE)
+
+OBJ =	$(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) $(DEBUGOBJS)
 
 TARGET =        virtualart
 #TARGET =       rohle
@@ -86,24 +88,24 @@ TEMPFILES =     $(DRX86)/genx86_tab.c $(DRX86)/rtasm_fns.c \
 
 TESTS =	divide simple armtest
 
-LIBS = -lm -lreadline -lhistory -lncurses -lutil
+LIBS = -lm -lreadline -lhistory -lncurses -lutil -lSDL
 
 .PHONY: clean cleaner package webpkg romdump lartrun
 
 # virtualart rohle riscpcemu
-all:	virtualart 
+all:	$(TARGET)
 
 clean:
-	rm -f *.o emulate $(TESTS)
+	rm -f $(OBJ) $(TARGET) $(TESTS)
 
 cleaner:
-	rm -f *.o *.d emulate $(TESTS) $(TEMPFILES) rtasm_fns.h
+	rm -f $(OBJ) $(OBJ:.o=.d) $(TARGET) $(TESTS) $(TEMPFILES)
 
 lartrun:	virtualart
 	./virtualart "script lartup.txt"
 
-virtualart: $(OBJ)
-	$(CC) -o emulate $(OBJ) $(LDFLAGS) $(LIBS) 
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LIBS) 
 
 simple.o:	simple.arm.s
 	arm-linux-as $< -o $@
@@ -139,7 +141,7 @@ romdump:
 $(DRX86)/rtasm.h:       $(DRX86)/rtasm_fns.h
 
 $(DRX86)/rtasm_fns.c:	$(DRX86)/mkintel.pl $(DRX86)/intel.dat
-	$(DRX86)/mkintel.pl > rtasm_fns.c
+	 $(DRX86)/mkintel.pl > $(DRX86)/rtasm_fns.c
 
 $(DRX86)/rtasm_fns.h:	$(DRX86)/rtasm_fns.c $(DRX86)/rtasm_mkheader.pl
 	$(DRX86)/rtasm_mkheader.pl > $(DRX86)/rtasm_fns.h
@@ -167,13 +169,13 @@ $(CORE)/asmalu.o:	$(CORE)/asmalu.s
 %.o:	%.asm
 	$(NASM) -f elf $< -o $@
 
-%.d:	%.c
+%.d:	%.c $(TEMPFILES)
 	$(CC) $(INCLUDE) -MM $< > $@
 
 %.d:	%.asm
 	$(NASM) -M $< > $@
 
-asmalu.d:
+$(CORE)/asmalu.d:
 	touch $@
 
 include $(OBJ:.o=.d)

@@ -3,16 +3,12 @@
 #include <unistd.h>
 
 #include "defs.h"
-#include "iomd.h"
-#include "keyboard.h"
-#include "mouse.h"
+/*#include "iomd.h"*/
 #include "machine.h"
 #include "cnew.h"
 #include "ostimer.h"
 #include "decode.h"
 #include "intctrl.h"
-
-#ifdef EMULART
 
 ostimer_registers* ostimer_new(void)
 {
@@ -213,5 +209,3 @@ void ostimer_clock(machineinfo* machine)
   
   intctrl_fire(machine);
 }
-
-#endif

@@ -29,7 +29,9 @@ machineinfo* machine_create(uint5 memory)
   machine->pstate = profile_initialise();
   machine->lastfew = cnewarray(traceback, 1024);
   machine->posn = 0;
+  #ifdef EMULART
   sa1100_serial_initialise(machine->mem);
+  #endif
     
 	return machine;
 }

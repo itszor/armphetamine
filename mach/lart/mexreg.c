@@ -1,3 +1,5 @@
+#include "defs.h"
+#include "memory.h"
 #include "mexreg.h"
 #include "cnew.h"
 

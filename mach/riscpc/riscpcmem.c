@@ -3,11 +3,9 @@
 #include "memory.h"
 #include "processor.h"
 #include "machine.h"
-#include "sapcm.h"
-#include "ostimer.h"
-#include "intctrl.h"
-#include "mexreg.h"
-#include "lartmem.h"
+#include "riscpcmem.h"
+#include "vidc20.h"
+#include "iomd.h"
 
 const mem_readbank mem_rrom0 =
 {
@@ -79,153 +77,149 @@ const mem_readbank mem_rbank3 =
   memory_readwordbank3
 };
 
-const mem_readbank mem_sapcm_serial_read =
+const mem_writebank mem_wvram =
 {
-  sa1100_serial_read,
-  sa1100_serial_read,
-  sa1100_serial_read
+  memory_writebytevram,
+  memory_writehalfvram,
+  memory_writevram
 };
 
-const mem_writebank mem_sapcm_serial_write =
+const mem_readbank mem_rvram =
 {
-  sa1100_serial_write,
-  sa1100_serial_write,
-  sa1100_serial_write
+  memory_readbytevram,
+  memory_readhalfvram,
+  memory_readvram
 };
 
-const mem_readbank mem_sapcm_lcd_read =
+const mem_writebank mem_wiomd =
 {
-  sa1100_lcd_read,
-  sa1100_lcd_read,
-  sa1100_lcd_read
+  iomd_writeword,
+  iomd_writeword,
+  iomd_writeword
 };
 
-const mem_writebank mem_sapcm_lcd_write =
+const mem_readbank mem_riomd =
 {
-  sa1100_lcd_write,
-  sa1100_lcd_write,
-  sa1100_lcd_write
+  iomd_readword,
+  iomd_readword,
+  iomd_readword
 };
 
-const mem_readbank mem_ostimer_read =
+const mem_writebank mem_wvidc20 =
 {
-  ostimer_read,
-  ostimer_read,
-  ostimer_read
-};
-
-const mem_writebank mem_ostimer_write =
-{
-  ostimer_write,
-  ostimer_write,
-  ostimer_write
-};
-
-const mem_readbank mem_mexreg_read =
-{
-  sa1100_mexreg_read,
-  sa1100_mexreg_read,
-  sa1100_mexreg_read
-};
-
-const mem_writebank mem_mexreg_write =
-{
-  sa1100_mexreg_write,
-  sa1100_mexreg_write,
-  sa1100_mexreg_write
+  vidc20_writebyte,
+  vidc20_writeword,
+  vidc20_writeword
 };
 
 void memory_subinitialise(meminfo* mem)
 {
-  fprintf(stderr, "Initialising LART memory subsystem\n");
+  fprintf(stderr, "Initialising RISC PC memory subsystem\n");
   mem->bank0 = cnewarray(uint5, BANK0RAM/4);
   mem->bank1 = cnewarray(uint5, BANK1RAM/4);
   mem->bank2 = cnewarray(uint5, BANK2RAM/4);
   mem->bank3 = cnewarray(uint5, BANK3RAM/4);
   mem->rom0 = cnewarray(uint5, 16*1024*1024/4);
   mem->rom1 = cnewarray(uint5, 16*1024*1024/4); // hello, I'm flash
-  mem->sapcm.dma = cnewarray(sapcm_dma_channel, 6);
-  mem->sapcm.serial_fifo = cnew(sapcm_serial_fifo);
-  mem->sapcm.serial_fifo->in = fifo_create(12);
-  mem->sapcm.serial_fifo->out = fifo_create(8);
-  mem->ostimer = ostimer_new();
-  mem->intctrl = intctrl_new();
-  mem->mex = mexreg_new();
 }
 
 void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
                         uint3 writeperm)
 {
-  switch (physaddress >> 24)
+  switch ((physaddress >> 24) & 0x1f)
   {
     case 0x00: // ROM bank 0
     tlb->read = readperm ? mem_rrom0 : mem_rfault;
     tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
-    
-    case 0x10: // ROM bank 1
+
+    case 0x01: // ROM bank 1
     tlb->read = readperm ? mem_rrom1 : mem_rfault;
     tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
 
-    case 0x80: // SA1100 serial registers
-    tlb->read = readperm ? mem_sapcm_serial_read : mem_rfault;
-    tlb->write = writeperm ? mem_sapcm_serial_write : mem_wfault;
-    break;
-    
-    case 0x90: // OS timer registers
-    tlb->read = readperm ? mem_ostimer_read : mem_rfault;
-    tlb->write = writeperm ? mem_ostimer_write : mem_wfault;
-    break;
-    
-    case 0xa0: // memory control registers
-    tlb->read = readperm ? mem_mexreg_read : mem_rfault;
-    tlb->write = writeperm ? mem_mexreg_write : mem_wfault;
+    case 0x02: // VRAM
+    tlb->read = readperm ? mem_rvram : mem_rfault;
+    tlb->write = writeperm ? mem_wvram : mem_wfault;
     break;
 
-    case 0xb0: // SA1100 LCD registers
-    tlb->read = readperm ? mem_sapcm_lcd_read : mem_rfault;
-    tlb->write = writeperm ? mem_sapcm_lcd_write : mem_wfault;
+    case 0x03: // module I/O space
+    switch ((physaddress >> 20) & 0xf)
+    {
+      case 0x2:  // iomd registers
+      tlb->read = readperm ? mem_riomd : mem_rfault;
+      tlb->write = writeperm ? mem_wiomd : mem_wfault;
+      break;
+      
+      case 0x4:  // video registers
+      tlb->read = readperm ? mem_rnull : mem_rfault;
+      tlb->write = writeperm ? mem_wvidc20 : mem_wfault;
+      break;
+      
+      default:
+      tlb->read = mem_rnull;
+      tlb->write = mem_wnull;
+    }
     break;
-  
-    case 0xc0: // DRAM bank 0 (8Mb)
+
+    case 0x08: // extended I/O space
+    case 0x09:
+    case 0x0a:
+    case 0x0b:
+    case 0x0c:
+    case 0x0d:
+    case 0x0e:
+    case 0x0f:
+    tlb->read = mem_rnull;
+    tlb->write = mem_wnull;
+    break;
+
+    case 0x10: // DRAM bank 0 (64Mb)
+    case 0x11:
+    case 0x12:
+    case 0x13:
     tlb->read = readperm ? mem_rbank0 : mem_rfault;
     tlb->write = writeperm ? mem_wbank0 : mem_wfault;
     break;
 
-    case 0xc1: // DRAM bank 1 (8Mb)
+    case 0x14: // DRAM bank 1 (64Mb)
+    case 0x15:
+    case 0x16:
+    case 0x17:
     tlb->read = readperm ? mem_rbank1 : mem_rfault;
     tlb->write = writeperm ? mem_wbank1 : mem_wfault;
     break;
 
-    case 0xc8: // DRAM bank 2 (8Mb)
+    case 0x18: // DRAM bank 2 (64Mb)
+    case 0x19:
+    case 0x1a:
+    case 0x1b:
     tlb->read = readperm ? mem_rbank2 : mem_rfault;
     tlb->write = writeperm ? mem_wbank2 : mem_wfault;
     break;
 
-    case 0xc9: // DRAM bank 3 (8Mb)
+    case 0x1c: // DRAM bank 3 (64Mb)
+    case 0x1d:
+    case 0x1e:
+    case 0x1f:
     tlb->read = readperm ? mem_rbank3 : mem_rfault;
     tlb->write = writeperm ? mem_wbank3 : mem_wfault;
     break;
 
     default:
-//    fprintf(stderr, "Bad physical address %.8x\n", physaddress);
     break;
   }
 }
 
 uint5 memory_readphysicalword(meminfo* mem, uint5 physaddress)
 {
-  switch (physaddress >> 24)
+  switch (physaddress >> 26)
   {
-    case 0xc0: return mem->bank0[(physaddress & 0xffffff) >> 2];
-    case 0xc1: return mem->bank1[(physaddress & 0xffffff) >> 2];
-    case 0xc8: return mem->bank2[(physaddress & 0xffffff) >> 2];
-    case 0xc9: return mem->bank3[(physaddress & 0xffffff) >> 2];
+    case 4: return mem->bank0[(physaddress & 0xffffff) >> 2];
+    case 5: return mem->bank1[(physaddress & 0xffffff) >> 2];
+    case 6: return mem->bank2[(physaddress & 0xffffff) >> 2];
+    case 7: return mem->bank3[(physaddress & 0xffffff) >> 2];
   }
-  fprintf(stderr, "Bad physical word read by MMU at %.8x\n", physaddress);
-  abort();
-
   return 0;
 }
 

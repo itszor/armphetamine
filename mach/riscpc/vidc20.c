@@ -6,6 +6,7 @@
 
 #ifdef VIDCSUPPORT
 #include <SDL/SDL.h>
+#endif
 
 void vidc20_init(meminfo* mem)
 {
@@ -188,5 +189,4 @@ void vidc20_writeword(meminfo* mem, uint5 address, uint5 data)
   }
 }
 
-#endif
 

@@ -8,8 +8,6 @@
 #include "mouse.h"
 #include "machine.h"
 
-#ifdef IOMDSUPPORT
-
 void iomd_writebyte(meminfo* mem, uint5 address, uint5 data)
 {
   iomd_writeword(mem, address, data);
@@ -509,4 +507,3 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
   return 0;
 }
 
-#endif

@@ -9,11 +9,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "decode.h"
-#include "loadaout.h"
 #include "block.h"
-#include "codegen.h"
-#include "generators.h"
-#include "riscos.h"
 #include "execute.h"
 #include "pqueue.h"
 #include "debug.h"
@@ -21,6 +17,10 @@
 
 #ifdef VIRTUALFRAMEBUFFER
 #include "SDL.h"
+#endif
+
+#ifdef ROHLE
+#include "riscos.h"
 #endif
 
 //#define TRACE 1
@@ -81,7 +81,9 @@ int main(int argc, char* argv[])
 /*  genx86_test();*/
 
 //  fprintf(stderr, "\nInitialising RISC OS API emulation...\n");
+#ifdef ROHLE
   riscosstate = riscos_initialise();
+#endif
   
 //	fprintf(stderr, "Tabulating translation rules...\n");
 /*	machine->translaterules = generators_register();*/
