@@ -485,7 +485,7 @@ void debug_romload(machineinfo* machine, char* cmd)
 {
   struct stat fileinfo;
   char filename[60];  // whee, buffer overflows ahead
-  char* m;
+  uint3* m;
   uint3* rombase;
   FILE* f;
   uint5 addr, i;
@@ -512,6 +512,8 @@ void debug_romload(machineinfo* machine, char* cmd)
   {
     addr -= 0x10000000;
     rombase = &((uint3*)machine->mem->rom1)[addr];
+    /* no need for this, just testing */
+    abort();
   }
   else
   {

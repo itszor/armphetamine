@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 #include "libjtype/defs.h"
@@ -76,9 +77,11 @@ uint5 sa1100_serial_read(meminfo* mem, uint5 physaddress)
         return mem->sapcm.serial_fifo->uart_data;
 
         case 0x1c:
+/*        fprintf(stderr, "Read UART status 0\n");*/
         return mem->sapcm.serial_fifo->uart_status_0;
         
         case 0x20:
+    /*    fprintf(stderr, "Read UART status 1\n");*/
         return mem->sapcm.serial_fifo->uart_status_1;
       }
     }
@@ -233,8 +236,34 @@ void sa1100_lcd_write(meminfo* mem, uint5 physaddress, uint5 data)
 void sapcm_clock(machineinfo* machine)
 {
   meminfo* mem = machine->mem;
+  fd_set rdfd;
+  struct timeval tv;
+  int retval;
+  
+  FD_ZERO(&rdfd);
+  FD_SET(mem->sapcm.aslave, &rdfd);
+  tv.tv_sec = 0;
+  tv.tv_usec = 0;
+
+  retval = select(mem->sapcm.aslave+1, &rdfd, NULL, NULL, &tv);
+  
+  if (retval)
+  {
+    uint3 c = 0;
+    read(mem->sapcm.aslave, &c, 1);
+    mem->sapcm.serial_fifo->uart_data = c;
+    // receive fifo not empty
+    mem->sapcm.serial_fifo->uart_status_1 |= 2;
+  }
+  else
+  {
+    mem->sapcm.serial_fifo->uart_status_1 &= ~2;
+  }
+  
+  mem->sapcm.serial_fifo->uart_status_1 |= 4;
+  
  /* fprintf(stderr, "Clocked serial\n");*/
-  mem->sapcm.serial_fifo->uart_status_1 =
+ /* mem->sapcm.serial_fifo->uart_status_1 =
       (fifo_empty(mem->sapcm.serial_fifo->in) ? 0 : 2)
-    | (fifo_full(mem->sapcm.serial_fifo->out) ? 0 : 4);
+    | (fifo_full(mem->sapcm.serial_fifo->out) ? 0 : 4);*/
 }

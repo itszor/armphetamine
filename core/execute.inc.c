@@ -1431,18 +1431,30 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+/*  static int fire = 7;*/
   IGNORE(null);
 
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
     registerinfo* reg = machine->reg;
+    uint5 mumble;
+    tlbentry null;
 
   #ifdef FAKESWI
     fake_syscall(machine, inst.swi.number);
   #else
     processor_swi(machine);
   #endif
+    mumble = memory_virtualtophysical(machine->mem, 0xec000030, &null, 4);
+    fprintf(stderr, "virtual to physical mapping for %.8x is %.8x\n",
+      0xec000030, mumble);
+    
+/*    if (--fire == 0)
+    {
+      machine->trace = 1;
+      machine->detracecounter=500;
+    }*/
   }
   return 1;
 }

@@ -321,7 +321,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   if ((mem->mmucontrol & 2) && (virtualaddress & (alignment-1))) {
   /* !!! ok, this is disabled 'cos it triggers on bytes, which is stupid */
     fprintf(stderr, "Alignment fault!\n");
-//    mem->memoryfault = 1;
+    mem->memoryfault = 1;
   }
 
   tableindex = virtualaddress >> 20;
@@ -332,11 +332,14 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   switch (firstleveldescriptor & 3)
   {
     case 0:  // first level descriptor: fault
-    {
+    {      
       fprintf(stderr, "First level descriptor fault at %.8x\n", virtualaddress);
       fprintf(stderr, "First-level descriptor=%.8x\n", firstleveldescriptor);
       fprintf(stderr, "Translation base=%.8x\n", mem->translationbase);
       fprintf(stderr, "Table index=%.8x\n", tableindex);
+      
+      diss_around_pc(mem->parent);
+      
       mem->memoryfault = 1;
     }
     break;

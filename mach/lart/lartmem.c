@@ -168,8 +168,16 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
 {
   switch (physaddress >> 24)
   {
+    case 0xe8: // alt location ? (physical or virtual??)
+    case 0xec:
+    fprintf(stderr, "Urgle burgle, accessing flash as "
+                    "virtual or physical addr?\n");
+    abort();
+    break;
+    
+    case 0x08:
+    fprintf(stderr, "Access alt. ROM location %.8x\n", physaddress);
     case 0x00: // ROM bank 0
-    case 0x08: // alt location
     tlb->read = readperm ? mem_rrom0 : mem_rfault;
     tlb->write = writeperm ? mem_wrom0 : mem_wfault;
     break;
@@ -209,6 +217,9 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     tlb->write = writeperm ? mem_wbank1 : mem_wfault;
     break;
 
+    case 0xc2 ... 0xc7:
+    break;
+
     case 0xc8: // DRAM bank 2 (8Mb)
     tlb->read = readperm ? mem_rbank2 : mem_rfault;
     tlb->write = writeperm ? mem_wbank2 : mem_wfault;
@@ -219,8 +230,12 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     tlb->write = writeperm ? mem_wbank3 : mem_wfault;
     break;
 
+    case 0xca ... 0xe0:
+    break;
+
     default:
-//    fprintf(stderr, "Bad physical address %.8x\n", physaddress);
+    fprintf(stderr, "Bad physical address for LART at %.8x\n", physaddress);
+    abort();
     break;
   }
 }
@@ -348,6 +363,10 @@ void memory_writerom0(meminfo* mem, uint5 addr, uint5 data)
     fprintf(stderr, "FLASH: Array read mode\n");
     mem->flashmode = READ_ARRAY;
   }
+ /* else if (data==0x0)
+  {
+    fprintf(stderr, "FLASH: Ignoring write\n");
+  }*/
   else
   {
     fprintf(stderr, "FLASH: Don't know what to do (addr: %.8x, data: %.8x)\n",

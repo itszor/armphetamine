@@ -1,10 +1,12 @@
 // backend disassembler functions for instruction decoder
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "libjtype/defs.h"
 #include "core/machine.h"
 #include "core/decode.h"
+#include "core/execute.h"
 
 static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
                             "hi","ls","ge","lt","gt","le","","nv"};
@@ -360,4 +362,38 @@ int diss_und(machineinfo* machine, instructionformat inst, void* null)
 
   fprintf(stderr, "undefined instruction");
   return 0;
+}
+
+void diss_around_pc(machineinfo* machine)
+{
+  int i;
+  instructionformat inst;
+  registerinfo* reg = machine->reg;
+  meminfo* mem = machine->mem;
+  uint5 instaddr = PCADDR-8;
+
+  fprintf(stderr, "Disassembling around %.8x\n", instaddr);
+
+  for (i=-32; i<32; i+=4)
+  {
+    inst.instruction = memory_readinstword(mem, instaddr+i);
+    fprintf(stderr, "+ %.8x : %.8x : ", instaddr+i, inst.instruction);
+    dispatch(machine, inst, &diss, (void*)(instaddr+i));
+    fprintf(stderr, "\n");
+  }
+
+#define LOCALFLAG(X) \
+((mem->currentmode<16) ? (((pcinfo*)&reg->r[15])->flag.X) \
+                     : (reg->cpsr.flag.X))
+
+  for (i=0; i<15; i++)
+  {
+    fprintf(stderr, "r%d=%.8x ", i, reg->r[i]);
+  }
+  fprintf(stderr, "cpsr=%.8x spsr[%d]=%.8x ",
+    reg->cpsr.value, reg->spsr_current, 
+    reg->spsr[reg->spsr_current].value);
+  fprintf(stderr, "%c%c%c%c\n", LOCALFLAG(c)?'C':'c', 
+          LOCALFLAG(v)?'V':'v', LOCALFLAG(n)?'N':'n', 
+          LOCALFLAG(z)?'Z':'z');
 }

@@ -33,4 +33,6 @@ extern int diss_sds(machineinfo* machine, instructionformat inst, void* null);
 
 extern int diss_und(machineinfo* machine, instructionformat inst, void* null);
 
+extern void diss_around_pc(machineinfo* machine);
+
 #endif

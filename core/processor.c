@@ -131,7 +131,6 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   instructionformat inst;
   psrinfo spsr = reg->spsr[reg->spsr_current];
 
-
   if (newmode<16)
   {
     fprintf(stderr, "Switching mode from %s to %s\n",
@@ -234,8 +233,8 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   }*/
 }
 
-/* FIQ & IRQ happen *after* PC has been updated for a given instruction */
-/* hence -8 not -4 */
+/* Next intruction to be executed here is pc-8 */
+/* following instruction is pc-4 */
 void processor_fiq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
@@ -270,6 +269,7 @@ void processor_dataabort(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   reg->spsr[pm_ABT32&15] = reg->cpsr;
+  fprintf(stderr, "Oh cheese, a data abort\n");
   processor_mode(machine, pm_ABT32);
   reg->r[14] = reg->r[15];  /* +/- 4 */
   reg->cpsr.flag.interrupt |= 2;  // disable irq
@@ -280,6 +280,7 @@ void processor_swi(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   reg->spsr[pm_SVC32&15] = reg->cpsr;
+  fprintf(stderr, "SWI! (vectorbase=%.8x)\n", reg->vectorbase);
   processor_mode(machine, pm_SVC32);
   reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
@@ -289,6 +290,7 @@ void processor_swi(machineinfo* machine)
 void processor_und(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
+  fprintf(stderr, "Teh undefined instruction trap!\n");
   reg->spsr[pm_UND32&15] = reg->cpsr;
   processor_mode(machine, pm_UND32);
   reg->r[14] = reg->r[15]-4;
