@@ -15,9 +15,9 @@ machineinfo* machine_create(uint5 memory)
 	machine->mem = memory_initialise(memory);
 	machine->reg = registers_new();
 //	machine->x86flags.value = 0;
-	machine->blocks = hash_new(32768);  // pick a number...
+/*	machine->blocks = hash_new(32768);  // pick a number...
 	machine->live = 0;
-	machine->translaterules = 0;
+	machine->translaterules = 0;*/
   machine->breakpoints = hash_new(16);
   machine->trace = 0;
   machine->pstate = profile_initialise();
@@ -104,4 +104,11 @@ void machine_start(machineinfo* machine)
     }
 #endif
   }
+}
+
+void machine_clone(machineinfo* dest, machineinfo* src)
+{
+  memory_clone(dest->mem, src->mem);
+  registers_clone(dest->reg, src->reg);
+  dest->cycle = src->cycle;
 }

@@ -182,7 +182,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       pheta_basicblock* prev = chunk->currentblock;
 
       if (!blockstart->data)
-        blockstart->data = pheta_newbasicblock(chunk, -1);
+        blockstart->data = pheta_newbasicblock(chunk, i);
 
       if (!chunk->root)
         chunk->root = blockstart->data;
@@ -1164,7 +1164,7 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   if ((e = hash_lookup(chunk->leaders, line)))
   {
     if (!e->data)
-      e->data = pheta_newbasicblock(chunk, line);
+      e->data = pheta_newbasicblock(chunk, line==-1 ? -1 : chunk->start+line*4);
     else
       pheta_lsync(chunk);
 
@@ -1172,7 +1172,7 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   }
   else
   {
-    return pheta_newbasicblock(chunk, line);
+    return pheta_newbasicblock(chunk, line==-1 ? -1 : chunk->start+line*4);
   }
 }
 

@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <readline.h>
 #include <history.h>
+#include <assert.h>
 
 #include "defs.h"
 #include "cnew.h"
@@ -360,7 +361,8 @@ void riscos_swi(osstateinfo* os, machineinfo* machine, uint5 num)
     }
     else
     {
-      printf("Error: %s\n", memory_lookup(mem, (uint5*)(reg->r[0]+4)));
+/*      printf("Error: %s\n", memory_lookup(mem, (uint5*)(reg->r[0]+4)));*/
+      assert(!"You tried to run old code");
     }
     break;
 

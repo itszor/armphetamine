@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "defs.h"
 #include "cnew.h"
@@ -227,7 +228,7 @@ meminfo* memory_initialise(uint5 bytes)
   meminfo* mem = cnew(meminfo);
   uint5 i;
 
-  mem->memory = cnewarray(uint5, bytes/4);
+/*  mem->memory = cnewarray(uint5, bytes/4);*/
   mem->bank0 = cnewarray(uint5, BANK0RAM/4);
   mem->bank1 = cnewarray(uint5, BANK1RAM/4);
   mem->bank2 = cnewarray(uint5, BANK2RAM/4);
@@ -235,7 +236,6 @@ meminfo* memory_initialise(uint5 bytes)
   mem->rom0 = cnewarray(uint5, 4*1024*1024/4);
   mem->rom1 = cnewarray(uint5, 16*1024*1024/4); // hello, I'm flash
   mem->vram = VRAM ? cnewarray(uint5, VRAM/4) : 0;
-  mem->writetag = 0;
   mem->currentmode = 0;
   mem->memoryfault = 0;
   memory_invalidatetlb(&mem->insttlb);
@@ -265,6 +265,65 @@ meminfo* memory_initialise(uint5 bytes)
   mem->trace = fopen("trace.out", "w");
 
   return mem;
+}
+
+/* This DOES NOT fully copy the memory structure - complicated stuff like the
+ * transmap is left alone!
+ */
+void memory_clone(meminfo* dest, meminfo* src)
+{
+  memcpy(dest->bank0, src->bank0, BANK0RAM);
+  memcpy(dest->bank1, src->bank1, BANK1RAM);
+  memcpy(dest->bank2, src->bank2, BANK2RAM);
+  memcpy(dest->bank3, src->bank3, BANK3RAM);
+  dest->currentmode = src->currentmode;
+  dest->memoryfault = src->memoryfault;
+  dest->mmuactive = src->mmuactive;
+  memcpy(&dest->insttlb, &src->insttlb, sizeof(tlbentry));
+  memcpy(&dest->datatlb, &src->datatlb, sizeof(tlbentry));
+  dest->mmucontrol = src->mmucontrol;
+  dest->translationbase = src->translationbase;
+  dest->domainaccesscontrol = src->domainaccesscontrol;
+  dest->faultstatus = src->faultstatus;
+  dest->faultaddress = src->faultaddress;
+}
+
+static void bankchecker(uint5* a, uint5* b, uint5 size, uint5 bank)
+{
+  uint5 i;
+  for (i=0; i<size; i++)
+  {
+    if (a[i] != b[i])
+    {
+      fprintf(stderr,
+        "Memories differ at bank %d, offset %.8x. A=%.8x, B=%.8x\n",
+        bank, i, a[i], b[i]);
+      abort();
+    }
+  }
+}
+
+#define BOMB(A,B) if ((A) != (B)) { \
+    fprintf(stderr, "%s != %s!\n", #A, #B); \
+    abort(); \
+  }
+
+void memory_diff(meminfo* a, meminfo* b)
+{
+  bankchecker(a->bank0, b->bank0, BANK0RAM/4, 0);
+  bankchecker(a->bank1, b->bank1, BANK1RAM/4, 1);
+  bankchecker(a->bank2, b->bank2, BANK2RAM/4, 2);
+  bankchecker(a->bank3, b->bank3, BANK3RAM/4, 3);
+  BOMB(a->currentmode, b->currentmode);
+  BOMB(a->memoryfault, b->memoryfault);
+  BOMB(a->mmuactive, b->mmuactive);
+/*  memcpy(&dest->insttlb, &src->insttlb, sizeof(tlbentry));
+  memcpy(&dest->datatlb, &src->datatlb, sizeof(tlbentry));*/
+  BOMB(a->mmucontrol, b->mmucontrol);
+  BOMB(a->translationbase, b->translationbase);
+  BOMB(a->domainaccesscontrol, b->domainaccesscontrol);
+  BOMB(a->faultstatus, b->faultstatus);
+  BOMB(a->faultaddress, b->faultaddress);
 }
 
 void memory_invalidatetlb(tlbentry* tlb)

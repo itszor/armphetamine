@@ -14,9 +14,9 @@ struct machineinfo {
   meminfo* mem;
   registerinfo* reg;
   // x86flaginfo x86flags;
-  hashtable* blocks;
+ /* hashtable* blocks;
   hashentry* live;
-  hashtable* translaterules;
+  hashtable* translaterules;*/
   hashtable* breakpoints;
   struct profile_state* pstate;
   int trace;

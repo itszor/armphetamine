@@ -11,7 +11,6 @@
 
 void nativesupport_invoke2(machineinfo* machine, uint3* code)
 {
-  int o1, o2;
   registerinfo* reg = machine->reg;
   
   fprintf(stderr, "--> entering native code\n");
@@ -97,6 +96,7 @@ void nativesupport_swi(machineinfo* machine, uint5 number)
   fake_syscall(machine, number);
 }
 
+/*
 void nativesupport_writebyte(meminfo* mem, uint5 address, uint5 byte)
 {
   uint3* addr = (uint3*)memory_lookup(mem, (uint5*)address);
@@ -152,3 +152,4 @@ uint5 nativesupport_reconstructpc(uint5 addr, registerinfo* reg)
 //  fprintf(stderr, "reconstructing pc, value %x (addr %x)\n", val, addr);
   return val;
 }
+*/

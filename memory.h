@@ -47,7 +47,7 @@ typedef struct {
 } irq_info;
 
 struct meminfo {
-  uint5* memory;
+/*  uint5* memory;*/
   uint5* rom0;
   uint5* rom1;
   uint5* vram;
@@ -110,7 +110,6 @@ struct meminfo {
   struct ostimer_registers* ostimer;
 #endif
 
-  int writetag;
   uint3 currentmode;
   uint3 memoryfault;
   void* parent;
