@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 
 #include "palloc.h"
 #include "cnew.h"

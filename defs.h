@@ -16,6 +16,10 @@
 #  define FALSE 0
 #endif
 
+#ifndef NULL
+#  define NULL (void*)0
+#endif
+
 // these may need changing for different compilers/platforms
 typedef unsigned int uint5;
 typedef signed int sint5;

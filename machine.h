@@ -22,6 +22,9 @@ struct machineinfo {
   int trace;
   struct insttab* exectab;
   sint5 cycle;
+#ifdef EMULART
+  uint5 serialclock;
+#endif
 };
 
 typedef struct machineinfo machineinfo;

@@ -1,3 +1,4 @@
+#include "defs.h"
 #include "machine.h"
 #include "decode.h"
 #include "disassemble.h"

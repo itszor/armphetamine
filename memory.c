@@ -8,6 +8,10 @@
 #include "iomd.h"
 #include "machine.h"
 
+#ifdef EMULART
+#  include "sapcm.h"
+#endif
+
 const mem_writebank mem_wfault =
 {
   memory_writefault,
@@ -74,6 +78,7 @@ const mem_readbank mem_rvram =
   memory_readvram
 };
 
+#ifdef IOMDSUPPORT
 const mem_writebank mem_wiomd =
 {
   iomd_writeword,
@@ -89,13 +94,16 @@ const mem_readbank mem_riomd =
   iomd_readword,
   iomd_readword
 };
+#endif
 
+#ifdef VIDCSUPPORT
 const mem_writebank mem_wvidc20 =
 {
   vidc20_writebyte,
   vidc20_writeword,
   vidc20_writeword
 };
+#endif
 
 const mem_writebank mem_wbank0 =
 {
@@ -161,18 +169,54 @@ const mem_readbank mem_rbank3 =
   memory_readbank3
 };
 
+#ifdef EMULART
+
+const mem_readbank mem_sapcm_serial_read =
+{
+  sa1100_serial_read,
+  sa1100_serial_read,
+  sa1100_serial_read,
+  sa1100_serial_read,
+  sa1100_serial_read
+};
+
+const mem_writebank mem_sapcm_serial_write =
+{
+  sa1100_serial_write,
+  sa1100_serial_write,
+  sa1100_serial_write
+};
+
+const mem_readbank mem_sapcm_lcd_read =
+{
+  sa1100_lcd_read,
+  sa1100_lcd_read,
+  sa1100_lcd_read,
+  sa1100_lcd_read,
+  sa1100_lcd_read
+};
+
+const mem_writebank mem_sapcm_lcd_write =
+{
+  sa1100_lcd_write,
+  sa1100_lcd_write,
+  sa1100_lcd_write
+};
+
+#endif  /* EMULART */
+
 meminfo* memory_initialise(uint5 bytes)
 {
   meminfo* mem = cnew(meminfo);
 
-  mem->memory = cnewarray(int, bytes/4);
-  mem->bank0 = cnewarray(int, BANK0RAM/4);
-  mem->bank1 = cnewarray(int, BANK1RAM/4);
-  mem->bank2 = cnewarray(int, BANK2RAM/4);
-  mem->bank3 = cnewarray(int, BANK3RAM/4);
-  mem->rom0 = cnewarray(int, 4*1024*1024/4);
-  mem->rom1 = 0; // cnewarray(int, 16*1024*1024/4);
-  mem->vram = cnewarray(int, VRAM/4);
+  mem->memory = cnewarray(uint5, bytes/4);
+  mem->bank0 = cnewarray(uint5, BANK0RAM/4);
+  mem->bank1 = cnewarray(uint5, BANK1RAM/4);
+  mem->bank2 = cnewarray(uint5, BANK2RAM/4);
+  mem->bank3 = cnewarray(uint5, BANK3RAM/4);
+  mem->rom0 = cnewarray(uint5, 4*1024*1024/4);
+  mem->rom1 = cnewarray(uint5, 4*1024*1024/4); // hello, I'm flash
+  mem->vram = cnewarray(uint5, VRAM/4);
   mem->writetag = 0;
   mem->currentmode = 0;
   mem->memoryfault = 0;
@@ -185,6 +229,13 @@ meminfo* memory_initialise(uint5 bytes)
   // a larger physical memory map will need more hashes than this
   mem->transmap = cnewarray(hashtable*, 0x20000000/4096);
 	
+#ifdef EMULART
+  mem->sapcm.dma = cnewarray(sapcm_dma_channel, 6);
+  mem->sapcm.serial_fifo = cnew(sapcm_serial_fifo);
+  mem->sapcm.serial_fifo->in = fifo_create(12);
+  mem->sapcm.serial_fifo->out = fifo_create(8);
+#endif
+  
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");
 
   return mem;
@@ -411,6 +462,75 @@ uint5 memory_nullread(meminfo* mem, uint5 physaddress)
   return 0x0c0ffee0;
 }
 
+#ifdef EMULART
+
+void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
+                        uint3 writeperm)
+{
+  switch (physaddress >> 24)
+  {
+    case 0x00: // ROM bank 0
+    tlb->read = readperm ? mem_rrom0 : mem_rfault;
+    tlb->write = writeperm ? mem_wnull : mem_wfault;
+    break;
+
+    case 0x80: // SA1100 serial registers
+    tlb->read = readperm ? mem_sapcm_serial_read : mem_rfault;
+    tlb->write = writeperm ? mem_sapcm_serial_write : mem_wfault;
+    break;
+    
+    case 0x90: // IOMD registers, sorta, perhaps
+    tlb->read = readperm ? mem_ostimer_read : mem_rfault;
+    tlb->write = writeperm ? mem_ostimer_write : mem_wfault;
+    break;
+
+    case 0xb0: // SA1100 LCD registers
+    tlb->read = readperm ? mem_sapcm_lcd_read : mem_rfault;
+    tlb->write = writeperm ? mem_sapcm_lcd_write : mem_wfault;
+    break;
+  
+    case 0xc0: // DRAM bank 0 (8Mb)
+    tlb->read = readperm ? mem_rbank0 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank0 : mem_wfault;
+    break;
+
+    case 0xc1: // DRAM bank 1 (8Mb)
+    tlb->read = readperm ? mem_rbank1 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank1 : mem_wfault;
+    break;
+
+    case 0xc8: // DRAM bank 2 (8Mb)
+    tlb->read = readperm ? mem_rbank2 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank2 : mem_wfault;
+    break;
+
+    case 0xc9: // DRAM bank 3 (8Mb)
+    tlb->read = readperm ? mem_rbank3 : mem_rfault;
+    tlb->write = writeperm ? mem_wbank3 : mem_wfault;
+    break;
+
+    default:
+    fprintf(stderr, "Bad physical address %.8x\n", physaddress);
+    break;
+  }
+}
+
+uint5 memory_readphysicalword(meminfo* mem, uint5 physaddress)
+{
+  switch (physaddress >> 24)
+  {
+    case 0xc0: return mem->bank0[(physaddress & 0xffffff) >> 2];
+    case 0xc1: return mem->bank1[(physaddress & 0xffffff) >> 2];
+    case 0xc8: return mem->bank2[(physaddress & 0xffffff) >> 2];
+    case 0xc9: return mem->bank3[(physaddress & 0xffffff) >> 2];
+  }
+  fprintf(stderr, "Bad physical word read by MMU at %.8x\n", physaddress);
+
+  return 0;
+}
+
+#else
+
 void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
                         uint3 writeperm)
 {
@@ -511,13 +631,15 @@ uint5 memory_readphysicalword(meminfo* mem, uint5 physaddress)
   return 0;
 }
 
+#endif  /* EMULART */
+
 uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
                                tlbentry* tlb)
 {
   uint5 tableindex, firstleveldescriptor, domain;
   uint3 isuser = (mem->currentmode==0);
   // bits go: aprsvd
-  const static uint3 apfault[] = {
+  static const uint3 apfault[] = {
     0, 0, 0, 0,
     1, 0, 1, 0,
     0, 0, 1, 0,
@@ -743,8 +865,8 @@ uint5 memory_readdataword(meminfo* mem, uint5 virtualaddress)
                   (virtualaddress & ~mem->datatlb.mask);
   }
   data = mem->datatlb.read.word(mem, physaddress);
-  fprintf(stderr, "Read data word %.8x from virtual addr %.8x\n", 
-    data, virtualaddress);
+/*  fprintf(stderr, "Read data word %.8x from virtual addr %.8x\n", 
+    data, virtualaddress);*/
   return data;
 }
 
@@ -767,8 +889,8 @@ uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
 void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
-  fprintf(stderr, "Write data word %.8x to virtual addr %.8x\n", data, 
-          virtualaddress);
+/*  fprintf(stderr, "Write data word %.8x to virtual addr %.8x\n", data, 
+          virtualaddress);*/
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {

@@ -26,7 +26,7 @@ void fifo_delete(fifo_info* fifo)
 
 void fifo_write(fifo_info* fifo, uint3 byte)
 {
-  if ((fifo->tail-fifo->head & (fifo->length-1))==1) return;
+  if ((fifo->tail-fifo->head % fifo->length)==1) return;
   fifo->data[fifo->head++] = byte;
   if (fifo->head == fifo->length) fifo->head = 0;
 }
@@ -35,4 +35,14 @@ uint5 fifo_read(fifo_info* fifo)
 {
   if (fifo->tail==fifo->head) return -1;
   return fifo->data[fifo->tail++];
+}
+
+uint5 fifo_empty(fifo_info* fifo)
+{
+  return fifo->head == fifo->tail;
+}
+
+uint5 fifo_full(fifo_info* fifo)
+{
+  return ((fifo->tail+1) & fifo->length) == fifo->head+fifo->length;
 }

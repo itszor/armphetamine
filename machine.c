@@ -30,6 +30,9 @@ void machine_start(machineinfo* machine)
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
   const uint5 cycperio = 100;
+#ifdef EMULART
+  sint5 serialclock = 60;
+#endif
 
   machine->cycle = cycperio;
   
@@ -61,20 +64,29 @@ void machine_start(machineinfo* machine)
       {
         /* do something */
       }
-#ifdef IOMDSUPPORT
-      if (--machine->cycle<0)
-      {
-        if (!--mem->io.timer0)
-        {
-          fprintf(stderr, "Timer0 triggered!\n");
-        }
-        if (!--mem->io.timer1)
-        {
-          fprintf(stderr, "Timer1 triggered!\n");
-        }
-        machine->cycle+=cycperio;
-      }
-#endif
     }
+      
+#ifdef IOMDSUPPORT
+    if (--machine->cycle<0)
+    {
+      if (!--mem->io.timer0)
+      {
+        fprintf(stderr, "Timer0 triggered!\n");
+      }
+      if (!--mem->io.timer1)
+      {
+        fprintf(stderr, "Timer1 triggered!\n");
+      }
+      machine->cycle+=cycperio;
+    }
+#endif
+
+#ifdef EMULART
+    if (--serialclock<0)
+    {
+      sapcm_clock(machine);
+      serialclock = 60;  // approx. 220MHz/60 = 3.6864MHz
+    }
+#endif
   }
 }

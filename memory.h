@@ -100,6 +100,13 @@ struct meminfo {
   } io;
 #endif
 
+#ifdef EMULART
+  struct {
+    struct sapcm_dma_channel* dma;
+    struct sapcm_serial_fifo* serial_fifo;
+  } sapcm;
+#endif
+
   int writetag;
   uint3 currentmode;
   uint3 memoryfault;
@@ -108,11 +115,19 @@ struct meminfo {
 
 typedef struct meminfo meminfo;
 
-#define BANK0RAM (4096*1024)
-#define BANK1RAM (4096*1024)
-#define BANK2RAM (4096*1024)
-#define BANK3RAM (4096*1024)
-#define VRAM (2048*1024)
+#ifdef EMULART
+#  define BANK0RAM (8192*1024)
+#  define BANK1RAM (8192*1024)
+#  define BANK2RAM (8192*1024)
+#  define BANK3RAM (8192*1024)
+#  define VRAM     (0)
+#else
+#  define BANK0RAM (4096*1024)
+#  define BANK1RAM (4096*1024)
+#  define BANK2RAM (4096*1024)
+#  define BANK3RAM (4096*1024)
+#  define VRAM (2048*1024)
+#endif
 
 extern meminfo* memory_initialise(uint5 bytes);
 extern void memory_invalidatetlb(tlbentry* tlb);

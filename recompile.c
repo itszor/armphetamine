@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "recompile.h"
 #include "pheta.h"
 #include "machine.h"
