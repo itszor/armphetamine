@@ -1887,7 +1887,7 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   if (inst.sdt.p && offsetreg != -1)  // pre-indexed if 1
     basereg = pheta_emit(chunk, ph_ADD, basereg, offsetreg);
 
-  pheta_state(chunk);
+/*  pheta_state(chunk);*/
   
   if (inst.sdt.l)  // load
   {
@@ -1975,7 +1975,7 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
     pheta_lcommit(chunk, inst.bdt.rn, offsetby);
   }
 
-  pheta_state(chunk);
+/*  pheta_state(chunk);*/
 
   if (inst.bdt.u)  // transfer upwards
   {

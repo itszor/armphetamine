@@ -572,6 +572,8 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   pqueue_delete(mychunk->active);
   fprintf(stderr, "Inserting register load/store code\n");
   genx86_insert_spill_code(mychunk);
+  fprintf(stderr, "Completing allocation\n");
+  genx86_complete_alloc(mychunk);
   fprintf(stderr, "Flattening code\n");
   genx86_flatten_code(mychunk);
  /* fprintf(stderr, "Allocation state:\n");

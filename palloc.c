@@ -567,7 +567,8 @@ void palloc_linearscan(pheta_chunk* chunk, meminfo* mem)
  * a scratch register by something else. Returns TRUE if
  * successful, FALSE if not.
  */
-uint5 palloc_free_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg)
+uint5 palloc_evict_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg,
+  uint5 except)
 {
   uint5 i;
   sint5 found = -1;
@@ -578,7 +579,7 @@ uint5 palloc_free_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg)
   
   for (i=0; i<ph_IREG; i++)
   {
-    if (chunk->reguse[i]==0)
+    if (chunk->reguse[i]==0 && !(except & (1<<i)))
     {
       found = i;
       break;
@@ -597,7 +598,6 @@ uint5 palloc_free_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg)
         chunk->alloc[creg].info.ireg.num==reg)
     {
       chunk->alloc[creg].info.ireg.num = found;
-      chunk->alloc[activerange->reg].slot->data.reg = found;
       fprintf(stderr, "Free ireg: Rewrote logical register %d\n", creg);
     }
   }

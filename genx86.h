@@ -91,6 +91,7 @@ typedef enum {
 
 typedef enum {
   gotype_EMPTY,
+  gotype_PARTIAL,
   gotype_IMMEDIATE,
   gotype_REGISTER,
   gotype_INDREG,
@@ -110,6 +111,7 @@ struct genx86_operand {
     uint5 imm;
     uint5 reg;
     uint5 addr;
+    palloc_info* src;
     struct {
       uint5 base;
       uint5 disp;
