@@ -27,6 +27,7 @@ machineinfo* machine_create(uint5 memory)
   machine->trace = 0;
   machine->detracecounter = 0;
   machine->pstate = profile_initialise();
+  machine->lastfew = cnewarray(traceback, 1024);
   sa1100_serial_initialise(machine->mem);
     
 	return machine;
@@ -56,6 +57,9 @@ void machine_start(machineinfo* machine, uint5 cont)
     uint5 instaddr;
     instructionformat inst;
 
+ /*   memory_invalidatetlb(&mem->datatlb);
+    memory_invalidatetlb(&mem->insttlb);*/
+
 #ifdef RECOMPILE
     do {
 #endif
@@ -72,6 +76,12 @@ void machine_start(machineinfo* machine, uint5 cont)
 #endif
     
     inst.instruction = memory_readinstword(mem, instaddr);
+    
+    machine->lastfew[machine->posn].inst = inst.instruction;
+    machine->lastfew[machine->posn].virtualaddress = instaddr;
+
+    machine->posn++;
+    if (machine->posn>=1024) machine->posn = 0;
     
     if (machine->trace)
     {

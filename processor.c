@@ -70,9 +70,9 @@ void processor_mode(machineinfo* machine, uint5 newmode)
 
   if ((newmode&15)>0)
   {
-    fprintf(stderr, "Storing cpsr %.8x to spsr[%d]\n", reg->cpsr,
-      newmode&15);
-    if (newmode != omode) reg->spsr[newmode&15] = reg->cpsr;
+/*    fprintf(stderr, "Storing cpsr %.8x to spsr[%d]\n", reg->cpsr,
+      newmode&15);*/
+    /*if (newmode != omode)*/ reg->spsr[newmode&15] = reg->cpsr;
   }
 
   switch (omode)
@@ -260,7 +260,7 @@ void processor_swi(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_SVC32);
-  reg->r[14] = reg->r[15]-4;
+  reg->r[14] = reg->r[15]-8;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = 0x08+8;
 }

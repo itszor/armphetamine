@@ -10,6 +10,11 @@
 struct insttab;
 struct profile_state;
 
+typedef struct {
+  uint5 inst;
+  uint5 virtualaddress;
+} traceback;
+
 struct machineinfo {
   meminfo* mem;
   registerinfo* reg;
@@ -22,6 +27,8 @@ struct machineinfo {
   int trace;
   int detracecounter;
   struct insttab* exectab;
+  traceback* lastfew;
+  uint5 posn;
   sint5 cycle;
 };
 

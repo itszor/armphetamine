@@ -818,7 +818,7 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       {
         processor_mode(machine, val & 0x1f);
 
-        if (!(reg->cpsr.flag.interrupt & 0x2))
+     /*   if (!(reg->cpsr.flag.interrupt & 0x2))
         {
           fprintf(stderr, "-- IRQ Enabled\n");
           interrupt = 1;
@@ -827,7 +827,7 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
         {
           if (!before) fprintf(stderr, "-- IRQ Disabled\n");
         }
-
+*/
         reg->cpsr.value &= ~field;
         reg->cpsr.value |= val & field;
 
@@ -1472,13 +1472,13 @@ int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   {
     registerinfo* reg = machine->reg;
 
+    INCPC;
+
   #ifdef FAKESWI
     fake_syscall(machine, inst.swi.number);
   #else
     processor_swi(machine);
   #endif
-  
-    INCPC;
   }
   return 1;
 }

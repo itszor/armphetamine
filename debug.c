@@ -45,6 +45,7 @@ static const debug_cmd commands[] =
   { "continue",    debug_CONTINUE,    debug_continue    },
   { "step",        debug_STEP,        debug_step        },
   { "disassemble", debug_DISASSEMBLE, debug_disassemble },
+  { "last",        debug_LAST,        debug_last,       },
   { "memory",      debug_MEMORY,      debug_memory      },
   { "registers",   debug_REGISTERS,   debug_registers   },
   { "setreg",      debug_SETREG,      debug_setreg      },
@@ -247,6 +248,26 @@ void debug_disassemble(machineinfo* machine, char* cmd)
     inst.instruction = word;
     fprintf(stderr, "%.8x : %.8x : ", start, word);
     dispatch(machine, inst, &diss, (void*)start);
+    fprintf(stderr, "\n");
+  }
+}
+
+void debug_last(machineinfo* machine, char* cmd)
+{
+  uint5 back, i;
+  
+  strsep(&cmd, " \t");
+  back = debug_getnum(cmd);
+      
+  fprintf(stderr, "Disassembling last %d instructions\n", back);
+  
+  for (i=(machine->posn-back)&1023; i!=machine->posn; i=(i+1)&1023)
+  {
+    uint5 word = machine->lastfew[i].inst;
+    instructionformat inst;
+    inst.instruction = word;
+    fprintf(stderr, "%.8x : %.8x : ", machine->lastfew[i].virtualaddress, word);
+    dispatch(machine, inst, &diss, (void*)machine->lastfew[i].virtualaddress);
     fprintf(stderr, "\n");
   }
 }

@@ -11,6 +11,7 @@ typedef enum {
   debug_CONTINUE,
   debug_STEP,
   debug_DISASSEMBLE,
+  debug_LAST,
   debug_MEMORY,
   debug_REGISTERS,
   debug_SETREG,
@@ -44,6 +45,7 @@ extern int debug_hexargs(char* cmd, ...);
 extern void debug_null(machineinfo* machine, char* cmd);
 extern void debug_run(machineinfo* machine, char* cmd);
 extern void debug_continue(machineinfo* machine, char* cmd);
+extern void debug_last(machineinfo* machine, char* cmd);
 extern void debug_step(machineinfo* machine, char* cmd);
 extern void debug_disassemble(machineinfo* machine, char* cmd);
 extern void debug_memory(machineinfo* machine, char* cmd);
