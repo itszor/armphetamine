@@ -20,6 +20,7 @@
 #include "phetadism.h"
 #include "vidc20.h"
 #include "iomd.h"
+#include "palloc.h"
 
 void debug_shell(machineinfo* machine)
 {
@@ -524,6 +525,21 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Translating from %x to %x\n", start, end);
   mychunk = pheta_translatechunk(machine, start, (end-start)/4);
   phetadism_chunk(mychunk);
+  fprintf(stderr, "Register allocating\n");
+  palloc_init(mychunk);
+  palloc_constant(mychunk);
+//  palloc_nonorthog(mychunk);
+//  palloc_fetchmem(mychunk);
+  fprintf(stderr, "Commit shuffling\n");
+  palloc_shufflecommit(mychunk);
+  phetadism_chunk(mychunk);
+  fprintf(stderr, "Finding live ranges\n");
+  palloc_clearmarkers(mychunk);
+  palloc_findspans(mychunk, mychunk->root, 0);
+  palloc_clearmarkers(mychunk);
+  palloc_linearscan(mychunk, mychunk->root, 0);
+  palloc_printspans(mychunk);
+  palloc_print(mychunk);
   // pheta_destroychunk(mychunk);  (when it's written...)
 }
 

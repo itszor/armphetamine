@@ -29,11 +29,12 @@ void phetadism_block(pheta_basicblock* blk)
 {
   uint5 i;
   
-  printf("-- block base: %x  (source start %x)\n", blk, blk->srcstart);
+  printf("Block base: %x  (source start %x)\n", blk, blk->srcstart);
   
   for (i=0; i<blk->length; i++)
   {
     uint5 opcode = blk->base[i++];
+    printf("%4d: ", i-1);
     switch (opcode)
     {
       case ph_CONST:
@@ -184,9 +185,10 @@ void phetadism_block(pheta_basicblock* blk)
       break;
     }
   }
-  printf("-- block predicate: p%d%s  true block: %x  false block: %x\n\n",
+  printf("Block predicate: p%d%s\n  True block: %x\n  False block: %x\n"
+         "  Parent block: %x\n\n",
          blk->predicate,
          blk->predicate==0 ? " (al)" :
          blk->predicate==255 ? " (unset)" : "",
-         blk->trueblk, blk->falseblk);
+         blk->trueblk, blk->falseblk, blk->parent);
 }

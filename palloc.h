@@ -4,23 +4,25 @@
 #include "defs.h"
 #include "pheta.h"
 #include "list.h"
+#include "hash.h"
 
 typedef enum {
   pal_UNSET,
   pal_CONSTB,
   pal_CONST,
   pal_RFILE,
-  pal_IREG
+  pal_IREG,
+  pal_ALIAS
 } palloc_type;
 
 typedef struct {
-  pheta_basicblock* startblk;
   uint5 startline;
-  pheta_basicblock* endblk;
-  uint5 endline;
-} palloc_edge;
+  uint5 length;
+  uint5 reg;
+  uint5 ireg;
+} palloc_liverange;
 
-typedef struct {
+struct palloc_info {
   palloc_type type;
   union {
     struct {
@@ -29,8 +31,15 @@ typedef struct {
     } ireg;
     uint5 value;
   } info;
-  hash* referenced_by;
-  palloc_edge edge;
-} palloc_info;
+  hashtable* referenced_by;
+  palloc_liverange edge;
+};
+
+typedef struct palloc_info palloc_info;
+
+
+extern void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
+                      uint5 startline);
+extern void palloc_printspans(pheta_chunk* chunk);
 
 #endif

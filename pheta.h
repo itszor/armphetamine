@@ -6,6 +6,7 @@
 #include "decode.h"
 #include "machine.h"
 #include "bset.h"
+#include "pqueue.h"
 
 typedef enum {
   ph_CONST,
@@ -75,6 +76,7 @@ typedef enum {
   ph_CPSR_FLAG,
   ph_CPSR_ALL,
   ph_SPSR,
+  ph_CLOCK,
   ph_NUMREG
 } pheta_armregisters;
 
@@ -85,13 +87,15 @@ typedef struct pheta_basicblock_t {
   uint5 cycles;
   uint5 srcstart;
   uint3 predicate;
-  uint3 translated;
+  uint3 marker;
   struct pheta_basicblock_t* trueblk;
   struct pheta_basicblock_t* falseblk;
-  list* parents;
+  struct pheta_basicblock_t* parent;
   char* comment;
   bset_info* active;
   sint5 lbuf[ph_NUMREG];
+  uint3 dirtybuf[ph_NUMREG];
+  pqueue* live;
 } pheta_basicblock;
 
 struct palloc_info;
@@ -146,6 +150,10 @@ typedef enum {
 
 #define ph_MAXDEST 1
 #define ph_MAXSRC 2
+
+#define col_WHITE 0
+#define col_GREY 1
+#define col_BLACK 2
 
 /*
 typedef enum {
@@ -376,6 +384,7 @@ typedef struct {
 } pheta_block;
 */
 
+extern const uint3 pheta_instlength[];
 
 extern pheta_chunk* pheta_newchunk(uint5 start, uint5 length);
 
@@ -385,8 +394,10 @@ extern pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
                                          uint5 length);
 extern void pheta_link(pheta_basicblock* from, uint5 code,
                        pheta_basicblock* condtrue, pheta_basicblock* condfalse);
-extern void pheta_getused(char* base, int* index, uint5* numdest, uint5 dest[],
+extern void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
                           uint5* numsrc, uint5 src[]);
+extern void pheta_dfs_visit(pheta_basicblock* blk);
+extern void pheta_dfs(pheta_chunk* chunk);
 
 extern uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno);
 

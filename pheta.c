@@ -13,6 +13,52 @@
 // this should be moved somewhere sensible
 extern uint5 setbits(uint5);
 
+const uint3 pheta_instlength[] = {
+  6,  /* const */
+  3,  /* constb */
+  3,  /* fetch */
+  3,  /* commit */
+  2,  /* fexpect */
+  2,  /* fcommit */
+  2,  /* fensure */
+  3,  /* setpred */
+  2,  /* nfexpect */
+  2,  /* nfcommit */
+  2,  /* nfensure */
+  3,  /* nsetpred */
+  3,  /* fwrite */
+  5,  /* xjmp */
+  4,  /* lsl */
+  4,  /* lsr */
+  4,  /* asr */
+  4,  /* ror */
+  4,  /* rol */
+  3,  /* rrx */
+  3,  /* rlx */
+  3,  /* mov */
+  3,  /* not */
+  4,  /* and */
+  4,  /* or */
+  4,  /* eor */
+  3,  /* teq */
+  3,  /* tst */
+  4,  /* add */
+  4,  /* adc */
+  4,  /* sub */
+  4,  /* sbc */
+  3,  /* cmp */
+  3,  /* cmn */
+  4,  /* mul */
+  3,  /* ldw */
+  3,  /* ldb */
+  3,  /* stw */
+  3,  /* stb */
+  1,  /* swi */
+  1,  /* undef */
+  1,  /* sync */
+  1   /* end */
+};
+
 pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
 {
   pheta_chunk* p = cnew(pheta_chunk);
@@ -22,6 +68,7 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->tempno = 0;
   p->predno = 1;
   p->force = -1;
+  p->currentblock = 0;
     
   return p;
 }
@@ -32,6 +79,8 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   int i;
   pheta_basicblock* b;
 
+  if (c->currentblock) pheta_lsync(c);
+
   list_add(&c->blocks);
   c->blocks->data = b = cnew(pheta_basicblock);
   b->base = calloc(sizeof(char), b->size = 8);
@@ -39,12 +88,17 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   b->predicate = 255;
   b->trueblk = 0;
   b->falseblk = 0;
-  b->parents = 0;
+  b->parent = 0;
   b->srcstart = startaddr;
+  b->live = pqueue_new();
   
   c->currentblock = b;
 
-  for (i=0; i<ph_NUMREG; i++) b->lbuf[i] = -1;
+  for (i=0; i<ph_NUMREG; i++)
+  {
+    b->lbuf[i] = -1;
+    b->dirtybuf[i] = 0;
+  }
 
   return b;
 }
@@ -95,6 +149,8 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
 
   p = hash_insert(leaders, 0);
   chunk->root = p->data = pheta_newbasicblock(chunk, base);
+  chunk->currentblock = 0;
+  fprintf(stderr, "Chunk root=%x\n", chunk->root);
   
   for (i=0; i<length; i++)
   {
@@ -107,11 +163,16 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
     if ((blockstart = hash_lookup(leaders, i)))
     {
       // chain adjacent blocks together
-      pheta_basicblock* prev = chunk->currentblock;
-      pheta_lsync(chunk);  // synchronise registers
-      chunk->currentblock = blockstart->data;
-      if (prev->predicate==255)
-        pheta_link(prev, ph_ALWAYS, chunk->currentblock, 0);
+      if (chunk->currentblock)
+      {
+        pheta_basicblock* prev = chunk->currentblock;
+        pheta_lsync(chunk);  // synchronise registers
+        chunk->currentblock = blockstart->data;
+        assert(prev != chunk->currentblock);
+        if (prev->predicate==255)
+          pheta_link(prev, ph_ALWAYS, chunk->currentblock, 0);
+      }
+      else chunk->currentblock = chunk->root;
     }
 
     // ew, this is pretty shaky...    
@@ -147,6 +208,8 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
 
   // this is a memory leak waiting to happen
   hash_nuke(leaders, NULL);
+
+  pheta_dfs(chunk);
 
   return chunk;
 }
@@ -322,42 +385,40 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
 }
 
 // return the intermediate registers used by an instruction
-void pheta_getused(char* base, int* index, uint5* numdest, uint5 dest[],
+void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
   uint5* numsrc, uint5 src[])
 {
   *numdest = 0;
   *numsrc = 0;
-  switch (base[(*index)++])
+  switch (base[index++])
   {
     case ph_CONST:
     {
-      dest[(*numdest)++] = base[(*index)+=5];
+      dest[(*numdest)++] = base[index];
     }
     break;
 
     case ph_CONSTB:
     {
-      dest[(*numdest)++] = base[(*index)+=2];
+      dest[(*numdest)++] = base[index];
     }
     break;
 
     case ph_FETCH:
     {
-      dest[(*numdest)++] = base[(*index)+=2];
+      dest[(*numdest)++] = base[index];
     }
     break;
 
     case ph_COMMIT:
     {
-      (*index)++;
-      src[(*numsrc)++] = base[(*index)++];
+      src[(*numsrc)++] = base[index+1];
     }
     break;
 
     case ph_FWRITE:
     {
-      (*index)++;
-      src[(*numsrc)++] = base[(*index)++];
+      src[(*numsrc)++] = base[index+1];
     }
     break;
 
@@ -375,9 +436,9 @@ void pheta_getused(char* base, int* index, uint5* numdest, uint5 dest[],
     case ph_SBC:
     case ph_MUL:
     {
-      dest[(*numdest)++] = base[(*index)++];
-      src[(*numsrc)++] = base[(*index)++];
-      src[(*numsrc)++] = base[(*index)++];
+      dest[(*numdest)++] = base[index];
+      src[(*numsrc)++] = base[index+1];
+      src[(*numsrc)++] = base[index+2];
     }
     break;
 
@@ -388,8 +449,8 @@ void pheta_getused(char* base, int* index, uint5* numdest, uint5 dest[],
     case ph_LDW:
     case ph_LDB:
     {
-      dest[(*numdest)++] = base[(*index)++];
-      src[(*numsrc)++] = base[(*index)++];
+      dest[(*numdest)++] = base[index];
+      src[(*numsrc)++] = base[index+1];
     }
     break;
 
@@ -400,58 +461,44 @@ void pheta_getused(char* base, int* index, uint5* numdest, uint5 dest[],
     case ph_STW:
     case ph_STB:
     {
-      src[(*numsrc)++] = base[(*index)++];
-      src[(*numsrc)++] = base[(*index)++];
+      src[(*numsrc)++] = base[index];
+      src[(*numsrc)++] = base[index+1];
     }
-    break;
-
-    case ph_FEXPECT:
-    case ph_FCOMMIT:
-    case ph_FENSURE:
-    case ph_NFEXPECT:
-    case ph_NFCOMMIT:
-    case ph_NFENSURE:
-    case ph_SETPRED:
-    case ph_NSETPRED:
-    {
-      (*index)+=2;
-    }
-    break;
-    
-    case ph_XJMP:
-    {
-      (*index)+=4;
-    }
-    break;
-    
-    case ph_SWI:
-    case ph_SYNC:
-    case ph_END:
     break;
   }
 }
 
-// not too sure about this.
-void pheta_scanparent(pheta_chunk* chunk, pheta_basicblock* at)
+void pheta_dfs(pheta_chunk* chunk)
 {
-  if (at->trueblk)
+  list* scanblock;
+
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
-    if (!list_itemfromdata(at->trueblk->parents, at))
-    {
-      list_add(&at->trueblk->parents);
-      at->trueblk->parents->data = at;
-      pheta_scanparent(chunk, at->trueblk);
-    }
+    pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
+    blk->marker = col_WHITE;
   }
-  if (at->falseblk)
+
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
-    if (!list_itemfromdata(at->trueblk->parents, at))
-    {
-      list_add(&at->falseblk->parents);
-      at->falseblk->parents->data = at;
-      pheta_scanparent(chunk, at->falseblk);
-    }
+    pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
+    if (blk->marker==col_WHITE) pheta_dfs_visit(blk);
   }
+}
+  
+void pheta_dfs_visit(pheta_basicblock* blk)
+{
+  blk->marker = col_GREY;
+  if (blk->trueblk && blk->trueblk->marker==col_WHITE)
+  {
+    blk->trueblk->parent = blk;
+    pheta_dfs_visit(blk->trueblk);
+  }
+  if (blk->falseblk && blk->falseblk->marker==col_WHITE)
+  {
+    blk->falseblk->parent = blk;
+    pheta_dfs_visit(blk->falseblk);
+  }
+  blk->marker = col_BLACK;
 }
 
 uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno)
@@ -459,12 +506,14 @@ uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno)
   if (chunk->currentblock->lbuf[regno] != -1)
     return chunk->currentblock->lbuf[regno];
   else
-    return pheta_emit(chunk, ph_FETCH, regno);
+    return (chunk->currentblock->lbuf[regno] =
+            pheta_emit(chunk, ph_FETCH, regno));
 }
 
 void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno)
 {
   chunk->currentblock->lbuf[regno] = tempno;
+  chunk->currentblock->dirtybuf[regno] = 1;
 }
 
 void pheta_lsync(pheta_chunk* chunk)
@@ -473,7 +522,7 @@ void pheta_lsync(pheta_chunk* chunk)
   
   for (i=0; i<ph_NUMREG; i++)
   {
-    if (chunk->currentblock->lbuf[i] != -1)
+    if (chunk->currentblock->lbuf[i] != -1 && chunk->currentblock->dirtybuf[i])
     {
       pheta_emit(chunk, ph_COMMIT, i, chunk->currentblock->lbuf[i]);
       chunk->currentblock->lbuf[i] = -1;
@@ -1123,12 +1172,12 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
       if (inst.dp.s)
       {
         pheta_emit(chunk, ph_FEXPECT, ph_N | ph_Z);
-        dest = op2;
+        dest = pheta_emit(chunk, ph_MOV, op2);
         pheta_emit(chunk, ph_FCOMMIT, ph_N | ph_Z);
       }
       else
       {
-        dest = op2;
+        dest = pheta_emit(chunk, ph_MOV, op2);
       }
     }
     break;
@@ -1263,9 +1312,16 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
     {
       case 0:  // LSL / no shift
       {
-        offsetreg = pheta_emit(chunk, ph_LSL,
-          pheta_lfetch(chunk, rm),
-          pheta_emit(chunk, ph_CONSTB, amount));
+        if (amount)
+        {
+          offsetreg = pheta_emit(chunk, ph_LSL,
+            pheta_lfetch(chunk, rm),
+            pheta_emit(chunk, ph_CONSTB, amount));
+        }
+        else
+        {
+          offsetreg = pheta_lfetch(chunk, rm);
+        }
       }
       break;
       

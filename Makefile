@@ -1,7 +1,7 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -pipe -Wall -O6 -mcpu=k6 -march=k6 -DASM_ALU -DQUICKWRITE \
+CFLAGS	= -g -pipe -Wall -O0 -mcpu=k6 -march=k6 -DASM_ALU -DQUICKWRITE \
 	  -DVERSION=\"0.2\" -DVIDCSUPPORT -DIOMDSUPPORT
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
 
@@ -13,7 +13,7 @@ OBJ =	allocate.o analyse.o block.o cnew.o codegen.o decode.o disassemble.o \
 	pseudo.o pseudodism.o registers.o riscos.o x86asm.o x86dism.o \
 	rtasm.o rtasm_fns.o flush.o pheta.o phetadism.o processor.o vidc20.o \
 	iomd.o asmalu.o debug.o bset.o asmalutab.o fifo.o mouse.o keyboard.o \
-	genx86.o
+	genx86.o palloc.o
 
 SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	disassemble.c execute26.c execute32.c fakesys.c flush.c generators.c \
@@ -21,7 +21,7 @@ SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	nativesupport.c pheta.c phetadism.c pqueue.c processor.c pseudo.c \
 	pseudodism.c registers.c riscos.c rtasm.c vidc20.c x86asm.c x86dism.c \
 	rtasm.c flush.c pheta.c phetadism.c vidc20.c iomd.c debug.c bset.c \
-	asmalutab.c fifo.c mouse.c keyboard.c genx86.c
+	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c
 
 LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread
 
