@@ -30,4 +30,4 @@ divloop:
         rsbne r2,r2,#0
         mov r0,r2
  
-        ldmfd r13!,{r4,pc}^
+        ldmfd r13!,{r4,pc}

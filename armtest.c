@@ -10,7 +10,8 @@ int testfunc(void)
     {
       for (x=0; x<100; x++)
       {
-        i += x*y;
+        if (y>50)
+          i += x*y;
       }
     }
   }

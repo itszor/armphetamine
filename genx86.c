@@ -1597,7 +1597,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
 
       if (instr->opcode == ph_LDW)
-        genx86_call_function(buf, chunk, (void*)dynsupport_readdataword);
+        genx86_call_function(buf, chunk, (void*)memory_readdataword);
       else
         genx86_call_function(buf, chunk, (void*)memory_readbyte);
 
@@ -1680,14 +1680,14 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         genx86_append(chunk, buf, ab_PUSH, regeax, 0, 0);
       }
       
-      genx86_append(chunk, buf, ab_PUSH, os2, 0, 0);
       genx86_append(chunk, buf, ab_PUSH, os1, 0, 0);
+      genx86_append(chunk, buf, ab_PUSH, os2, 0, 0);
 
       memop = genx86_makeconstant(chunk, (uint5)mem);
       genx86_append(chunk, buf, ab_PUSH, memop, 0, 0);
 
       if (instr->opcode == ph_STW)
-        genx86_call_function(buf, chunk, (void*)dynsupport_writeword);
+        genx86_call_function(buf, chunk, (void*)memory_writeword);
       else
         genx86_call_function(buf, chunk, (void*)memory_writebyte);
 
@@ -2005,11 +2005,14 @@ nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
         free(op);
       }
       
+      // generate a branch if we aren't falling through from the
+      // previous true block
       if (last->trueblk && last->trueblk != blk)
       {
         reloc_record* reloc;
         op = cnew(genx86_op);
-        op->operator = ab_JE;
+        op->operator = ab_JNE;
+        // 0x100 ensures we reserve 32 bits of offset
         op->op[0] = genx86_makeconstant(chunk, 0x100);
         op->op[1] = op->op[2] = 0;
         genx86_asm(nat, op);
@@ -2023,11 +2026,14 @@ nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
         last->trueblk->reloc->data = reloc;
       }
 
+      // generate a branch if we aren't falling through from the
+      // previous false block
       if (last->falseblk && last->falseblk != blk)
       {
         reloc_record* reloc;
         op = cnew(genx86_op);
-        op->operator = ab_JNE;
+        op->operator = ab_JE;
+        // again, reserve 32 bits for offset
         op->op[0] = genx86_makeconstant(chunk, 0x100);
         op->op[1] = op->op[2] = 0;
         genx86_asm(nat, op);
@@ -2080,6 +2086,7 @@ nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
         free(op);
       }
       
+      // if we've got a true block, and one already exists, branch to it
       if (blk->trueblk && blk->trueblk->marker)
       {
         op = cnew(genx86_op);
@@ -2092,10 +2099,11 @@ nativeblockinfo* genx86_flatten_code(pheta_chunk* chunk)
         free(op);
       }
 
+      // if we've got a false block, and one already exists, branch to it
       if (blk->falseblk && blk->falseblk->marker)
       {
         op = cnew(genx86_op);
-        op->operator = ab_JNE;
+        op->operator = ab_JE;
         op->op[0] = genx86_makeconstant(chunk, blk->falseblk->natoffset -
           nat->length - 6);
         op->op[1] = op->op[2] = 0;

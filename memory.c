@@ -731,7 +731,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
 uint5 memory_readdataword(meminfo* mem, uint5 virtualaddress)
 {
-  uint5 physaddress;
+  uint5 physaddress, data;
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
@@ -742,7 +742,10 @@ uint5 memory_readdataword(meminfo* mem, uint5 virtualaddress)
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
   }
-  return mem->datatlb.read.word(mem, physaddress);
+  data = mem->datatlb.read.word(mem, physaddress);
+  fprintf(stderr, "Read data word %.8x from virtual addr %.8x\n", 
+    data, virtualaddress);
+  return data;
 }
 
 uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
@@ -764,6 +767,8 @@ uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
 void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
+  fprintf(stderr, "Write data word %.8x to virtual addr %.8x\n", data, 
+          virtualaddress);
   if (mem->datatlb.modestamp != mem->currentmode ||
       (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
   {
