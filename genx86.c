@@ -746,6 +746,8 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     case COMPOUND(pal_CONSTB, pal_CONSTB, pal_UNSET):
     case COMPOUND(pal_CONST, pal_CONST, pal_UNSET):
     {
+      // This is OK iff we allocate a constant to a register, then
+      // alias the destination of a mov instruction to the source
       if (dest->info.value != src1->info.value)
       {
         ERR;
@@ -834,7 +836,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
           
           case pal_RFILE:
           {
-            dest->info.value = armsrc;
+            dest->info.value = armsrc*4;
           }
           break;
         }
