@@ -136,11 +136,15 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
     switch (opcode)
     {
       // mov aliasing? hmmmm.
+      // This is possibly breaking, eg, movs
       case ph_MOV:
       {
         uint5 dest = instr->data.op.dest;
         uint5 src = instr->data.op.src1;
-        if (chunk->alloc[dest].type==pal_UNSET)
+        uint5 osrc = palloc_close(chunk, src);
+        if (chunk->alloc[dest].type == pal_UNSET &&
+            chunk->alloc[osrc].type != pal_CONST &&
+            chunk->alloc[osrc].type != pal_CONSTB)
         {
           chunk->alloc[dest].type = pal_ALIAS;
           chunk->alloc[dest].info.value = src;

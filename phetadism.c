@@ -7,7 +7,7 @@
 #include "phetadism.h"
 #include "list.h"
 
-static const char* opname[] = { "const", "constb", "fetch", "commit", "assoc", 
+const char* opname[] = { "const", "constb", "fetch", "commit", "assoc", 
   "spill", "reload", "phi", "fexpect", "fcommit", "fensure", "nfexpect", 
   "nfcommit", "nfensure", "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", 
   "rlx", "mov", "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub", 

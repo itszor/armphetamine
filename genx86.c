@@ -2169,6 +2169,46 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     }
     break;
 
+    case ph_FWRITE:
+    {
+      palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      if (src->type==pal_CONST && src->type==pal_CONSTB)
+      {
+        switch (src->info.value)
+        {
+          case 0:
+          if (instr->data.op.dest & ph_C)
+          {
+            genx86_append(chunk, buf, ab_CLC, 0, 0, 0);
+          }
+          else
+          {
+            fprintf(stderr, "Can't write to that flag\n");
+          }
+          break;
+          
+          case 1:
+          if (instr->data.op.dest & ph_C)
+          {
+            genx86_append(chunk, buf, ab_STC, 0, 0, 0);
+          }
+          else
+          {
+            fprintf(stderr, "Can't write to that flag\n");
+          }
+          break;
+          
+          default:
+          fprintf(stderr, "Can only write 0 or 1 to a flag\n");
+        }
+      }
+      else
+      {
+        fprintf(stderr, "Write register to flag not supported yet\n");
+      }
+    }
+    break;
+
     case ph_LDB:
     case ph_LDW:
     {
@@ -2371,7 +2411,21 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
     break;
-    // !!! things missing
+    
+    case ph_CONST:
+    case ph_CONSTB:
+    /* these don't need to generate any actual code */
+    break;
+    
+    case ph_UKJMP:
+    {
+      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
+    }
+    break;
+    
+    default:
+    fprintf(stderr, "Unimplemented ph2 opcode: %s\n", opname[instr->opcode]);
+    exit(1);
   }
   
   return 0;
@@ -2545,7 +2599,7 @@ void genx86_flatten_code(pheta_chunk* chunk)
         off->type = gotype_INDREGPLUSDISP8;
         off->width = gowidth_BYTE;
         off->data.regdisp.base = EBP;
-        if (blk->predicate & ph_NAT)
+        if (last->predicate & ph_NAT)
         {
           off->data.regdisp.disp = offsetof(registerinfo,
             npredbuf[last->predicate & 0xf]);
