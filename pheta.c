@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include "defs.h"
 #include "pheta.h"
@@ -10,6 +11,7 @@
 #include "decode.h"
 #include "pqueue.h"
 #include "palloc.h"
+#include "clist.h"
 
 // this should be moved somewhere sensible
 extern uint5 setbits(uint5);
@@ -116,7 +118,8 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   b->trueblk = 0;
   b->falseblk = 0;
   b->parent = 0;
-  b->predecessor = 0;
+  b->predecessor = clist_new();
+  b->scsubgraph = 0;
   b->srcstart = startaddr;
   b->live = pqueue_new();
   b->required = 0;
@@ -405,6 +408,8 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     break;
   }
   va_end(ap);
+  
+ /* blk->length++;*/
     
   return dest;
 }
@@ -508,6 +513,7 @@ void pheta_getused(pheta_instr* instr, int index, uint5* numdest, uint5 dest[],
 void pheta_dfs(pheta_chunk* chunk)
 {
   list* scanblock;
+  uint5 time = 0;
 
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -518,22 +524,58 @@ void pheta_dfs(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
-    if (blk->marker==col_WHITE) pheta_dfs_visit(blk);
+    if (blk->marker==col_WHITE) pheta_dfs_visit(blk, &time);
   }
 }
 
-void pheta_dfs_visit(pheta_basicblock* blk)
+void pheta_dfs_visit(pheta_basicblock* blk, uint5* time)
 {
   blk->marker = col_GREY;
+  blk->discovertime = ++*time;
   if (blk->trueblk && blk->trueblk->marker==col_WHITE)
   {
     blk->trueblk->parent = blk;
-    pheta_dfs_visit(blk->trueblk);
+    pheta_dfs_visit(blk->trueblk, time);
   }
   if (blk->falseblk && blk->falseblk->marker==col_WHITE)
   {
     blk->falseblk->parent = blk;
-    pheta_dfs_visit(blk->falseblk);
+    pheta_dfs_visit(blk->falseblk, time);
+  }
+  blk->marker = col_BLACK;
+  blk->finishtime = ++*time;
+}
+
+void pheta_scc(pheta_chunk* chunk)
+{
+  list* scanblock;
+  
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
+  {
+    pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
+    blk->marker = col_WHITE;
+  }
+  
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
+  {
+    pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
+    if (blk->marker==col_WHITE) pheta_scc_visit(blk);
+  }
+}
+
+void pheta_scc_visit(pheta_basicblock* blk)
+{
+  clist* walk;
+  blk->marker = col_GREY;
+  for (walk=blk->predecessor->next; walk->data; walk=walk->next)
+  {
+    pheta_basicblock* parent = walk->data;
+    parent->scsubgraph = blk;
+    if (parent->marker==col_WHITE)
+    {
+      fprintf(stderr, "Recursing\n");
+      pheta_scc_visit(parent);
+    }
   }
   blk->marker = col_BLACK;
 }
@@ -546,26 +588,42 @@ void pheta_predecessor(pheta_chunk* chunk)
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
     if (blk->trueblk)
     {
-      list* seek;
-      uint5 there = 0;
-      for (seek=blk->trueblk->predecessor; seek; seek=seek->prev)
-        if (seek->data==blk) there = 1;
-      if (!there)
+      clist* seek, *insertat = blk->trueblk->predecessor;
+      sint5 stime = -1;
+      for (seek=blk->trueblk->predecessor->next; seek->data; seek=seek->next)
       {
-        list_add(&blk->trueblk->predecessor);
-        blk->trueblk->predecessor->data = blk;
+        pheta_basicblock* sblk = seek->data;
+        if (sblk->finishtime == stime)
+        {
+          insertat = 0;
+          break;
+        }
+        if (sblk->finishtime > stime) insertat = seek;
+      }
+      if (insertat)
+      {
+        clist* item = clist_prepend(insertat);
+        item->data = blk;
       }
     }
     if (blk->falseblk)
     {
-      list* seek;
-      uint5 there = 0;
-      for (seek=blk->falseblk->predecessor; seek; seek=seek->prev)
-        if (seek->data==blk) there = 1;
-      if (!there)
+      clist* seek, *insertat = blk->falseblk->predecessor;
+      sint5 stime = -1;
+      for (seek=blk->falseblk->predecessor->next; seek->data; seek=seek->next)
       {
-        list_add(&blk->falseblk->predecessor);
-        blk->falseblk->predecessor->data = blk;
+        pheta_basicblock* sblk = seek->data;
+        if (sblk->finishtime == stime)
+        {
+          insertat = 0;
+          break;
+        }
+        if (sblk->finishtime > stime) insertat = seek;
+      }
+      if (insertat)
+      {
+        clist* item = clist_prepend(insertat);
+        item->data = blk;
       }
     }
   }
@@ -642,10 +700,10 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   }
   if (needflag != 0 || needpred != -1)
   {
-    list* l;
+    clist* l;
     fprintf(stderr, "Trying next level up\n");
 
-    for (l=blk->predecessor; l; l=l->prev)
+    for (l=blk->predecessor->next; l->data; l=l->next)
     {
       pheta_basicblock* pre = l->data;
       fprintf(stderr, "-- trying %p\n", pre);

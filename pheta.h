@@ -117,10 +117,13 @@ typedef struct pheta_basicblock_t {
   uint5 marker;
   uint5 required;
   uint5 set;
+  uint5 discovertime;
+  uint5 finishtime;
   struct pheta_basicblock_t* trueblk;
   struct pheta_basicblock_t* falseblk;
   struct pheta_basicblock_t* parent;
-  list* predecessor;  // flag resolution needs all predecessors for a block
+  clist* predecessor;  // flag resolution needs all predecessors for a block
+  struct pheta_basicblock_t* scsubgraph;
   char* comment;
   bset_info* active;
   sint5 lbuf[ph_NUMREG];
@@ -227,8 +230,10 @@ extern void pheta_link(pheta_basicblock* from, uint5 code,
                        pheta_basicblock* condtrue, pheta_basicblock* condfalse);
 extern void pheta_getused(pheta_instr* instr, int index, uint5* numdest,
                           uint5 dest[], uint5* numsrc, uint5 src[]);
-extern void pheta_dfs_visit(pheta_basicblock* blk);
+extern void pheta_dfs_visit(pheta_basicblock* blk, uint5* time);
 extern void pheta_dfs(pheta_chunk* chunk);
+extern void pheta_scc(pheta_chunk* chunk);
+extern void pheta_scc_visit(pheta_basicblock* blk);
 extern void pheta_predecessor(pheta_chunk* chunk);
 
 extern void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,

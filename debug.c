@@ -40,6 +40,7 @@ void debug_shell(machineinfo* machine)
 
 const static debug_cmd commands[] =
 {
+  { "#",           debug_COMMENT,     debug_null        },
   { "run",         debug_RUN,         debug_run         },
   { "disassemble", debug_DISASSEMBLE, debug_disassemble },
   { "memory",      debug_MEMORY,      debug_memory      },
@@ -158,29 +159,27 @@ int debug_hexargs(char* cmd, ...)
   return args;
 }
 
+void debug_null(machineinfo* machine, char* cmd)
+{
+
+}
+
 void debug_run(machineinfo* machine, char* cmd)
 {
   registerinfo* reg = machine->reg;
-  uint5 start, end, got;
+  uint5 start;
 
-  got = debug_hexargs(cmd, &start, &end);
-  
-  switch (got)
+  strsep(&cmd, " \t");
+  start = debug_getnum(cmd);
+
+  if (start!=-1)
   {
-    case 0:
-    fprintf(stderr, "Running from zero\n");
-    break;
-    
-    case 1:
     fprintf(stderr, "Running from %x\n", start);
     PCSETADDR(start+8);
-    break;
-    
-    case 2:
-    fprintf(stderr, "Running from %x to %x\n", start, end);
-    PCSETADDR(start+8);
-    fprintf(stderr, "(to do this, set a breakpoint first)\n");
-    break;
+  }
+  else
+  {
+    fprintf(stderr, "Running from current address\n");
   }
   
   machine_start(machine);
@@ -188,28 +187,25 @@ void debug_run(machineinfo* machine, char* cmd)
 
 void debug_disassemble(machineinfo* machine, char* cmd)
 {
-  uint5 start, end, got;
+  uint5 start, end;
   
-  got = debug_hexargs(cmd, &start, &end);
+  strsep(&cmd, " \t");
+  start = debug_getnum(cmd);
+  strsep(&cmd, " \t");
+  end = debug_getnum(cmd);
+  
+  if (end==-1 && start!=-1) end = start+32;
+  
+  if (start==-1)
+  {
+    fprintf(stderr, "Please specify a start address or range\n");
+    return;
+  }
   
   start &= ~3;
   end &= ~3;
   
-  switch (got)
-  {
-    case 0:
-    fprintf(stderr, "Please specify a start address or range\n");
-    return;
-    break;
-    
-    case 1:
-    end = start+32;
-    // deliberate fall-through
-    
-    case 2:
-    fprintf(stderr, "Disassembling from %x to %x\n", start, end);
-    break;
-  }
+  fprintf(stderr, "Disassembling from %x to %x\n", start, end);
   
   for (; start<end; start+=4)
   {
@@ -224,23 +220,23 @@ void debug_disassemble(machineinfo* machine, char* cmd)
 
 void debug_memory(machineinfo* machine, char* cmd)
 {
-  uint5 start, end, got;
+  uint5 start, end;
 
-  got = debug_hexargs(cmd, &start, &end);
+  strsep(&cmd, " \t");
+  start = debug_getnum(cmd);
+  strsep(&cmd, " \t");
+  end = debug_getnum(cmd);
 
-  switch (got)
+  if (end==-1 && start!=-1) end = start+32;
+
+  if (start==-1)
   {
-    case 0:
     fprintf(stderr, "Please specify a start address or range\n");
-    break;
-
-    case 1:
-    end = start+32;
-    // deliberate fall-through
-
-    case 2:
+    return;
+  }
+  else
+  {
     fprintf(stderr, "Dumping memory from %x to %x\n", start, end);
-    break;
   }
 }
 
@@ -293,11 +289,12 @@ void debug_setreg(machineinfo* machine, char* cmd)
 
 void debug_breakset(machineinfo* machine, char* cmd)
 {
-  uint5 addr, got;
-  
-  got = debug_hexargs(cmd, &addr);
+  uint5 addr;
 
-  if (got != 1)
+  strsep(&cmd, " \t");
+  addr = debug_getnum(cmd);
+
+  if (addr == -1)
   {
     fprintf(stderr, "Give an address\n");
     return;
@@ -309,11 +306,12 @@ void debug_breakset(machineinfo* machine, char* cmd)
 
 void debug_breakclear(machineinfo* machine, char* cmd)
 {
-  uint5 addr, got;
+  uint5 addr;
   
-  got = debug_hexargs(cmd, &addr);
+  strsep(&cmd, " \t");
+  addr = debug_getnum(cmd);
   
-  if (got != 1)
+  if (addr == -1)
   {
     fprintf(stderr, "Give an address\n");
     return;
@@ -401,7 +399,7 @@ void debug_load(machineinfo* machine, char* cmd)
     fprintf(stderr, "Enter an address\n");
     return;
   }
-  sscanf(cmd, "%x", &addr);
+  addr = debug_getnum(cmd);
   
   m = malloc(fileinfo.st_size);
   f = fopen(filename, "r");
@@ -444,7 +442,7 @@ void debug_romload(machineinfo* machine, char* cmd)
     fprintf(stderr, "Enter an address\n");
     return;
   }
-  sscanf(cmd, "%x", &addr);
+  addr = debug_getnum(cmd);
   
   m = malloc(fileinfo.st_size);
   f = fopen(filename, "r");
@@ -497,10 +495,12 @@ void debug_script(machineinfo* machine, char* cmd)
 
 void debug_virtual(machineinfo* machine, char* cmd)
 {
-  uint5 addr, got;
+  uint5 addr;
   tlbentry nulltlb;
+
+  strsep(&cmd, " \t");
+  addr = debug_getnum(cmd);
   
-  got = debug_hexargs(cmd, &addr);
   fprintf(stderr, "Virtual address: %.8x  Physical address: %.8x\n", addr,
     memory_virtualtophysical(machine->mem, addr, &nulltlb));
 }
@@ -539,6 +539,8 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   phetadism_chunk(mychunk);
   fprintf(stderr, "Getting predecessors\n");
   pheta_predecessor(mychunk);
+  fprintf(stderr, "Finding strongly-connected components\n");
+  pheta_scc(mychunk);
   fprintf(stderr, "Fixing up flags & predicates\n");
   pheta_fixup_flags(mychunk);
   fprintf(stderr, "Finding live ranges\n");

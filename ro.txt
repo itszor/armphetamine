@@ -1,8 +1,8 @@
-romload Rom 0
-breakset 5c
-#breakset 3815c98
-#breakset 3815c84
-#breakset 3815c70
-#breakset 382a8ac
-#breakset 382a8dc
-run 0
+romload Rom 0x0
+breakset 0x5c
+# breakset 0x3815c98
+# breakset 0x3815c84
+# breakset 0x3815c70
+# breakset 0x382a8ac
+# breakset 0x382a8dc
+run 0x0

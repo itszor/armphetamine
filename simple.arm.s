@@ -7,9 +7,10 @@ simple:
 	mov r0,r1
 	add r1,r0,r1
 	add r2,r0,r2
+loop:
 	add r3,r0,r3
-	add r4,r0,r4
-	add r5,r0,r5
+	adds r4,r0,r4
+	bge loop - .
 	add r6,r0,r6
 	add r7,r0,r4
 	add r8,r0,r8

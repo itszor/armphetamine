@@ -18,6 +18,7 @@ typedef list* (*listsearchfn)(list*, void*);
 
 extern list* list_add(list** oldhead);
 extern void list_removehead(list** head);
+extern list* list_insertitem(list** head, list* before);
 extern void list_delinkitem(list** head, list* item);
 extern list* list_itemfromdata(list* li, void* data);
 extern void list_destroy(list* li);

@@ -6,6 +6,7 @@
 #include "machine.h"
 
 typedef enum {
+  debug_COMMENT,
   debug_RUN,
   debug_DISASSEMBLE,
   debug_MEMORY,
@@ -38,6 +39,7 @@ extern void debug_shell(machineinfo* machine);
 extern int debug_hexargs(char* cmd, ...);
 
 // debugger commands
+extern void debug_null(machineinfo* machine, char* cmd);
 extern void debug_run(machineinfo* machine, char* cmd);
 extern void debug_disassemble(machineinfo* machine, char* cmd);
 extern void debug_memory(machineinfo* machine, char* cmd);

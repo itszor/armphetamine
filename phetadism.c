@@ -42,6 +42,8 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
   uint5 i;
     
   printf("Block base: %p  (source start %x)\n", blk, blk->srcstart);
+  printf("Time (discover): %d  time (finish): %d\n", blk->discovertime,
+    blk->finishtime);
   
   for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
   {
@@ -272,6 +274,13 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
     }
   }
   printf("Block predicate: %s\n  True block: %p\n  False block: %p\n"
-         "  Parent block: %p\n\n",
+         "  Parent block: %p\n",
          txtcc[blk->predicate], blk->trueblk, blk->falseblk, blk->parent);
+  printf("Predecessors' finish times: ");
+  for (walk=blk->predecessor->next; walk->data; walk=walk->next)
+  {
+    pheta_basicblock* foo = walk->data;
+    printf("%d ", foo->finishtime);
+  }
+  printf("\nStrongly-connected subgraph: %p\n\n", blk->scsubgraph);
 }

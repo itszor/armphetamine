@@ -53,4 +53,19 @@ void clist_delinkitem(clist* entry)
   free(entry);
 }
 
+/* moves item 'from' after item 'to' */
+void clist_moveitem(clist* to, clist* from)
+{
+  /* delink 'from' from previous location */
+  from->prev->next = from->next;
+  from->next->prev = from->prev;
+  /* tie 'from' into new location */
+  from->next = to->next;
+  from->prev = to;
+  /* insert 'from' after 'to' */
+  to->next->prev = from;
+  to->next = from;
+}
+
+
 

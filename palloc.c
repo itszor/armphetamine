@@ -431,7 +431,7 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
         }
         else break;
       }
-    
+
       if (chunk->regno<maxreg)
       {
         uint5 s;
@@ -554,43 +554,42 @@ void palloc_printspans(pheta_chunk* chunk)
   }
 }
 
-// This is a nasty piece of work, but I haven't slept all night & it's
-// the best I can manage.
 void palloc_shufflecommit(pheta_chunk* chunk)
 {
-  return;
-/*  list* scanblock;
-  sint5 i;
+  list* scanblock;
   sint5 lookfor[ph_NUMREG];
-  sint5 commitplace[ph_NUMREG];
+  uint5 i;
+  clist* commitplace[ph_NUMREG];
+  clist* sourceplace[ph_NUMREG];
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
-    uint3* newbase = cnewarray(uint3, blk->length);
-    uint5 nlength = 0;
+    clist* walk;
 
     for (i=0; i<ph_NUMREG; i++)
     {
-      commitplace[i] = -1;
+      commitplace[i] = 0;
+      sourceplace[i] = 0;
       lookfor[i] = -1;
     }
 
-    for (i=blk->length-1; i>=0; i--)
+    for (walk=blk->base->prev; walk->data; walk=walk->prev)
     {
-      uint5 inststart = i-blk->base[i]+1;
-      uint5 opcode = blk->base[inststart];
+      pheta_instr* instr = walk->data;
+      uint5 opcode = instr->opcode;
       uint5 destr[ph_MAXDEST], srcr[ph_MAXSRC], ndest, nsrc, j;
       
       if (opcode==ph_COMMIT)
       {
-        uint5 armreg = blk->base[inststart+1];
-        uint5 src = blk->base[inststart+2];
+        uint5 armreg = instr->data.op.dest;
+        uint5 src = instr->data.op.src1;
         lookfor[armreg] = src;
+        sourceplace[armreg] = walk;
    // fprintf(stderr, "Found a commit for reg %d at %d\n", armreg, inststart);
       }
       
-      pheta_getused(blk->base, inststart, &ndest, destr, &nsrc, srcr);
+      pheta_getused(instr, 0, &ndest, destr, &nsrc, srcr);
       
       for (j=0; j<ndest; j++)
       {
@@ -600,41 +599,18 @@ void palloc_shufflecommit(pheta_chunk* chunk)
           if (lookfor[k]==destr[j])
           {
      //   fprintf(stderr, "Setting commitplace[%d] to %d\n", k, inststart);
-            commitplace[k] = inststart;
+            commitplace[k] = walk;
           }
         }
       }
+    }
 
-      i = inststart;
-    }
-    
-    for (i=0; i<blk->length; i++)
+    for (i=0; i<ph_NUMREG; i++)
     {
-      uint5 opcode = blk->base[i];
-      
-      if (opcode!=ph_COMMIT)
-      {
-        int m;
-        memcpy(&newbase[nlength], &blk->base[i], pheta_instlength[opcode]+1);
-        nlength += pheta_instlength[opcode]+1;
-        for (m=0; m<ph_NUMREG; m++)
-        {
-          if (i==commitplace[m])
-          {
-            newbase[nlength++] = ph_COMMIT;
-            newbase[nlength++] = m;
-            newbase[nlength++] = lookfor[m];
-            newbase[nlength++] = 4;
-          }
-        }
-      }
-      
-      i += pheta_instlength[opcode];
+      if (commitplace[i] && sourceplace[i])
+        clist_moveitem(commitplace[i], sourceplace[i]);
     }
-    
-    free(blk->base);
-    blk->base = newbase;
-  }*/
+  }
 }
 
 // this has gone stale

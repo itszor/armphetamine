@@ -28,6 +28,22 @@ void list_removehead(list** head)
   *head = prev;
 }
 
+list* list_insertitem(list** head, list* before)
+{
+  list* item = cnew(list);
+  if (!before)
+  {
+    item->next = item->prev = 0;
+    *head = item;
+    return item;
+  }
+  if (before->prev) before->prev->next = item;
+  before->next = item;
+  item->prev = before->prev;
+  item->next = before;
+  return item;
+}
+
 // Delinks an item without freeing its data pointer */
 void list_delinkitem(list** head, list* item)
 {
