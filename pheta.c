@@ -835,8 +835,10 @@ void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
       fprintf(f, "\\n");
     }
     
-    fprintf(f, "Condition '%s%s'", (blk->predicate&16)?"native-":"", 
+    fprintf(f, "Condition: '%s%s'\\n", (blk->predicate&16)?"native-":"", 
       txtcc[blk->predicate&15]);
+
+    fprintf(f, "Cycles: %d", blk->cycles);
     
     fprintf(f, "\")],\n[");
 /*

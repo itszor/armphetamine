@@ -48,7 +48,8 @@ phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  pqueue.h clist.h phetadism.h
 pqueue.o: pqueue.c cnew.h pqueue.h defs.h
 processor.o: processor.c cnew.h registers.h defs.h processor.h \
- machine.h memory.h keyboard.h mouse.h hash.h list.h decode.h
+ memory.h keyboard.h mouse.h hash.h list.h machine.h decode.h \
+ execute.h
 pseudodism.o: pseudodism.c defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h pseudo.h decode.h codegen.h \
  allocate.h x86asm.h clist.h pseudodism.h

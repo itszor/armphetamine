@@ -6,7 +6,7 @@ int testfunc(int q)
 
   for (i=1; i<100; i++)
   {
-    j += 10000/i;
+    j += (i+j*3+17) ^ 0x35;
   }
   
   return j * q;

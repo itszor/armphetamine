@@ -2,7 +2,7 @@
 
 CC	= gcc
 CFLAGS	= -g -pipe -W -Wall -Werror -O3 -DQUICKWRITE -DVERSION=\"0.4\" \
-	 -DEMULART
+	 -DEMULART -DRECOMPILE
 NASM	= nasm
 
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
