@@ -24,7 +24,7 @@ SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c decodet.c \
 	executethm.c
 
-LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread
+LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
 
 .PHONY:	clean cleaner package webpkg romdump
 

@@ -20,13 +20,13 @@ const uint3 pheta_instlength[] = {
   3,  /* commit */
   2,  /* spill */
   2,  /* reload */
-  2,  /* fexpect */
-  2,  /* fcommit */
-  2,  /* fensure */
+  3,  /* fexpect */
+  3,  /* fcommit */
+  3,  /* fensure */
   3,  /* setpred */
-  2,  /* nfexpect */
-  2,  /* nfcommit */
-  2,  /* nfensure */
+  3,  /* nfexpect */
+  3,  /* nfcommit */
+  3,  /* nfensure */
   3,  /* nsetpred */
   3,  /* fwrite */
   5,  /* xjmp */
@@ -94,6 +94,8 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   b->parent = 0;
   b->srcstart = startaddr;
   b->live = pqueue_new();
+  b->required = 0;
+  b->set = 0;
   
   c->currentblock = b;
 
@@ -220,7 +222,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
 void pheta_link(pheta_basicblock* from, uint5 pred,
                 pheta_basicblock* condtrue, pheta_basicblock* condfalse)
 {
-  assert(pred<255);
+//  assert(pred<255);
   from->predicate = pred;
   from->trueblk = condtrue;
   from->falseblk = condfalse;
@@ -314,7 +316,11 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     case ph_NFEXPECT:
     case ph_NFCOMMIT:
     case ph_NFENSURE:
-    emitbyte(block, &written, va_arg(ap, uint5));
+    {
+      uint5 pattern = va_arg(ap, uint5);
+      emitbyte(block, &written, pattern & 0xff);
+      emitbyte(block, &written, (pattern>>8) & 0xff);
+    }
     break;
 
     case ph_SETPRED:

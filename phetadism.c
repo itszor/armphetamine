@@ -15,7 +15,7 @@ static const char* opname[] = { "const", "constb", "fetch", "commit", "spill",
   "sync", "end" };
 
 static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
-														"hi","ls","ge","lt","gt","le","al","nv"};
+                            "hi","ls","ge","lt","gt","le","al","nv"};
 
 
 void phetadism_chunk(pheta_chunk* chunk)
@@ -89,16 +89,28 @@ void phetadism_block(pheta_basicblock* blk)
       case ph_NFENSURE:
       {
         uint5 mask = blk->base[i++], first=1;
-        char flags[10];
+        uint5 j;
+        mask |= blk->base[i++]<<8;
         
-        flags[0] = 0;
+        printf("%-10s", opname[opcode]);
         
-        if (mask & ph_C) strcat(flags, (first=0, "c"));
+        for (j=0; j<16; j++)
+        {
+          if (mask & (1<<j))
+          {
+            printf(first ? "%s" : ", %s", txtcc[j]);
+            first = 0;
+          }
+        }
+
+        printf("\n");
+        
+/*        if (mask & ph_C) strcat(flags, (first=0, "c"));
         if (mask & ph_V) strcat(flags, first ? (first=0, "v") : ",v");
         if (mask & ph_N) strcat(flags, first ? (first=0, "n") : ",n");
-        if (mask & ph_Z) strcat(flags, first ? (first=0, "z") : ",z");
+        if (mask & ph_Z) strcat(flags, first ? (first=0, "z") : ",z");*/
         
-        printf("%-10s%s\n", opname[opcode], flags);
+/*        printf("%-10s%s\n", opname[opcode], flags);*/
       }
       break;
 
