@@ -124,19 +124,45 @@ void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
     uint5 opcode = blk->base[i];
     uint5 nsrc, srcr[ph_MAXSRC], ndest, destr[ph_MAXDEST];
     uint5 thisline = startline+i, j;
-    
-    pheta_getused(blk->base, i, &ndest, destr, &nsrc, srcr);
-    
-    if (ndest==1)
+
+    switch (opcode)
     {
-      for (j=0; j<nsrc; j++)
+      // mov aliasing? hmmmm.
+      case ph_MOV:
       {
-        palloc_liverange* srcspan = chunk->reversetable[srcr[j]];
-        if (srcspan->startline+srcspan->length <= thisline)
+        uint5 dest = blk->base[1];
+        uint5 src = blk->base[2];
+        if (chunk->alloc[dest].type==pal_UNSET)
         {
-          fprintf(stderr, "Could alias %d to %d\n", srcspan->reg, destr[0]);
+          chunk->alloc[dest].type = pal_ALIAS;
+          chunk->alloc[dest].info.value = src;
         }
       }
+      break;
+    
+      default:
+      {
+        pheta_getused(blk->base, i, &ndest, destr, &nsrc, srcr);
+
+        if (ndest==1 && (nsrc==1 || nsrc==2))
+        {
+          palloc_liverange* srcspan = chunk->reversetable[srcr[0]];
+          fprintf(stderr, "This reg finishes at: %d, this is line %d\n",
+            srcspan->startline+srcspan->length, thisline);
+          if (srcspan->startline+srcspan->length <= thisline)
+          {
+            uint5 srctype = chunk->alloc[srcr[0]].type;
+            fprintf(stderr, "Can alias %d to %d\n", destr[0], srcspan->reg);
+            if (chunk->alloc[destr[0]].type == pal_UNSET &&
+                srctype!=pal_CONST && srctype!=pal_CONSTB)
+            {
+              chunk->alloc[destr[0]].type = pal_ALIAS;
+              chunk->alloc[destr[0]].info.value = srcr[0];
+            }
+          }
+        }
+      }
+      break;
     }
     
     i += pheta_instlength[opcode];
@@ -146,31 +172,54 @@ void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
   if (blk->trueblk && !blk->trueblk->marker)
   {
-    palloc_findspans(chunk, blk->trueblk, startline+blk->length);
+    palloc_srcdestalias_inner(chunk, blk->trueblk, startline+blk->length);
   }
   
   if (blk->falseblk && !blk->falseblk->marker)
   {
-    palloc_findspans(chunk, blk->falseblk, startline+blk->length);
+    palloc_srcdestalias_inner(chunk, blk->falseblk, startline+blk->length);
   }
 }
 
-void palloc_srcdestalias(pheta_chunk* chunk, pheta_basicblock* blk)
+void palloc_srcdestalias(pheta_chunk* chunk)
 {
   int i;
+  list* scanblock;
+  pheta_basicblock* blk;
+  
   chunk->reversetable = cnewarray(palloc_liverange*, chunk->tempno);
   
-  for (i=0; i<chunk->active->length; i++)
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
-    palloc_liverange* span =(palloc_liverange*)(chunk->active->item[i])->data;
-    chunk->reversetable[span->reg] = span;
+    blk = (pheta_basicblock*)scanblock->data;
+    for (i=0; i<blk->live->length; i++)
+    {
+      palloc_liverange* span =(palloc_liverange*)(blk->live->item[i])->data;
+      chunk->reversetable[span->reg] = span;
+    }
   }
   
   palloc_clearmarkers(chunk);
   
-  palloc_srcdestalias_inner(chunk, blk, 0);
+  palloc_srcdestalias_inner(chunk, chunk->root, 0);
   
   free(chunk->reversetable);
+}
+
+void palloc_closealias(pheta_chunk* chunk)
+{
+  uint5 some, i;
+  do {
+    some = 0;
+    for (i=0; i<chunk->tempno; i++)
+    {
+      if (chunk->alloc[i].type==pal_ALIAS)
+      {
+        chunk->alloc[i] = chunk->alloc[chunk->alloc[i].info.value];
+        some = 1;
+      }
+    }
+  } while (some==1);
 }
 
 // allocate all 'fetched' & 'committed' registers to memory locations
@@ -228,6 +277,14 @@ void palloc_clearmarkers(pheta_chunk* chunk)
   }
 }
 
+uint5 palloc_close(pheta_chunk* chunk, uint5 reg)
+{
+  if (chunk->alloc[reg].type==pal_ALIAS)
+    return palloc_close(chunk, chunk->alloc[reg].info.value);
+  else
+    return reg;
+}
+
 void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                       uint5 startline)
 {
@@ -251,7 +308,7 @@ void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
       newspan->data = range = cnew(palloc_liverange);
       range->startline = startline+i;
       range->length = 0;
-      range->reg = destr[j];
+      range->reg = palloc_close(chunk, destr[j]);
      /* fprintf(stderr, "Line %d: dest reg %d\n", startline+i, destr[j]);*/
     }
     
@@ -265,7 +322,7 @@ void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
         palloc_liverange* range = (palloc_liverange*) prevspan->data;
         for (j=0; j<nsrc; j++)
         {
-          if (srcr[j]==range->reg)
+          if (palloc_close(chunk, srcr[j])==range->reg)
           {
             range->length = (startline+i) - range->startline;
         /*    fprintf(stderr, "Line %d: updating src reg %d\n", startline+i,
@@ -289,6 +346,27 @@ void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
   if (blk->falseblk && !blk->falseblk->marker)
   {
     palloc_findspans(chunk, blk->falseblk, startline+blk->length);
+  }
+}
+
+// this doesn't delete the actual container
+void palloc_deletespans(pheta_chunk* chunk)
+{
+  list* scanblock;
+  
+  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
+  {
+    pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
+    pqueueitem* del;
+    int i;
+    
+    for (i=0; i<blk->live->length; i++)
+    {
+      pqueueitem* del = blk->live->item[i];
+      free(del->data);
+      free(del);
+    }
+    blk->live->length = 0;
   }
 }
 
@@ -337,18 +415,19 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
         chunk->alloc[range->reg].type = pal_IREG;
         chunk->alloc[range->reg].info.ireg.num = ireg;
       }
-      else
+      else  // have to spill a register
       {
-        palloc_liverange* delrange;
+        pqueueitem* splititem;
+        palloc_liverange* delrange, *splitrange;
         uint5 j;
         sint5 f = -1;
-        uint5 end = ((palloc_liverange*)chunk->active->item[0]->data)->startline
-                  + ((palloc_liverange*)chunk->active->item[0]->data)->length;
+        uint5 end = range->startline + range->length;
+ 
         // find furthest end-point (linear search makes priority queue utterly
         // useless here, but I think I need the wrong end at this point...)
         for (j=0; j<chunk->active->length; j++)
         {
-          palloc_liverange* seek = 
+          palloc_liverange* seek =
             ((palloc_liverange*)chunk->active->item[j]->data);
           uint5 test = seek->startline + seek->length;
 
@@ -357,19 +436,50 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
           
           fprintf(stderr, "Active %d: reg %d\n", j, seek->reg);
         }
+ 
         assert(f!=-1);
+ 
         del = chunk->active->item[f];
         assert(del);
+ 
         delrange = (palloc_liverange*) del->data;
+ 
         fprintf(stderr, "Spilling register %d from ireg %s\n",
           delrange->reg, regname[chunk->alloc[delrange->reg].info.ireg.num]);
         fprintf(stderr, "Allocating %s to %d\n", 
           regname[chunk->alloc[delrange->reg].info.ireg.num], range->reg);
+ 
         chunk->alloc[range->reg].type = pal_IREG;
         chunk->alloc[range->reg].info.ireg.num = 
           chunk->alloc[delrange->reg].info.ireg.num;
-        chunk->alloc[delrange->reg].type = pal_RFILE;
-        chunk->alloc[delrange->reg].info.value = delrange->reg;
+ 
+        if (chunk->alloc[delrange->reg].type!=pal_SPLIT)
+        {
+          list* head;
+          chunk->alloc[delrange->reg].type = pal_SPLIT;
+          head = chunk->alloc[delrange->reg].info.extra = 0;
+
+          list_add(&head);
+          splitrange = head->data = cnew(palloc_liverange);
+
+          splitrange->startline = startline + lineno;
+          splitrange->length = delrange->length - lineno;
+          splitrange->reg = delrange->reg;
+          fprintf(stderr, "Inserted split range:\n"
+            "Part one: start=%d, length=%d, reg=%d\n",
+            splitrange->startline, splitrange->length, splitrange->reg);
+
+          list_add(&head);
+          head->data = delrange;
+          delrange->length = splitrange->startline - delrange->startline;
+          fprintf(stderr, "Part two: start=%d, length=%d, reg=%d\n",
+            delrange->startline, delrange->length, delrange->reg);
+        }
+        else
+        {
+          fprintf(stderr, "Write some code to split again?\n");
+          abort();
+        }
       }
     }
 
@@ -581,6 +691,12 @@ void palloc_print(pheta_chunk* chunk)
       case pal_ALIAS:
       {
         fprintf(stderr, "%3d: Aliased to %d\n", i, a->info.value);
+      }
+      break;
+      
+      case pal_SPLIT:
+      {
+        fprintf(stderr, "%3d: Split\n", i);
       }
       break;
       

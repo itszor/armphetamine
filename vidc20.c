@@ -32,7 +32,10 @@ void vidc20_writeword(meminfo* mem, uint5 address, uint5 data)
       col.r = data & 0xff;
       col.g = (data>>8) & 0xff;
       col.b = (data>>16) & 0xff;
-      SDL_SetColors(mem->video.surf, &col, mem->video.paladdr++, 1);
+      if (mem->video.surf)
+      {
+        SDL_SetColors(mem->video.surf, &col, mem->video.paladdr++, 1);
+      }
       mem->video.paladdr &= 0xff;
     }
     break;

@@ -537,7 +537,13 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
-  palloc_srcdestalias(mychunk, mychunk->root);
+  fprintf(stderr, "Source-destination aliasing\n");
+  palloc_srcdestalias(mychunk);
+  fprintf(stderr, "Freeing previous spans\n");
+  palloc_deletespans(mychunk);
+  fprintf(stderr, "Re-running span finder\n");
+  palloc_clearmarkers(mychunk);
+  palloc_findspans(mychunk, mychunk->root, 0);
   palloc_printspans(mychunk);
   fprintf(stderr, "Doing linear scan allocation\n");
   mychunk->reguse[0] = mychunk->reguse[1] = mychunk->reguse[2] =
@@ -545,13 +551,21 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   mychunk->reguse[4] = mychunk->reguse[5] = 2;
   mychunk->regno = 0;
   mychunk->active = pqueue_new();
+  fprintf(stderr, "Allocation state:\n");
+  palloc_print(mychunk);
+
   palloc_clearmarkers(mychunk);
   palloc_linearscan(mychunk, mychunk->root, 0);
   pqueue_delete(mychunk->active);
-  palloc_clearmarkers(mychunk);
-  fprintf(stderr, "Generating x86 code\n");
-  genx86_translate(mychunk, mychunk->root);
+  fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);
+  fprintf(stderr, "Closing aliases\n");
+  palloc_closealias(mychunk);
+  fprintf(stderr, "Allocation state:\n");
+  palloc_print(mychunk);
+  fprintf(stderr, "Generating x86 code\n");
+  palloc_clearmarkers(mychunk);
+  genx86_translate(mychunk, mychunk->root);
   // pheta_destroychunk(mychunk);  (when it's written...)
 }
 

@@ -244,7 +244,7 @@ EE             |OUT DX,AL
 EF             |OUT DX,EAX
 6E             |OUTSB
 6F             |OUTS
-8F /0          |POP m32
+8F /0          |POP r/m32
 58+rd          |POP r32
 1F             |POP DS
 07             |POP ES

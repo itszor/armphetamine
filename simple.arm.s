@@ -4,13 +4,19 @@
         .type    simple,function
 
 simple:
-	mov r0,#7
-loop:
-	and r1,r2,r0
-	teq r2,r3
-	sbc r3,r4,r0,rrx
-	mla r5,r6,r7,r0
-	rsc r5,r6,#0
-	sub r0,r0,#1
-	cmp r0,#6
-	bgt loop - .
+	mov r0,r1
+	add r1,r0,r1
+	add r2,r0,r2
+	add r3,r0,r3
+	add r4,r0,r4
+	add r5,r0,r5
+	add r6,r0,r6
+	add r7,r0,r4
+	add r8,r0,r8
+	add r9,r2,r10
+	add r8,r3,r6
+	add r7,r4,r5
+	add r4,r6,r5
+	add r5,r4,r3
+	add r6,r2,r1
+	add r7,r0,r10

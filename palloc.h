@@ -14,6 +14,7 @@ typedef enum {
   pal_IREG,
   pal_STACK,
   pal_ALIAS,
+  pal_SPLIT,
   pal_NUMTYPES
 } palloc_type;
 
@@ -31,6 +32,7 @@ struct palloc_info {
 /*      uint5 arm_affiliation;*/
     } ireg;
     uint5 value;
+    pqueue* extra;
   } info;
 /*  hashtable* referenced_by;
   palloc_liverange edge;*/
@@ -39,9 +41,13 @@ struct palloc_info {
 typedef struct palloc_info palloc_info;
 typedef struct palloc_liverange palloc_liverange;
 
-extern void palloc_srcdestalias(pheta_chunk* chunk, pheta_basicblock* blk);
+extern void palloc_srcdestalias(pheta_chunk* chunk);
 extern void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
                                       uint5 startline);
+extern void palloc_closealias(pheta_chunk* chunk);
+extern void palloc_deletespans(pheta_chunk* chunk);
+extern void palloc_clearmarkers(pheta_chunk* chunk);
+extern uint5 palloc_close(pheta_chunk* chunk, uint5 reg);
 extern void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                       uint5 startline);
 extern void palloc_printspans(pheta_chunk* chunk);

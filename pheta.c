@@ -806,6 +806,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
         {
           shiftreg = pheta_emit(chunk, ph_AND, shiftreg, shiftmask);
           op2 = pheta_emit(chunk, ph_ROR, op2, shiftreg);
+          pheta_dp_guts(machine, inst, chunk, op2);
         }
       }
       break;

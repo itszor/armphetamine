@@ -187,7 +187,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              &rtasm_pop_m32,
+              &rtasm_pop_rm32,
               0, 0
             },
   /* rcr */ { NULL,
@@ -266,10 +266,23 @@ void genx86_test(void)
   x86asm_deletenative(nat);
 }
 
+static const char* allocname[] = {
+  "unset", "constb", "const", "rfile", "ireg",
+  "stack", "alias", "split"
+};
+
+static const char* abname[] = {
+  "shl", "shr", "sar", "ror", "rol", "and", "or", "xor", "add", "adc",
+  "sub", "sbb", "imul", "lea", "mov", "not", "push", "pop", "rcr", "rcl",
+  "test", "cmp"
+};
+
 #define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
                            ((S1)*pal_NUMTYPES) + (S2))
-#define ERR { fprintf(stderr, "Specialisation error at %d. Opcode=%d\n", \
-               __LINE__, opcode); exit(1); }
+#define ERR { fprintf(stderr, "Specialisation error at %d. " \
+  "Opcode=%s, pattern=%s:%s:%s.\n", \
+  __LINE__, abname[opcode], allocname[dest->type], allocname[src1->type], \
+  allocname[src2->type]); abort(); }
 
 void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                 palloc_info* src1, palloc_info* src2)
@@ -358,6 +371,16 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
           genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value*4));
           rtasm_pop_r32(nat, ECX);
         }
+      }
+      else if (genx86_tab[opcode].r32_rm32)
+      {
+        // ew!
+        rtasm_xchg_r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
+          dest->info.value*4));
+        genx86_tab[opcode].r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
+          dest->info.value*4));
+        rtasm_xchg_r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
+          dest->info.value*4));
       }
       else ERR;
     }
@@ -542,6 +565,16 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
           rtasm_ind8(ESP, src1->info.value*4), src2->info.value);
       }
       else ERR;
+    }
+    break;
+    
+    case COMPOUND(pal_CONSTB, pal_CONSTB, pal_UNSET):
+    case COMPOUND(pal_CONST, pal_CONST, pal_UNSET):
+    {
+      if (dest->info.value != src1->info.value)
+      {
+        ERR;
+      }
     }
     break;
     

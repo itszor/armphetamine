@@ -1,7 +1,7 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -pipe -Wall -O0 -mcpu=k6 -march=k6 -DASM_ALU -DQUICKWRITE \
+CFLAGS	= -g -pipe -Wall -O0 -mcpu=k6 -march=k6 -DQUICKWRITE \
 	  -DVERSION=\"0.2\" -DVIDCSUPPORT -DIOMDSUPPORT
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
 
@@ -27,7 +27,7 @@ LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread
 
 .PHONY:	clean cleaner package webpkg romdump
 
-all:	.depend emulate simple
+all:	.depend emulate simple divide
 
 clean:
 	rm -f *.o emulate
@@ -41,8 +41,11 @@ execute32.c:	execute.inc.c
 emulate: $(OBJ)
 	$(CC) -o emulate $(OBJ) $(LDFLAGS) $(LIBS) 
 
-simple:	simple.arm.s
-	arm-linux-elf-as simple.arm.s -o simple
+simple:	simple2.arm.s
+	arm-linux-elf-as simple2.arm.s -o simple
+
+divide:	divide.arm.s
+	arm-linux-elf-as divide.arm.s -o divide
 
 package:	cleaner
 	tar -c -v -z -C .. -f ../armphetamine-0.2.tar.gz armphetamine
