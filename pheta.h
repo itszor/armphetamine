@@ -150,10 +150,11 @@ typedef enum {
 } pheta_condition_code;
 
 // *** to be superceded
-#define ph_C 1
-#define ph_V 2
-#define ph_N 4
-#define ph_Z 8
+#define ph_C  0x01
+#define ph_V  0x02
+#define ph_N  0x04
+#define ph_Z  0x08
+#define ph_IC 0x10
 
 #define ph_ALWAYS 0
 

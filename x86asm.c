@@ -15,6 +15,7 @@ nativeblockinfo* x86asm_newnative(void)
   nativeblockinfo* nat = cnew(nativeblockinfo);
   nat->base = cnewarray(char, nat->size=2048);
   nat->length = 0;
+  nat->expecting = 0;
   return nat;
 }
 

@@ -29,7 +29,21 @@ typedef enum {
   ab_RCR,
   ab_RCL,
   ab_TEST,
-  ab_CMP
+  ab_CMP,
+  ab_SETO,
+  ab_SETNO,
+  ab_SETB,
+  ab_SETAE,
+  ab_SETE,
+  ab_SETNE,
+  ab_SETBE,
+  ab_SETA,
+  ab_SETS,
+  ab_SETNS,
+  ab_SETL,
+  ab_SETGE,
+  ab_SETLE,
+  ab_SETG
 } genx86_ab86;
 
 typedef struct {

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stddef.h>
+#include <assert.h>
 
 #include "genx86.h"
 #include "x86asm.h"
@@ -229,6 +231,146 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               ICFLAG|VFLAG|NFLAG|ZFLAG, 0
+            },
+ /* seto */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_seto_rm8,
+              0, 0
+            },
+/* setno */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setno_rm8,
+              0, 0
+            },
+ /* setb */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setb_rm8,
+              0, 0
+            },
+/* setae */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setae_rm8,
+              0, 0
+            },
+ /* sete */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_sete_rm8,
+              0, 0
+            },
+/* setne */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setne_rm8,
+              0, 0
+            },
+/* setbe */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setbe_rm8,
+              0, 0
+            },
+ /* seta */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_seta_rm8,
+              0, 0
+            },
+ /* sets */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_sets_rm8,
+              0, 0
+            },
+/* setns */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setns_rm8,
+              0, 0
+            },
+ /* setl */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setl_rm8,
+              0, 0
+            },
+/* setge */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setge_rm8,
+              0, 0
+            },
+/* setle */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setle_rm8,
+              0, 0
+            },
+ /* setg */ { NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &rtasm_setg_rm8,
+              0, 0
             }
 };
 
@@ -311,7 +453,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     {
       if (genx86_tab[opcode].rm32)
       {
-        genx86_tab[opcode].rm32(nat, rtasm_ind8(EBP, dest->info.value*4));
+        genx86_tab[opcode].rm32(nat, rtasm_ind8(EBP, dest->info.value));
       }
       else ERR;
     }
@@ -331,7 +473,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     {
       if (genx86_tab[opcode].rm32)
       {
-        genx86_tab[opcode].rm32(nat, rtasm_ind8(ESP, dest->info.value*4));
+        genx86_tab[opcode].rm32(nat, rtasm_ind8(ESP, dest->info.value));
       }
       else ERR;
     }
@@ -342,12 +484,12 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       uint5 value = src1->info.value;
       if (value<128 && genx86_tab[opcode].rm32_i8)
       {
-        genx86_tab[opcode].rm32_i8(nat, rtasm_ind8(EBP, dest->info.value*4), 
+        genx86_tab[opcode].rm32_i8(nat, rtasm_ind8(EBP, dest->info.value), 
           value);
       }
       else if (genx86_tab[opcode].rm32_i32)
       {
-        genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value*4),
+        genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value),
           value);
       }
       else ERR;
@@ -358,7 +500,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     {
       if (genx86_tab[opcode].rm32_i32)
       {
-        genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value*4),
+        genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value),
           src1->info.value);
       }
       else ERR;
@@ -375,9 +517,9 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       temp.info.ireg.num = EAX;
       rtasm_push_r32(nat, EAX);
       if (opcode!=ab_MOV)
-        rtasm_mov_r32_rm32(nat, EAX, rtasm_ind8(EBP, dest->info.value*4));
+        rtasm_mov_r32_rm32(nat, EAX, rtasm_ind8(EBP, dest->info.value));
       genx86_out(nat, opcode, &temp, src1, src2, line);
-      rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4), EAX);
+      rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value), EAX);
       rtasm_pop_r32(nat, EAX);
     }
     break;
@@ -386,20 +528,20 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     {
       if (genx86_tab[opcode].rm32_r32)
       {
-        genx86_tab[opcode].rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4),
+        genx86_tab[opcode].rm32_r32(nat, rtasm_ind8(EBP, dest->info.value),
           src1->info.ireg.num);
       }
       else if (genx86_tab[opcode].rm32_c)
       {
         if (src1->info.ireg.num==ECX)
         {
-          genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value*4));
+          genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value));
         }
         else
         {
           rtasm_push_r32(nat, ECX);
           rtasm_mov_r32_rm32(nat, ECX, rtasm_reg(src1->info.ireg.num));
-          genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value*4));
+          genx86_tab[opcode].rm32_c(nat, rtasm_ind8(EBP, dest->info.value));
           rtasm_pop_r32(nat, ECX);
         }
       }
@@ -409,11 +551,11 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
         // *** xchg reg,[mem] is a BAD INSTRUCTION according to pentium
         // optimisation doc
         rtasm_xchg_r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
-          dest->info.value*4));
+          dest->info.value));
         genx86_tab[opcode].r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
-          dest->info.value*4));
+          dest->info.value));
         rtasm_xchg_r32_rm32(nat, src1->info.ireg.num, rtasm_ind8(EBP,
-          dest->info.value*4));
+          dest->info.value));
       }
       else ERR;
     }
@@ -462,7 +604,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].r32_rm32)
       {
         genx86_tab[opcode].r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-          src1->info.value*4));
+          src1->info.value));
       }
       else ERR;
     }
@@ -512,7 +654,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].r32_rm32)
       {
         genx86_tab[opcode].r32_rm32(nat, dest->info.ireg.num, rtasm_ind8(ESP,
-          src1->info.value*4));
+          src1->info.value));
       }
       else ERR;
     }
@@ -540,7 +682,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].r32_rm32_i8)
       {
         genx86_tab[opcode].r32_rm32_i8(nat, dest->info.ireg.num, rtasm_ind8(EBP,
-          src1->info.value*4), src2->info.value);
+          src1->info.value), src2->info.value);
       }
       else ERR;
     }
@@ -551,7 +693,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].r32_rm32_i8)
       {
         genx86_tab[opcode].r32_rm32_i32(nat, dest->info.ireg.num, 
-          rtasm_ind8(EBP, src1->info.value*4), src2->info.value);
+          rtasm_ind8(EBP, src1->info.value), src2->info.value);
       }
       else ERR;
     }
@@ -570,7 +712,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
 
     case COMPOUND(pal_IREG, pal_IREG, pal_CONST):
     {
-      if (genx86_tab[opcode].r32_rm32_i8)
+      if (genx86_tab[opcode].r32_rm32_i32)
       {
         genx86_tab[opcode].r32_rm32_i32(nat, dest->info.ireg.num, 
           rtasm_reg(src1->info.ireg.num), src2->info.value);
@@ -584,7 +726,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].r32_rm32_i8)
       {
         genx86_tab[opcode].r32_rm32_i8(nat, dest->info.ireg.num, rtasm_ind8(ESP,
-          src1->info.value*4), src2->info.value);
+          src1->info.value), src2->info.value);
       }
       else ERR;
     }
@@ -595,7 +737,7 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       if (genx86_tab[opcode].r32_rm32_i8)
       {
         genx86_tab[opcode].r32_rm32_i32(nat, dest->info.ireg.num, 
-          rtasm_ind8(ESP, src1->info.value*4), src2->info.value);
+          rtasm_ind8(ESP, src1->info.value), src2->info.value);
       }
       else ERR;
     }
@@ -613,6 +755,11 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     
     default:
     ERR;
+  }
+
+  if (nat->expecting)
+  {
+    nat->beenset |= genx86_tab[opcode].flagset;
   }
 }
 
@@ -680,7 +827,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
           {
             palloc_info psrc;
             psrc.type = pal_RFILE;
-            psrc.info.value = armsrc;
+            psrc.info.value = armsrc*4;
             genx86_out(nat, ab_MOV, dest, &psrc, &nul, line);
           }
           break;
@@ -702,7 +849,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
         {
           palloc_info pdest;
           pdest.type = pal_RFILE;
-          pdest.info.value = armdest;
+          pdest.info.value = armdest*4;
           genx86_out(nat, ab_MOV, &pdest, src, &nul, line);
         }
       }
@@ -794,7 +941,7 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
         palloc_info* src1 = &chunk->alloc[blk->base[i+2]];
         palloc_info* src2 = &chunk->alloc[blk->base[i+3]];
         if (dest->type==pal_IREG && src1->type==pal_IREG && 
-            src2->type==pal_IREG)
+            src2->type==pal_IREG && nat->expecting==0)
         {
           genx86_out(nat, ab_LEA, dest, src1, src2, line);
         }
@@ -929,6 +1076,49 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
         genx86_out(nat, ab_PUSH, src1, &nul, &nul, line);
         genx86_out(nat, ab_ADD, src1, src2, &nul, line);
         genx86_out(nat, ab_POP, src1, &nul, &nul, line);
+      }
+      break;
+      
+      case ph_FEXPECT:
+      case ph_NFEXPECT:
+      {
+        uint5 expmask = blk->base[i+1];
+        nat->expecting |= expmask;
+        nat->beenset = 0;
+      }
+      break;
+      
+      case ph_FCOMMIT:
+      {
+        uint5 commask = blk->base[i+1];
+        palloc_info off;
+        off.type = pal_RFILE;
+        if (commask & ph_C)
+        {
+          off.info.value = offsetof(registerinfo, cflag);
+          if (nat->beenset & ph_IC)
+            genx86_out(nat, ab_SETAE, &off, &nul, &nul, line);
+          else if (nat->beenset & ph_C)
+            genx86_out(nat, ab_SETB, &off, &nul, &nul, line);
+          else
+            assert(!"Carry flag has not been set");
+        }
+        if (commask & ph_V)
+        {
+          off.info.value = offsetof(registerinfo, vflag);
+          genx86_out(nat, ab_SETO, &off, &nul, &nul, line);
+        }
+        if (commask & ph_N)
+        {
+          off.info.value = offsetof(registerinfo, nflag);
+          genx86_out(nat, ab_SETS, &off, &nul, &nul, line);
+        }
+        if (commask & ph_Z)
+        {
+          off.info.value = offsetof(registerinfo, zflag);
+          genx86_out(nat, ab_SETE, &off, &nul, &nul, line);
+        }
+        nat->expecting = 0;
       }
       break;
       
