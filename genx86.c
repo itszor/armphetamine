@@ -1300,8 +1300,8 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
   palloc_info nul, one, off;
   list* map = 0;
   clist* walk;
-  uint5 patchfalseblk = -1;
-  const static uint5 predset[] =
+  sint5 patchfalseblk = -1;
+  static const uint5 predset[] =
   {
     ab_SETE, ab_SETNE, ab_SETB, ab_SETAE,
     ab_SETS, ab_SETNS, ab_SETO, ab_SETNO,
@@ -1870,7 +1870,7 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
   if (patchfalseblk != -1)
   {
     if (falsebranch==-1) falsebranch = blk->falseblk->natoffset;
-    fprintf(stderr, "Adding relocation offset %p value %x\n", patchfalseblk,
+    fprintf(stderr, "Adding relocation offset %x value %x\n", patchfalseblk,
       falsebranch);
     relocate_add(&nat->reloc, falsebranch, patchfalseblk, relsize_WORD, 
       reloc_RELATIVE);

@@ -17,7 +17,7 @@
 // this should be moved somewhere sensible
 extern uint5 setbits(uint5);
 
-const static uint5 ccflags[] =
+static const uint5 ccflags[] =
 {
   /* eq */ ph_Z,
   /* ne */ ph_Z,
@@ -805,6 +805,7 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
     
       default:
       // do nothing
+      break;
     } // switch (opcode)
   }
   if (needflag != 0 || needpred != -1)
@@ -1429,6 +1430,7 @@ int pheta_dp_imm(machineinfo* machine, instructionformat inst, void* chunk)
   }
   
   pheta_dp_guts(machine, inst, chunk, op2);
+  return 0;
 }
 
 void pheta_dp_guts(machineinfo* machine, instructionformat inst,

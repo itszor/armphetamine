@@ -41,7 +41,7 @@ void analyse_block(blockinfo* blk)
 	hashentry* basicentry;
 	hashentry* thisblock = 0, *lastblock = 0;
 		
-	info = (imapinfo*)blk->psb->info = cnewarray(imapinfo, psb->length);
+	info = blk->psb->info = cnewarray(imapinfo, psb->length);
 	lastset = blk->lastset = hash_new(psb->length);
 	nextused = blk->nextused = hash_new(psb->length);
 

@@ -4,6 +4,10 @@
 // the compiler should optimise this to a real ROR, if it's right...
 #define ROR(X,R) (((X)>>(R)) | ((X)<<(32-(R))))
 
+#ifndef IGNORE
+#  define IGNORE(X) ((X)=(X))
+#endif
+
 // these may need changing for different compilers/platforms
 typedef unsigned int uint5;
 typedef signed int sint5;

@@ -145,10 +145,10 @@ struct palloc_liverange;
 
 typedef struct {
   list* blocks;
-  int tempno;
-  int predno;
-  int force;
-  int virtualaddress;  // this is a horrible place for this
+  uint5 tempno;
+  uint5 predno;
+  uint5 force;
+  uint5 virtualaddress;  // this is a horrible place for this
   uint5 start;
   uint5 length;
   uint5 stacksize;

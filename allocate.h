@@ -17,7 +17,7 @@ typedef enum {
 	ireg_ECX,
 	ireg_EDX,
 	ireg_ESI,
-	ireg_EDI,
+	ireg_EDI
 } iregnumber;
 
 extern uint3 iregset[];

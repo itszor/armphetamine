@@ -280,6 +280,12 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   // islogic affects the way the carry flag is set
   int islogic = logic & (1<<inst.dp.opcode);
 
+  IGNORE(null);
+  #ifdef ARM26BIT
+  // ewww
+  IGNORE(mem);
+  #endif
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 
   if (regshift)  // shift by register
@@ -571,6 +577,8 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   // mask for rd-affecting instructions
   const uint5 affectrd = 0xf0ff;
 
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 
   op2 = ROR(temp&255, amount);
@@ -733,7 +741,7 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
 {
   registerinfo* reg = machine->reg;
 /*  meminfo* mem = machine->mem;*/
-  
+
   if (inst.mrs.ident==0 && inst.mrs.ident2==15 && inst.mrs.ident3==2)
   {
     PUT(inst.mrs.rd, inst.mrs.ps ? reg->spsr[reg->spsr_current].value
@@ -774,6 +782,8 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
@@ -793,6 +803,8 @@ int EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
@@ -817,6 +829,8 @@ int EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+  
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
@@ -935,7 +949,7 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
     {
       processor_dataabort(machine);
       mem->memoryfault = 0;
-      return;
+      return 1;
     }
 
     // pipelining correction  
@@ -950,6 +964,7 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
       return 0;
     }
   }
+  return 0;
 }
 
 static void savecurrent(machineinfo* machine, uint5 mode)
@@ -1053,6 +1068,8 @@ static void restorenew(machineinfo* machine, uint5 mode)
 int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
@@ -1197,7 +1214,7 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     {
       processor_dataabort(machine);
       mem->memoryfault = 0;
-      return;
+      return 1;
     }
 
 //#ifndef ARM26BIT
@@ -1232,6 +1249,8 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
@@ -1251,6 +1270,8 @@ int EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_cdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 //  fprintf(stderr, "Error: unimplemented instruction (cdt)\n");
   processor_und(machine);
@@ -1260,6 +1281,8 @@ int EXECUTEFN(exec_cdt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_cdo)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 //  fprintf(stderr, "Error: unimplemented instruction (cdo)\n");
   processor_und(machine);
@@ -1269,6 +1292,8 @@ int EXECUTEFN(exec_cdo)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   else
   {
@@ -1431,6 +1456,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_sds)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   // unimplemented
   fprintf(stderr, "Error: unimplemented instruction (sds)\n");
@@ -1441,6 +1468,8 @@ int EXECUTEFN(exec_sds)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_und)(machineinfo* machine, instructionformat inst,
   void* null)
 {
+  IGNORE(null);
+
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
   // unimplemented
   fprintf(stderr, "Warning: undefined instruction\n");
@@ -1454,6 +1483,9 @@ int EXECUTEFN(exec_thumbl)(machineinfo* machine, instructionformat inst,
   void* null)
 {
   registerinfo* reg = machine->reg;
+
+  IGNORE(null);
+
   if (inst.instruction & 0x0100)
   {
     // part 1, latch low bits

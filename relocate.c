@@ -22,29 +22,29 @@ void relocate_fix(list** to, void* base)
   {
     reloc_record* rec = (*to)->data;
     
-    fprintf(stderr, "Patching offset %p with %x\n", rec->offset, rec->value);
+    fprintf(stderr, "Patching offset %x with %x\n", rec->offset, rec->value);
     
     switch (rec->size)
     {
       case relsize_BYTE:
       if (rec->type==reloc_ABSOLUTE)
-        *(uint3*)(base+rec->offset) = rec->value;
+        *(uint3*)((uint3*)base+rec->offset) = rec->value;
       else
-        *(uint3*)(base+rec->offset) += rec->value;
+        *(uint3*)((uint3*)base+rec->offset) += rec->value;
       break;
       
       case relsize_HALFWORD:
       if (rec->type==reloc_ABSOLUTE)
-        *(uint4*)(base+rec->offset) = rec->value;
+        *(uint4*)((uint3*)base+rec->offset) = rec->value;
       else
-        *(uint4*)(base+rec->offset) += rec->value;
+        *(uint4*)((uint3*)base+rec->offset) += rec->value;
       break;
       
       case relsize_WORD:
       if (rec->type==reloc_ABSOLUTE)
-        *(uint5*)(base+rec->offset) = rec->value;
+        *(uint5*)((uint3*)base+rec->offset) = rec->value;
       else
-        *(uint5*)(base+rec->offset) += rec->value;
+        *(uint5*)((uint3*)base+rec->offset) += rec->value;
       break;
     }
     

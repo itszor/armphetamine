@@ -7,7 +7,7 @@
 
 void palloc_init(pheta_chunk* chunk)
 {
-  int i;
+  uint5 i;
   chunk->alloc = cnewarray(palloc_info, chunk->tempno);
   
   for (i=0; i<chunk->tempno; i++)
@@ -196,7 +196,7 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
 void palloc_srcdestalias(pheta_chunk* chunk)
 {
-  int i;
+  uint5 i;
   list* scanblock;
   pheta_basicblock* blk;
   
@@ -330,7 +330,7 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
     for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
     {
       pheta_basicblock* ablk = (pheta_basicblock*) scanblock->data;
-      int k;
+      uint5 k;
       for (k=0; k<ablk->live->length; k++)
       {
         pqueueitem* prevspan = ablk->live->item[k];
@@ -374,7 +374,7 @@ void palloc_deletespans(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
-    int i;
+    uint5 i;
     
     for (i=0; i<blk->live->length; i++)
     {
@@ -603,7 +603,7 @@ void palloc_printspans(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
-    int i;
+    uint5 i;
     fprintf(stderr, "Block %p:\n", blk);
     for (i=0; i<blk->live->length; i++)
     {
@@ -654,7 +654,7 @@ void palloc_shufflecommit(pheta_chunk* chunk)
       
       for (j=0; j<ndest; j++)
       {
-        int k;
+        uint5 k;
         for (k=0; k<ph_NUMREG; k++)
         {
           if (lookfor[k]==destr[j])
@@ -705,7 +705,7 @@ void palloc_print(pheta_chunk* chunk)
 {
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
                            "ESP", "EBP", "ESI", "EDI"};
-  int i;
+  uint5 i;
   extern const char* armreg[];
   
   for (i=0; i<chunk->tempno; i++)
