@@ -6,8 +6,8 @@
 #include "x86asm.h"
 #include "genx86.h"
 
-static const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
-                                "ESP", "EBP", "ESI", "EDI"};
+const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
+                         "ESP", "EBP", "ESI", "EDI"};
 
 void palloc_init(pheta_chunk* chunk)
 {
@@ -574,15 +574,14 @@ void palloc_linearscan(pheta_chunk* chunk, meminfo* mem)
  * a scratch register by something else. Returns TRUE if
  * successful, FALSE if not.
  */
-uint5 palloc_evict_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg,
-  uint5 except)
+uint5 palloc_evict_ireg(pheta_chunk* chunk, uint5 reg, uint5 except)
 {
   uint5 i;
   sint5 found = -1;
 
   assert(chunk->reguse[reg] != 2);
 
-  if (chunk->reguse[reg]==0) return TRUE;
+  if (chunk->reguse[reg]==0 && !(except & (1<<reg))) return TRUE;
   
   for (i=0; i<ph_IREG; i++)
   {
@@ -616,6 +615,31 @@ uint5 palloc_evict_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg,
   chunk->reguse[found] = 1;
   
   return TRUE;
+}
+
+// try to get a 32-bit register which is safe to use for 8-bit
+// register operations
+uint5 palloc_request_8bitsafe_ireg(pheta_chunk* chunk, uint5* reg, uint5 except)
+{
+  uint5 safereg[] = { EAX, ECX, EDX, EBX };
+  uint5 i;
+  
+  for (i=0; i<4; i++)
+  {
+    if (chunk->reguse[i]==0 && !(except & (1<<i)))
+    {
+      *reg = safereg[i];
+      chunk->reguse[i] = 1;
+      return 1;
+    }
+  }
+    
+  return 0;
+}
+
+void palloc_relinquish_ireg(pheta_chunk* chunk, uint5 reg)
+{
+  chunk->reguse[reg] = 0;
 }
 
 void palloc_printspans(pheta_chunk* chunk)

@@ -683,9 +683,11 @@ uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
   switch (a->type)
   {
     case gotype_PARTIAL:
+/*
     fprintf(stderr, "WARNING: Comparing partial allocations for equivalence\n");
     fprintf(stderr, "a->data.src=%s, b->data.src=%s\n",
       patypename[a->data.src->type], patypename[b->data.src->type]);
+*/
     if (a->data.src != b->data.src) return 0;
     break;
     
@@ -856,6 +858,50 @@ genx86_operand* genx86_makeregister(pheta_chunk* chunk, uint5 reg)
   return op;
 }
 
+genx86_operand* genx86_makeregister8(pheta_chunk* chunk, uint5 reg)
+{
+  hashentry* e;
+  genx86_operand* op;
+  uint5 key = reg+32;
+  
+  if ((e = hash_lookup(chunk->registerpool, key)))
+  {
+    return e->data;
+  }
+  
+  e = hash_insert(chunk->registerpool, key);
+  op = e->data = cnew(genx86_operand);
+  
+  op->type = gotype_REGISTER;
+  op->width = gowidth_BYTE;
+  op->data.reg = reg;
+  
+  return op;
+}
+
+genx86_operand* genx86_makebaseoffset(pheta_chunk* chunk, uint5 offset,
+  uint5 width)
+{
+  hashentry* e;
+  genx86_operand* op;
+  uint5 key = offset | (width<<16);
+  
+  if ((e = hash_lookup(chunk->baseoffsetpool, key)))
+  {
+    return e->data;
+  }
+  
+  e = hash_insert(chunk->baseoffsetpool, key);
+  op = e->data = cnew(genx86_operand);
+  
+  op->type = offset>128 ? gotype_INDREGPLUSDISP32 : gotype_INDREGPLUSDISP8;
+  op->width = width;
+  op->data.regdisp.base = EBP;
+  op->data.regdisp.disp = offset;
+  
+  return op;
+}
+
 void genx86_call_function(genx86_buffer* buf, pheta_chunk* chunk, void* func)
 {
   genx86_operand* blank;
@@ -908,7 +954,6 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         switch (instr->data.op.src1)
         {
           case ph_R15_ADDR:
-          case ph_R15_FULL:
           {
             palloc_info* dest = &chunk->alloc[instr->data.op.dest];
             genx86_operand* src = genx86_makeconstant(chunk,
@@ -916,6 +961,89 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
             genx86_append(chunk, buf, ab_MOV, genx86_findoperand(chunk, dest),
               src, 0);
           }
+          break;
+
+          case ph_R15_FULL:
+          {
+            palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+            genx86_operand* src = genx86_makeconstant(chunk,
+              chunk->virtualaddress);
+            uint5 areg, breg;
+            genx86_operand* aregfull;
+            extern char* regname[];
+              
+            if (palloc_request_8bitsafe_ireg(chunk, &areg, 0))
+            {
+              if (palloc_request_8bitsafe_ireg(chunk, &breg, 1<<areg))
+              {
+                genx86_operand* al =
+                  genx86_makeregister8(chunk, LO8BITREG(areg));
+                genx86_operand* ah =
+                  genx86_makeregister8(chunk, HI8BITREG(areg));
+                genx86_operand* bl =
+                  genx86_makeregister8(chunk, LO8BITREG(breg));
+                genx86_operand* bh =
+                  genx86_makeregister8(chunk, HI8BITREG(breg));
+                genx86_operand* off, *num;
+                genx86_operand* destop = genx86_findoperand(chunk, dest);
+                
+                fprintf(stderr, "Got registers %s and %s for 8-bit "\
+                  "operations\n", regname[areg], regname[breg]);
+                
+                off = genx86_makebaseoffset(chunk,
+                  offsetof(registerinfo, vflag), gowidth_BYTE);
+                genx86_append(chunk, buf, ab_MOV, al, off, 0);
+
+                off = genx86_makebaseoffset(chunk,
+                  offsetof(registerinfo, cflag), gowidth_BYTE);
+                genx86_append(chunk, buf, ab_MOV, ah, off, 0);
+
+                off = genx86_makebaseoffset(chunk,
+                  offsetof(registerinfo, zflag), gowidth_BYTE);
+                genx86_append(chunk, buf, ab_MOV, bl, off, 0);
+
+                off = genx86_makebaseoffset(chunk,
+                  offsetof(registerinfo, nflag), gowidth_BYTE);
+                genx86_append(chunk, buf, ab_MOV, bh, off, 0);
+                
+                genx86_append(chunk, buf, ab_SHL, ah,
+                  genx86_makeconstant(chunk, 1), 0);
+                genx86_append(chunk, buf, ab_SHL, bl,
+                  genx86_makeconstant(chunk, 2), 0);
+                genx86_append(chunk, buf, ab_SHL, bh,
+                  genx86_makeconstant(chunk, 3), 0);
+                
+                genx86_append(chunk, buf, ab_OR, al, ah, 0);
+                genx86_append(chunk, buf, ab_OR, al, bl, 0);
+                genx86_append(chunk, buf, ab_OR, al, bh, 0);
+                
+                aregfull = genx86_makeregister(chunk, areg);
+                
+                genx86_append(chunk, buf, ab_SHL, aregfull,
+                  genx86_makeconstant(chunk, 28), 0);
+                
+                genx86_append(chunk, buf, ab_MOV, destop, src, 0);
+
+                genx86_append(chunk, buf, ab_OR, destop, aregfull, 0);
+                
+                palloc_relinquish_ireg(chunk, breg);
+                palloc_relinquish_ireg(chunk, areg);
+              }
+              else
+              {
+                fprintf(stderr, "Can't free second register!\n");
+                exit(1);
+              }
+            }
+            else
+            {
+              fprintf(stderr, "Can't free a register!\n");
+              exit(1);
+            }
+          }
+          break;
+          
+          default:
           break;
         }
       }
@@ -1276,11 +1404,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
       if (needmask & ph_C)
       {
-        off = cnew(genx86_operand);
-        off->type = gotype_INDREGPLUSDISP8;
-        off->width = gowidth_BYTE;
-        off->data.regdisp.base = EBP;
-        off->data.regdisp.disp = offsetof(registerinfo, cflag);
+        off = genx86_makebaseoffset(chunk, offsetof(registerinfo, cflag),
+          gowidth_BYTE);
         if (buf->beenset & ph_IC)
           genx86_append(chunk, buf, ab_SETAE, off, 0, 0);
         else if (buf->beenset & ph_C)
@@ -1290,11 +1415,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       }
       if (needmask & ph_V)
       {
-        off = cnew(genx86_operand);
-        off->type = gotype_INDREGPLUSDISP8;
-        off->width = gowidth_BYTE;
-        off->data.regdisp.base = EBP;
-        off->data.regdisp.disp = offsetof(registerinfo, vflag);
+        off = genx86_makebaseoffset(chunk, offsetof(registerinfo, vflag),
+          gowidth_BYTE);
         if (buf->beenset & ph_V)
           genx86_append(chunk, buf, ab_SETO, off, 0, 0);
         else
@@ -1302,11 +1424,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       }
       if (needmask & ph_N)
       {
-        off = cnew(genx86_operand);
-        off->type = gotype_INDREGPLUSDISP8;
-        off->width = gowidth_BYTE;
-        off->data.regdisp.base = EBP;
-        off->data.regdisp.disp = offsetof(registerinfo, nflag);
+        off = genx86_makebaseoffset(chunk, offsetof(registerinfo, nflag),
+          gowidth_BYTE);
         if (buf->beenset & ph_N)
           genx86_append(chunk, buf, ab_SETS, off, 0, 0);
         else
@@ -1314,11 +1433,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       }
       if (needmask & ph_Z)
       {
-        off = cnew(genx86_operand);
-        off->type = gotype_INDREGPLUSDISP8;
-        off->width = gowidth_BYTE;
-        off->data.regdisp.base = EBP;
-        off->data.regdisp.disp = offsetof(registerinfo, zflag);
+        off = genx86_makebaseoffset(chunk, offsetof(registerinfo, zflag),
+          gowidth_BYTE);
         if (buf->beenset & ph_Z)
           genx86_append(chunk, buf, ab_SETE, off, 0, 0);
         else
@@ -1331,11 +1447,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         {
           if (pred & (1<<j))
           {
-            off = cnew(genx86_operand);
-            off->type = gotype_INDREGPLUSDISP8;
-            off->width = gowidth_BYTE;
-            off->data.regdisp.base = EBP;
-            off->data.regdisp.disp = offsetof(registerinfo, predbuf[j]);
+            off = genx86_makebaseoffset(chunk,
+              offsetof(registerinfo, predbuf[j]), gowidth_BYTE);
             genx86_append(chunk, buf, predset[j], off, 0, 0);
           }
         }
@@ -1355,11 +1468,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         {
           if (pred & (1<<j))
           {
-            genx86_operand* off = cnew(genx86_operand);
-            off->type = gotype_INDREGPLUSDISP8;
-            off->width = gowidth_BYTE;
-            off->data.regdisp.base = EBP;
-            off->data.regdisp.disp = offsetof(registerinfo, npredbuf[j]);
+            genx86_operand* off = genx86_makebaseoffset(chunk,
+              offsetof(registerinfo, npredbuf[j]), gowidth_BYTE);
             genx86_append(chunk, buf, predset[j], off, 0, 0);
           }
         }
@@ -1378,11 +1488,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       {
         if (mask==ph_C || mask==ph_IC)
         {
-          off = cnew(genx86_operand);
-          off->type = gotype_INDREGPLUSDISP8;
-          off->width = gowidth_DWORD;
-          off->data.regdisp.base = EBP;
-          off->data.regdisp.disp = offsetof(registerinfo, cflag);
+          off = genx86_makebaseoffset(chunk, offsetof(registerinfo, cflag),
+            gowidth_DWORD);
           zero = genx86_makeconstant(chunk, 0);
           genx86_append(chunk, buf, ab_BT, off, zero, 0);
           if (mask==ph_IC)
@@ -1475,7 +1582,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
        */
       if (dest->type==pal_IREG && dest->info.ireg.num!=EAX)
       {
-        preserve_eax |= palloc_evict_ireg(chunk, blk, EAX, 
+        preserve_eax |= palloc_evict_ireg(chunk, EAX, 
                                           (1<<EAX)|(1<<ECX)|(1<<EDX));
       }
       
@@ -1564,7 +1671,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
       if (chunk->reguse[EAX])
       {
-        preserve_eax |= palloc_evict_ireg(chunk, blk, EAX, 
+        preserve_eax |= palloc_evict_ireg(chunk, EAX, 
                                           (1<<EAX)|(1<<ECX)|(1<<EDX));
       }
       
@@ -1708,12 +1815,8 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
     genx86_delayedfetchcommit* dfc = scan->data;
     if (dfc->var->type==pal_IREG)
     {
-      genx86_operand* mem = cnew(genx86_operand);
-      mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8 : 
-                                     gotype_INDREGPLUSDISP32;
-      mem->width = gowidth_DWORD;
-      mem->data.regdisp.base = EBP;
-      mem->data.regdisp.disp = dfc->src*4;
+      genx86_operand* mem = genx86_makebaseoffset(chunk, dfc->src*4, 
+        gowidth_DWORD);
       fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->info.ireg.num);
       genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, dfc->var->slot, mem, 0);
     }
@@ -1728,12 +1831,8 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
       case pal_CONST:
       case pal_CONSTB:
       {
-        genx86_operand* mem = cnew(genx86_operand);
-        mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8
-                                     : gotype_INDREGPLUSDISP32;
-        mem->width = gowidth_DWORD;
-        mem->data.regdisp.base = EBP;
-        mem->data.regdisp.disp = dfc->src*4;
+        genx86_operand* mem = genx86_makebaseoffset(chunk, dfc->src*4, 
+          gowidth_DWORD);
         fprintf(stderr, "Commit %d to %d\n", dfc->var->info.ireg.num,
           dfc->src);
         genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, mem, dfc->var->slot,
@@ -1854,19 +1953,9 @@ void genx86_flatten_code(pheta_chunk* chunk)
         op = cnew(genx86_op);
         off = cnew(genx86_operand);
         op->operator = ab_TEST;
-        off->type = gotype_INDREGPLUSDISP8;
-        off->width = gowidth_BYTE;
-        off->data.regdisp.base = EBP;
-        if (last->predicate & ph_NAT)
-        {
-          off->data.regdisp.disp = offsetof(registerinfo,
-            npredbuf[last->predicate & 0xf]);
-        }
-        else
-        {
-          off->data.regdisp.disp = offsetof(registerinfo,
-            predbuf[last->predicate & 0xf]);
-        }
+        off = genx86_makebaseoffset(chunk, last->predicate & ph_NAT ?
+          offsetof(registerinfo, npredbuf[last->predicate & 0xf]) :
+          offsetof(registerinfo, predbuf[last->predicate & 0xf]), gowidth_BYTE);
         op->op[0] = off;
         op->op[1] = genx86_makeconstant(chunk, 1);
         op->op[2] = 0;
@@ -1938,21 +2027,10 @@ void genx86_flatten_code(pheta_chunk* chunk)
       if (!unconditional)
       {
         op = cnew(genx86_op);
-        off = cnew(genx86_operand);
         op->operator = ab_TEST;
-        off->type = gotype_INDREGPLUSDISP8;
-        off->width = gowidth_BYTE;
-        off->data.regdisp.base = EBP;
-        if (blk->predicate & ph_NAT)
-        {
-          off->data.regdisp.disp = offsetof(registerinfo,
-            npredbuf[blk->predicate & 0xf]);
-        }
-        else
-        {
-          off->data.regdisp.disp = offsetof(registerinfo,
-            predbuf[blk->predicate & 0xf]);
-        }
+        off = genx86_makebaseoffset(chunk, blk->predicate & ph_NAT ?
+          offsetof(registerinfo, npredbuf[blk->predicate & 0xf]) :
+          offsetof(registerinfo, predbuf[blk->predicate & 0xf]), gowidth_BYTE);
         op->op[0] = off;
         op->op[1] = genx86_makeconstant(chunk, 1);
         op->op[2] = 0;

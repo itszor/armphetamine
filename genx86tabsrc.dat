@@ -6,7 +6,7 @@ rol  |Mi,Mc,mi     |c|v
 rcr  |Mi,Mc,mi     |c|v
 rcl  |Mi,Mc,mi     |c|v
 and  |RM,MR,Mi,MI  |nz|cv
-or   |RM,MR,Mi,MI  |nz|cv
+or   |RM,MR,Mi,MI,rm,mr,mi  |nz|cv
 xor  |RM,MR,Mi,MI  |nz|cv
 add  |RM,MR,Mi,MI  |cvnz|
 adc  |RM,MR,Mi,MI  |cvnz|
@@ -14,7 +14,7 @@ sub  |RM,MR,Mi,MI  |ivnz|
 sbb  |RM,MR,Mi,MI  |ivnz|
 imul |RM,RMi,RMI   ||cvnz
 lea  |RMs          ||
-mov  |RM,MR,MI,RI  ||
+mov  |RM,MR,MI,RI,rm,mr,ri,mi  ||
 not  |M,m          ||
 push |M,i,I        ||
 pop  |M            ||

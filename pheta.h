@@ -165,6 +165,7 @@ typedef struct {
   list* assoc;
   hashtable* constantpool;
   hashtable* registerpool;
+  hashtable* baseoffsetpool;
   list* miscoperand;
   machineinfo* parentmachine;
 } pheta_chunk;

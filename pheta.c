@@ -48,6 +48,7 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->assoc = 0;
   p->constantpool = hash_new(32);
   p->registerpool = hash_new(8);
+  p->baseoffsetpool = hash_new(32);
     
   return p;
 }
@@ -1835,9 +1836,9 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
     {
       destr = inst.dp.s ? ph_R15_FULL : ph_R15_ADDR;
 
+      pheta_emit(chunk, ph_SYNC);
       // sometimes this should be a RTS
       pheta_emit(chunk, ph_CAJMP, dest);
-      pheta_emit(chunk, ph_SYNC);
     }
     pheta_lcommit(chunk, destr, dest);
   }
@@ -2110,8 +2111,8 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   {
     // use an extra cycle for pipeline bubble or something
     pheta_cycles(chunk, 1);
-    pheta_emit(chunk, ph_CAJMP, loadreg);
     pheta_emit(chunk, ph_SYNC);
+    pheta_emit(chunk, ph_CAJMP, loadreg);
     pheta_lcommit(chunk, ph_R15_FULL, loadreg);
   }
   return 0;
@@ -2214,8 +2215,8 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
   // !!! exception semantics? !!!  
   if (setpc)
   {
-    pheta_emit(chunk, ph_CAJMP, loadreg);
     pheta_emit(chunk, ph_SYNC);
+    pheta_emit(chunk, ph_CAJMP, loadreg);
     pheta_lcommit(chunk, inst.bdt.s ? ph_R15_FULL : ph_R15_ADDR, loadreg);
   }
   return 0;

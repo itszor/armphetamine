@@ -4,7 +4,7 @@
         .type    simple,function
 
 simple:
-	add pc,pc,r1,lsl #2
+	adds pc,pc,r1,lsl #2
 	add r5,r6,r7
 	b one
 	b two
