@@ -53,7 +53,6 @@ struct meminfo {
   uint5* bank2;
   uint5* bank3;
   tlbentry insttlb, datatlb;
-//  level1pt* pagetable;
   uint5 mmucontrol;          // register 1 (write)
   uint5 translationbase;     // register 2 (write)
   uint5 domainaccesscontrol; // register 3 (write)
