@@ -277,6 +277,7 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
   switch (opcode)
   {
     case ph_CONST:
+    case ph_UKJMP:
     instr->data.con.dest = dest = chunk->tempno++;
     instr->data.con.imm = va_arg(ap, uint5);
     break;
@@ -1860,15 +1861,15 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   if (dest != -1)
   {
     uint5 destr = inst.dp.rd;
+    pheta_lcommit(chunk, destr, dest);
     if (destr==15)
     {
+      pheta_emit(chunk, ph_SYNC);
       destr = inst.dp.s ? ph_R15_FULL : ph_R15_ADDR;
 
       // sometimes this should be a RTS
       dest = pheta_emit(chunk, inst.dp.s ? ph_CAJMP26F : ph_CAJMP, dest);
-      pheta_emit(chunk, ph_SYNC);
     }
-    pheta_lcommit(chunk, destr, dest);
   }
   return;
 }
@@ -1924,13 +1925,15 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   }
   else  // going outside - ack!
   {
+    uint5 pctemp;
     pheta_basicblock* previous = chunk->currentblock;
     pheta_basicblock* exitchunk = pheta_newbasicblock(chunk, -1);
     hashentry* nottaken = hash_lookup(chunk->leaders, next);
     pheta_lsync(chunk);
-    pheta_emit(chunk, ph_SYNC);
     // deal with xjmp later
-    pheta_emit(chunk, ph_UKJMP);
+    pctemp = pheta_emit(chunk, ph_CONST,
+      (uint5)chunk->virtualaddress + offset*4 + 8);
+    pheta_emit(chunk, ph_UKJMP, pctemp);
     pheta_link(previous, inst.bra.cond, exitchunk, nottaken->data);
   }
   return 0;

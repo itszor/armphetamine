@@ -1794,11 +1794,12 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-      genx86_operand* src = genx86_findoperand(chunk, src1);
+/*      genx86_operand* src = genx86_findoperand(chunk, src1);
       genx86_operand* c8 = genx86_makeconstant(chunk, 8);
       genx86_move(chunk, buf, dest, src1);
       genx86_append(chunk, buf, ab_ADD, genx86_findoperand(chunk, dest), c8, 0);
-/*      genx86_append(chunk, buf, ab_RET, 0, 0, 0);*/
+      */
+      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
     break;
 
@@ -1822,18 +1823,25 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_append(chunk, buf, ab_BT, src, genx86_makeconstant(chunk, 31), 0);
       genx86_append(chunk, buf, ab_SETB, genx86_makebaseoffset(chunk,
         offsetof(registerinfo, nflag), gowidth_BYTE), 0, 0);
+      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
+    }
+    break;
+
+    case ph_UKJMP:
+    {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      genx86_operand* src = genx86_findoperand(chunk, src1);
+      genx86_operand* pcop;
+
+      pcop = genx86_makebaseoffset(chunk, 15*4, gowidth_DWORD);
+      genx86_append(chunk, buf, ab_MOV, pcop, src, 0);
+      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
     break;
 
     case ph_CONST:
     case ph_CONSTB:
     /* these don't need to generate any actual code */
-    break;
-
-    case ph_UKJMP:
-    {
-      genx86_append(chunk, buf, ab_RET, 0, 0, 0);
-    }
     break;
 
     default:
@@ -1895,7 +1903,8 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
     {
       case ph_R15_ADDR:
       case ph_R15_FULL:
-      genx86_insert(chunk, buf, dfc->loc->next->next, ab_RET, 0, 0, 0);
+      /* this so shouldn't be here */
+/*      genx86_insert(chunk, buf, dfc->loc->next->next, ab_RET, 0, 0, 0);*/
       break;
       
       default:
