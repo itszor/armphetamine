@@ -366,7 +366,20 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     break;
     
     case COMPOUND(pal_RFILE, pal_RFILE, pal_UNSET):
-    ERR;
+    {
+      // this case is nasty. We can't ever generate an x86 instruction with two
+      // memory operands, so let's generate some really dumb code to spill and
+      // reload a register instead.
+      palloc_info temp;
+      temp.type = pal_IREG;
+      temp.info.ireg.num = EAX;
+      rtasm_push_r32(nat, EAX);
+      if (opcode!=ab_MOV)
+        rtasm_mov_r32_rm32(nat, EAX, rtasm_ind8(EBP, dest->info.value*4));
+      genx86_out(nat, opcode, &temp, src1, src2, line);
+      rtasm_mov_rm32_r32(nat, rtasm_ind8(EBP, dest->info.value*4), EAX);
+      rtasm_pop_r32(nat, EAX);
+    }
     break;
     
     case COMPOUND(pal_RFILE, pal_IREG, pal_UNSET):

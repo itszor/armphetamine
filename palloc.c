@@ -141,12 +141,14 @@ void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       }
       break;
 
+/* this won't help, whoops
       case ph_CMN:
       case ph_TEQ:
       // purposefully do nothing since there are no x86 equivalents so
       // these instructions must be synthesized from add & xor respectively,
       // which need a destination register
       break;
+*/
 
       default:
       {
