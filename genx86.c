@@ -528,7 +528,7 @@ void genx86_move(nativeblockinfo* nat, palloc_info* dest, palloc_info* src)
       break;
     }
   }
-  if (src->type==pal_CONST || src->type==pal_CONSTB && dest->type==pal_IREG)
+  if ((src->type==pal_CONST || src->type==pal_CONSTB) && dest->type==pal_IREG)
   {
     genx86_out(nat, ab_XOR, dest, dest, &nul);
     return;
