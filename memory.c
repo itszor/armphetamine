@@ -234,6 +234,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->sapcm.serial_fifo->in = fifo_create(12);
   mem->sapcm.serial_fifo->out = fifo_create(8);
   mem->ostimer = ostimer_new();
+  mem->intctrl = intctrl_new();
 #endif
   
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");

@@ -120,3 +120,4 @@ sapcm.o: sapcm.c defs.h sapcm.h memory.h keyboard.h mouse.h hash.h \
  list.h machine.h processor.h registers.h fifo.h
 ostimer.o: ostimer.c defs.h iomd.h memory.h keyboard.h mouse.h hash.h \
  list.h machine.h processor.h registers.h cnew.h ostimer.h decode.h
+intctrl.o: intctrl.c intctrl.h defs.h cnew.h

@@ -17,7 +17,7 @@ OBJ =	cnew.o decode.o disassemble.o \
 	iomd.o asmalu.o debug.o bset.o asmalutab.o fifo.o mouse.o keyboard.o \
 	genx86.o palloc.o decodet.o executethm.o clist.o relocate.o \
 	dynsupport.o genx86_tab.o transmap.o profile.o recompile.o sapcm.o \
-	ostimer.o
+	ostimer.o intctrl.o
 
 SRC =	asmalutab.c cnew.c decode.c \
 	disassemble.c execute26.c execute32.c fakesys.c flush.c \
@@ -27,7 +27,7 @@ SRC =	asmalutab.c cnew.c decode.c \
 	rtasm.c flush.c pheta.c phetadism.c vidc20.c iomd.c debug.c bset.c \
 	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c decodet.c \
 	executethm.c clist.c relocate.c structsupport.c transmap.c \
-	profile.c recompile.c sapcm.c ostimer.c
+	profile.c recompile.c sapcm.c ostimer.c intctrl.c
 
 TESTS =	divide simple armtest
 

@@ -106,6 +106,7 @@ struct meminfo {
     struct sapcm_serial_fifo* serial_fifo;
   } sapcm;
   struct ostimer_registers* ostimer;
+  struct intctrl_registers* intctrl;
 #endif
 
   uint3 currentmode;
