@@ -850,7 +850,7 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     fprintf(stderr, "%x\n", inst.instruction);
     dispatch(machine, inst, &diss, (void*)reg->r[15]);
     fprintf(stderr, "\n");
-/*    abort();*/
+    abort();
   }
   
   INCPC;
@@ -950,8 +950,8 @@ int EXECUTEFN(exec_mull)(machineinfo* machine, instructionformat inst,
     }
     if (inst.mul.s)
     {
-      FLAG(z) = result>>63;
-      FLAG(n) = (result==0) ? 1 : 0;
+      FLAG(n) = result>>63;
+      FLAG(z) = (result==0) ? 1 : 0;
     }
     RPUT(inst.mull.rdlo, result & 0xffffffff);
     RPUT(inst.mull.rdhi, (result>>32));
