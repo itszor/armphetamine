@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <pty.h>
-#include <utmp.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "defs.h"
 #include "sapcm.h"
@@ -9,12 +11,36 @@
 
 void sa1100_serial_initialise(meminfo* mem)
 {
-  if (openpty(&mem->sapcm.amaster, &mem->sapcm.aslave, NULL, NULL, NULL)==-1)
+  pid_t child;
+  char ptyname[40];
+  int namelen;
+  int devno;
+
+  if (openpty(&mem->sapcm.amaster, &mem->sapcm.aslave, ptyname,
+    NULL, NULL) == -1)
   {
     fprintf(stderr, "Can't open pty, error=%d\n", errno);
     return errno;
   }
-  write(mem->sapcm.aslave, "Hello world\n", 12);
+  
+  namelen = strlen(ptyname);
+/*  fprintf(stderr, "ptyname=%s\n", ptyname);*/
+  for (; ptyname[namelen]!='/'; namelen--);
+  sscanf(&ptyname[namelen+1], "%d", &devno);
+/*  fprintf(stderr, "devno=%d\n", devno);*/
+    
+  if ((child=fork())==0)
+  {
+    // we are the child
+    char slave[40];
+  
+    sprintf(slave, "-S%c%c%d", "pqrs"[devno/16], 
+      "0123456789abcdef"[devno&15], mem->sapcm.amaster);
+  /*  fprintf(stderr, "Using slave %s\n", slave);*/
+    execlp("/usr/X11/bin/xterm", "/usr/X11/bin/xterm", &slave[0], "-T", 
+      "VirtuaLART", NULL);
+  }
+ /* sleep(1);*/
 }
 
 uint5 sa1100_serial_read(meminfo* mem, uint5 physaddress)
@@ -83,7 +109,7 @@ void sa1100_serial_write(meminfo* mem, uint5 physaddress, uint5 data)
 
         case 0x14:
         mem->sapcm.serial_fifo->uart_data = data;
-        fprintf(stderr, "%c", data);
+        write(mem->sapcm.aslave, &data, 1);
         break;
 
         case 0x1c:
