@@ -106,3 +106,5 @@ genx86.o: genx86.c genx86.h defs.h x86asm.h hash.h list.h registers.h \
 palloc.o: palloc.c palloc.h defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  pqueue.h cnew.h x86asm.h
+decodet.o: decodet.c decode.h defs.h machine.h processor.h registers.h \
+ memory.h keyboard.h mouse.h hash.h list.h
