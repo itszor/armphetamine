@@ -27,6 +27,10 @@ void machine_start(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
+  const uint5 cycperio = 100;
+
+  machine->cycle = cycperio;
+  
   for (;;)
   {
     uint5 instaddr = PCADDR-8;
@@ -47,7 +51,21 @@ void machine_start(machineinfo* machine)
     }
     else
     {
-      dispatch(machine, inst, &exec, 0);
+      dispatch(machine, inst, machine->exectab, 0);
+#ifdef IOMDSUPPORT
+      if (--machine->cycle<0)
+      {
+        if (!--mem->io.timer0)
+        {
+          fprintf(stderr, "Timer0 triggered!\n");
+        }
+        if (!--mem->io.timer1)
+        {
+          fprintf(stderr, "Timer1 triggered!\n");
+        }
+        machine->cycle+=cycperio;
+      }
+#endif
     }
   }
 }

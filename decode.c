@@ -21,20 +21,36 @@ insttab diss = {
 	diss_und
 };
 
-// execution function table
-insttab exec = {
-	exec_dp,
-	exec_dp_imm,
-	exec_mul,
-	exec_sdt,
-	exec_bdt,
-	exec_bra,
-	exec_swi,
-	exec_cdt,
-	exec_cdo,
-	exec_crt,
-	exec_sds,
-	exec_und
+// execution function table, 26-bit
+insttab exec26 = {
+	exec_dp_26,
+	exec_dp_imm_26,
+	exec_mul_26,
+	exec_sdt_26,
+	exec_bdt_26,
+	exec_bra_26,
+	exec_swi_26,
+	exec_cdt_26,
+	exec_cdo_26,
+	exec_crt_26,
+	exec_sds_26,
+	exec_und_26
+};
+
+// execution function table, 32-bit
+insttab exec32 = {
+	exec_dp_32,
+	exec_dp_imm_32,
+	exec_mul_32,
+	exec_sdt_32,
+	exec_bdt_32,
+	exec_bra_32,
+	exec_swi_32,
+	exec_cdt_32,
+	exec_cdo_32,
+	exec_crt_32,
+	exec_sds_32,
+	exec_und_32
 };
 
 // intermediate code translator function table

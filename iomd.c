@@ -32,9 +32,11 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x14:  // IRQ A interrupt request/clear
+    mem->io.irqa.request = data;
     break;
     
     case 0x18:  // IRQ A interrupt mask
+    mem->io.irqa.mask = data;
     break;
     
     case 0x1c:  // SUSPEND mode
@@ -44,9 +46,11 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x24:  // IRQ B interrupt request/clear
+    mem->io.irqb.request = data;
     break;
     
     case 0x28:  // IRQ B interrupt mask
+    mem->io.irqb.mask = data;
     break;
     
     case 0x2c:  // STOP mode
@@ -56,45 +60,66 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x34:  // FIQ interrupts request
+    mem->io.fiq.request = data;
     break;
     
     case 0x38:  // FIQ interrupts mask
+    mem->io.fiq.mask = data;
     break;
     
     case 0x3c:  // Clock control
+    fprintf(stderr, "Writing to clock control\n");
     break;
     
     case 0x40:  // Timer 0 LOW bits
+    mem->io.t0lolat = data;
     break;
     
     case 0x44:  // Timer 0 HIGH bits
+    mem->io.t0hilat = data;
     break;
     
     case 0x48:  // Timer 0 Go command
+    {
+      mem->io.timer0 = mem->io.t0lolat | (mem->io.t0hilat << 8);
+      fprintf(stderr, "Timer 0 is go! (%d)\n", mem->io.timer0);
+    }
     break;
     
     case 0x4c:  // Timer 0 Latch command
+    mem->io.t0lolat = mem->io.timer0 & 0xff;
+    mem->io.t0hilat = (mem->io.timer0 >> 8) & 0xff;
     break;
     
     case 0x50:  // Timer 1 LOW bits
+    mem->io.t1lolat = data;
     break;
     
     case 0x54:  // Timer 1 HIGH bits
+    mem->io.t1hilat = data;
     break;
     
     case 0x58:  // Timer 1 Go command
+    {
+      mem->io.timer1 = mem->io.t1lolat | (mem->io.t1hilat << 8);
+      fprintf(stderr, "Timer 1 is go! (%d)\n", mem->io.timer1);
+    }
     break;
     
     case 0x5c:  // Timer 1 Latch command
+    mem->io.t1lolat = mem->io.timer1 & 0xff;
+    mem->io.t1hilat = (mem->io.timer1 >> 8) & 0xff;
     break;
     
     case 0x60:  // IRQ C interrupts status
     break;
     
     case 0x64:  // IRQ C interrupts request
+    mem->io.irqc.request = data;
     break;
     
     case 0x68:  // IRQ C interrupts mask
+    mem->io.irqc.mask = data;
     break;
     
     case 0x6c:  // Video LCD and Serial Sound Mux control
@@ -104,9 +129,11 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x74:  // IRQ D interrupts request
+    mem->io.irqd.request = data;
     break;
     
     case 0x78:  // IRQ D interrupts mask
+    mem->io.irqd.mask = data;
     break;
     
     case 0x80:
@@ -114,6 +141,10 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x8c:  // Refresh period
+    if (data==1)
+      fprintf(stderr, "16us refresh period\n");
+    else
+      fprintf(stderr, "No refresh\n");
     break;
     
     case 0x94:  // Chip ID number LOW byte
@@ -212,9 +243,15 @@ void iomd_writeword(meminfo* mem, uint5 address, uint5 data)
     case 0x1e8:  // Duplex LCD Video DMA Init B
     break;
     
-    case 0x1f0:
-    case 0x1f4:
-    case 0x1f8:  // DMA interrupt control
+    case 0x1f0:  // DMA interrupt status
+    break;
+    
+    case 0x1f4:  // DMA interrupt request
+    mem->io.sounddma.request = data;
+    break;
+    
+    case 0x1f8:  // DMA interrupt mask
+    mem->io.sounddma.mask = data;
     break;
   }
 }
@@ -246,9 +283,11 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x14:  // IRQ A interrupt request/clear
+    return mem->io.irqa.request & mem->io.irqa.mask;
     break;
     
     case 0x18:  // IRQ A interrupt mask
+    return mem->io.irqa.mask;
     break;
     
     case 0x1c:  // SUSPEND mode
@@ -258,9 +297,11 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x24:  // IRQ B interrupt request/clear
+    return mem->io.irqb.request & mem->io.irqb.mask;
     break;
     
     case 0x28:  // IRQ B interrupt mask
+    return mem->io.irqb.mask;
     break;
     
     case 0x2c:  // STOP mode
@@ -270,18 +311,22 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x34:  // FIQ interrupts request
+    return mem->io.fiq.request & mem->io.fiq.mask;
     break;
     
     case 0x38:  // FIQ interrupts mask
+    return mem->io.fiq.mask;
     break;
     
     case 0x3c:  // Clock control
     break;
     
     case 0x40:  // Timer 0 LOW bits
+    return mem->io.t0lolat;
     break;
     
     case 0x44:  // Timer 0 HIGH bits
+    return mem->io.t0hilat;
     break;
     
     case 0x48:  // Timer 0 Go command
@@ -291,9 +336,11 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x50:  // Timer 1 LOW bits
+    return mem->io.t1lolat;
     break;
     
     case 0x54:  // Timer 1 HIGH bits
+    return mem->io.t1hilat;
     break;
     
     case 0x58:  // Timer 1 Go command
@@ -306,9 +353,11 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x64:  // IRQ C interrupts request
+    return mem->io.irqc.request & mem->io.irqc.mask;
     break;
     
     case 0x68:  // IRQ C interrupts mask
+    return mem->io.irqc.mask;
     break;
     
     case 0x6c:  // Video LCD and Serial Sound Mux control
@@ -318,9 +367,11 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x74:  // IRQ D interrupts request
+    return mem->io.irqd.request & mem->io.irqd.mask;
     break;
     
     case 0x78:  // IRQ D interrupts mask
+    return mem->io.irqd.mask;
     break;
     
     case 0x80:
@@ -331,9 +382,11 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0x94:  // Chip ID number LOW byte
+    return 152;
     break;
     
     case 0x98:  // Chip ID number HIGH byte
+    return 91;
     break;
     
     case 0x9c:  // Chip version number
@@ -346,15 +399,18 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     break;
     
     case 0xc4:  // I/O timing control
+    fprintf(stderr, "Setting I/O timing control\n");
     break;
     
     case 0xc8:  // I/O Expansion card timing control
+    fprintf(stderr, "Setting I/O expansion card timing control\n");
     break;
     
     case 0xcc:  // I/O Asynchronous timing control
     break;
     
     case 0xd0:  // DRAM width control
+    return 0; // 32-bit DRAM banks
     break;
     
     case 0xd4:  // DRAM self-refresh control
@@ -426,9 +482,15 @@ uint5 iomd_readword(meminfo* mem, uint5 address)
     case 0x1e8:  // Duplex LCD Video DMA Init B
     break;
     
-    case 0x1f0:
-    case 0x1f4:
-    case 0x1f8:  // DMA interrupt control
+    case 0x1f0:  // DMA interrupt status
+    break;
+    
+    case 0x1f4:  // DMA interrupt request
+    return mem->io.sounddma.request & mem->io.sounddma.mask;
+    break;
+    
+    case 0x1f8:  // DMA interrupt mask
+    return mem->io.sounddma.mask;
     break;
   }
   return 0;

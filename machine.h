@@ -7,6 +7,8 @@
 #include "memory.h"
 #include "hash.h"
 
+struct insttab;
+
 struct machineinfo {
   meminfo* mem;
   registerinfo* reg;
@@ -16,6 +18,8 @@ struct machineinfo {
   hashtable* translaterules;
   hashtable* breakpoints;
   int trace;
+  struct insttab* exectab;
+  sint5 cycle;
 };
 
 typedef struct machineinfo machineinfo;

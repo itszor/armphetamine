@@ -126,6 +126,11 @@ int main(void)
   mem = machine->mem;
   reg = machine->reg;
 
+#ifdef VIDCSUPPORT
+  fprintf(stderr, "Initialising VIDC20\n");
+  vidc20_init(mem);
+#endif
+
 //  fprintf(stderr, "\nInitialising RISC OS API emulation...\n");
   riscosstate = riscos_initialise();
   
@@ -311,7 +316,7 @@ int main(void)
 		  dispatch(machine, ins, &diss, 0);
       fprintf(stderr, "\n");
   #endif
-      dispatch(machine, ins, &exec, 0);
+      dispatch(machine, ins, machine->exectab, 0);
   #ifdef CTRACE
     fprintf(trc, "%x,%x,", instaddr, ins.instruction);
     for (rnum=0; rnum<15; rnum++) fprintf(trc, "%x ", reg->r[rnum]);

@@ -82,19 +82,58 @@
 #define PRINTOPS 1
 // #define FAKESWI 1
 
-extern void exec_dp(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_dp_imm(machineinfo* machine, instructionformat inst,
+extern void exec_dp_26(machineinfo* machine, instructionformat inst,
+                       void* null);
+extern void exec_dp_imm_26(machineinfo* machine, instructionformat inst,
                         void* null);
-extern void exec_psrt(machineinfo* machine, instructionformat inst, uint5 op2);
-extern void exec_mul(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_sdt(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_bdt(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_bra(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_swi(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_cdt(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_cdo(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_crt(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_sds(machineinfo* machine, instructionformat inst, void* null);
-extern void exec_und(machineinfo* machine, instructionformat inst, void* null);
+extern void exec_psrt_26(machineinfo* machine, instructionformat inst,
+                         uint5 op2);
+extern void exec_mul_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_sdt_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_bdt_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_bra_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_swi_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_cdt_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_cdo_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_crt_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_sds_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_und_26(machineinfo* machine, instructionformat inst,
+                        void* null);
+
+extern void exec_dp_32(machineinfo* machine, instructionformat inst,
+                       void* null);
+extern void exec_dp_imm_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_psrt_32(machineinfo* machine, instructionformat inst,
+                         uint5 op2);
+extern void exec_mul_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_sdt_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_bdt_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_bra_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_swi_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_cdt_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_cdo_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_crt_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_sds_32(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_und_32(machineinfo* machine, instructionformat inst,
+                        void* null);
 
 #endif

@@ -18,9 +18,12 @@
 #include "decode.h"
 #include "pheta.h"
 #include "phetadism.h"
+#include "vidc20.h"
+#include "iomd.h"
 
 void debug_shell(machineinfo* machine)
 {
+  processor_reset(machine);
   while (1)
   {
     char* buf = readline("debug> ");
@@ -45,6 +48,7 @@ const static debug_cmd commands[] =
   { "breaklist",   debug_BREAKLIST,   debug_breaklist   },
   { "trace",       debug_TRACE,       debug_trace       },
   { "load",        debug_LOAD,        debug_load        },
+  { "romload",     debug_ROMLOAD,     debug_romload     },
   { "script",      debug_SCRIPT,      debug_script      },
   { "virtual",     debug_VIRTUAL,     debug_virtual     },
   { "phetatrans",  debug_PHETATRANS,  debug_phetatrans  },
@@ -410,6 +414,49 @@ void debug_load(machineinfo* machine, char* cmd)
   
   free(m);
   fprintf(stderr, "Loaded file '%s' to %x\n", filename, addr);
+}
+
+void debug_romload(machineinfo* machine, char* cmd)
+{
+  struct stat fileinfo;
+  char filename[60];  // whee, buffer overflows ahead
+  char* m;
+  FILE* f;
+  uint5 addr, i;
+  
+  strsep(&cmd, " \t");
+  if (!cmd)
+  {
+    fprintf(stderr, "Enter a filename\n");
+    return;
+  }
+  sscanf(cmd, "%s", &filename[0]);
+  
+  stat(filename, &fileinfo);
+  
+  strsep(&cmd, " \t");
+  if (!cmd)
+  {
+    fprintf(stderr, "Enter an address\n");
+    return;
+  }
+  sscanf(cmd, "%x", &addr);
+  
+  m = malloc(fileinfo.st_size);
+  f = fopen(filename, "r");
+  if (!f)
+  {
+    fprintf(stderr, "Bad filename '%s'\n", filename);
+    return;
+  }
+  fread(m, fileinfo.st_size, 1, f);
+  fclose(f);
+
+  for (i=0; i<fileinfo.st_size; i++)
+    ((uint3*)machine->mem->rom0)[i] = m[i];
+  
+  free(m);
+  fprintf(stderr, "Loaded ROM '%s' to ROM0:%x\n", filename, addr);
 }
 
 void debug_script(machineinfo* machine, char* cmd)

@@ -53,7 +53,7 @@ static const uint4 cctable[] =
       : "false",
     reg->cpsr.value>>28);*/
 
-int exec_condition(machineinfo* machine, instructionformat inst)
+int EXECUTEFN(exec_condition)(machineinfo* machine, instructionformat inst)
 {
 	registerinfo* reg = machine->reg;
   // conditional execution on any instruction
@@ -183,9 +183,10 @@ int exec_condition(machineinfo* machine, instructionformat inst)
 
 #include "asmalu.h"
 
-void exec_dp(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -222,9 +223,10 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
   }
 }
 
-void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -252,7 +254,8 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
 
 #else
 // execute an ALU instruction with op2 as a shifted register
-void exec_dp(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
@@ -272,7 +275,7 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
   // islogic affects the way the carry flag is set
   int islogic = logic & (1<<inst.dp.opcode);
 
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
 
   if (regshift)  // shift by register
   {
@@ -462,7 +465,7 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
         }
       }
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -482,7 +485,7 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
         }
       }
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -494,7 +497,7 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
         SUBFLAGS(op1,op2);  // always affect flags
       }
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -506,7 +509,7 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
         ADDFLAGS(op1,op2);  // always affect flags
       }
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -547,7 +550,8 @@ void exec_dp(machineinfo* machine, instructionformat inst, void* null)
     INCPC;
 }
 
-void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
   registerinfo* reg = machine->reg;
   uint5 op1 = GET(inst.dp.rn);
@@ -556,7 +560,7 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
   // mask for rd-affecting instructions
   const uint5 affectrd = 0xf0ff;
 
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
 
   op2 = ROR(temp&255, amount);
   // why isn't this more clear in the data sheet? grr...
@@ -631,7 +635,7 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
       if (inst.dp.s)
         rd = op1 & op2;
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -640,7 +644,7 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
       if (inst.dp.s)
         rd = op1 ^ op2;
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -652,7 +656,7 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
         SUBFLAGS(op1,op2);
       }
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -664,7 +668,7 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
         ADDFLAGS(op1,op2);
       }
       else
-        exec_psrt(machine, inst, op2);
+        EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
     break;
 
@@ -707,7 +711,8 @@ void exec_dp_imm(machineinfo* machine, instructionformat inst, void* null)
 
 #endif
 
-void exec_psrt(machineinfo* machine, instructionformat inst, uint5 val)
+void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
+  uint5 val)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
@@ -744,9 +749,10 @@ void exec_psrt(machineinfo* machine, instructionformat inst, uint5 val)
   }
 }
 
-void exec_bra(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -761,9 +767,10 @@ void exec_bra(machineinfo* machine, instructionformat inst, void* null)
   }
 }
 
-void exec_mul(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -783,9 +790,10 @@ void exec_mul(machineinfo* machine, instructionformat inst, void* null)
   }
 }
 
-void exec_sdt(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -922,9 +930,10 @@ void exec_sdt(machineinfo* machine, instructionformat inst, void* null)
 
 // block data transfer always tries to use ready-translated address unless
 // straddling a page boundary
-void exec_bdt(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -1034,9 +1043,10 @@ void exec_bdt(machineinfo* machine, instructionformat inst, void* null)
 #define write(A,B,C) printf("fwrite(%x,%x,%x,%x)\n", (A),(B),(C),(D))
 */
 
-void exec_swi(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_swi)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -1051,23 +1061,26 @@ void exec_swi(machineinfo* machine, instructionformat inst, void* null)
   }
 }
 
-void exec_cdt(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_cdt)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
 //  fprintf(stderr, "Error: unimplemented instruction (cdt)\n");
   processor_und(machine);
 }
 
-void exec_cdo(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_cdo)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
 //  fprintf(stderr, "Error: unimplemented instruction (cdo)\n");
   processor_und(machine);
 }
 
-void exec_crt(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   else
   {
     registerinfo* reg = machine->reg;
@@ -1083,6 +1096,7 @@ void exec_crt(machineinfo* machine, instructionformat inst, void* null)
     {
       case 15:  // MMU control
       {
+        fprintf(stderr, "--> MMU control\n");
         if (inst.crt.l)  // coprocessor -> ARM (MRC)
         {
           switch (inst.crt.cpopc)
@@ -1108,36 +1122,98 @@ void exec_crt(machineinfo* machine, instructionformat inst, void* null)
         }
         else  // ARM -> coprocessor (MCR)
         {
+          fprintf(stderr, "----> MCR\n");
           switch (inst.crt.cpopc)
           {
             case 0:
             {
               switch (inst.crt.crn)  // coproc register number
               {
-                case 1: mem->mmucontrol = RGET(inst.crt.rd); break;
-                case 2: mem->translationbase = RGET(inst.crt.rd); break;
-                case 3: mem->domainaccesscontrol = RGET(inst.crt.rd); break;
+                case 1:
+                {
+                  uint5 oldstate = mem->mmucontrol;
+                  uint5 newstate = RGET(inst.crt.rd);
+                  fprintf(stderr, "------> Set MMU control: %x\n",
+                    newstate);
+
+                  if (((oldstate ^ newstate) & 1) == 1)
+                  {
+                    uint5 instaddr;
+                    instructionformat inst;
+                    int i;
+                    INCPC;
+                    // we need to execute the next like three instructions
+                    // because the virtual memory system has some latency
+                    // when switching on and off. These little things just
+                    // kill you honestly.
+                    fprintf(stderr, "Virtual memory state changed!\n");
+                    for (i=0; i<3; i++)
+                    {
+                      instaddr = PCADDR-8;
+                      inst.instruction = memory_readinstword(mem, instaddr);
+                      fprintf(stderr, "%.8x : %.8x : ", instaddr, 
+                              inst.instruction);
+                      dispatch(machine, inst, &diss, 0);
+                      fprintf(stderr, "\n");
+                      dispatch(machine, inst, machine->exectab, 0);
+                    }
+                    machine->trace = 1;
+                  }
+                  mem->mmucontrol = newstate;
+                }
+                break;
+                
+                case 2:
+                {
+                  fprintf(stderr, "------> Set translation base: %x\n",
+                    RGET(inst.crt.rd));
+                  mem->translationbase = RGET(inst.crt.rd);
+                }
+                break;
+                
+                case 3:
+                {
+                  fprintf(stderr, "------> Set domain access control: %x\n",
+                    RGET(inst.crt.rd));
+                  mem->domainaccesscontrol = RGET(inst.crt.rd);
+                }
+                break;
+                
                 case 5: // flush TLB
                 {
-                
+                  fprintf(stderr, "------> Flush TLB\n");
                 }
                 break;
                 
                 case 6: // purge TLB
                 {
-                
+                  fprintf(stderr, "------> Purge TLB\n");
                 }
                 break;
                 
                 case 7: // flush IDC
                 {
-                
+                  fprintf(stderr, "------> Flush IDC\n");
                 }
                 break;
                 
-                case 0x8: case 0x9: case 0xa: case 0xb:
-                case 0xc: case 0xd: case 0xe: case 0xf:
+                case 0x8:
+                {
+                  fprintf(stderr, "------> TLB operation (SA)\n");
+                }
+                break;
+                
+                case 0x9: case 0xa: case 0xb:
+                case 0xc: case 0xd: case 0xe:
+                fprintf(stderr, "------> Throwing undefined instruction\n");
                 processor_und(machine);
+                break;
+                
+                case 0xf:
+                {
+                  fprintf(stderr, "------> Test, Clock, Idle ctrl (SA)\n");
+                }
+                break;
               }
             }
             break;
@@ -1157,17 +1233,19 @@ void exec_crt(machineinfo* machine, instructionformat inst, void* null)
   }
 }
 
-void exec_sds(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_sds)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   // unimplemented
   fprintf(stderr, "Error: unimplemented instruction (sds)\n");
   exit(1);
 }
 
-void exec_und(machineinfo* machine, instructionformat inst, void* null)
+void EXECUTEFN(exec_und)(machineinfo* machine, instructionformat inst,
+  void* null)
 {
-  if (!exec_condition(machine, inst)) return;
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return;
   // unimplemented
   fprintf(stderr, "Warning: undefined instruction\n");
   processor_und(machine);

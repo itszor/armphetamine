@@ -308,6 +308,6 @@ typedef enum {
 extern void dispatch(machineinfo* machine, instructionformat inst,
                      insttab* action, void* data);
 
-extern insttab diss, exec, pseudo, phet4;
+extern insttab diss, exec26, exec32, pseudo, phet4;
 
 #endif

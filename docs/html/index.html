@@ -10,6 +10,20 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <h1><a name="news">News</a></h1>
 
+<h3>16 March 2001</h3>
+
+<p>I've been working on the interpretive core and hardware support, since finding that some lovely person has uploaded a RISC OS 3.70 ROM image 'somewhere on the internet' since last time I looked. Turns out the copy I ripped out of my own Risc PC back home <i>was</i> corrupted somehow (probably my broken level 2 cache at work again), and it wasn't just my paranoia (I <b>knew</b> that loop couldn't have terminated as it was in my copy!).
+
+<p>Both 26-bit and 32-bit cores can live simulateously now, with different copies of the emulator code invoked through function tables and preprocessor abuse. The VIDC20 code knows a bit about video, and IOMD knows a bit about timers and interrupt requests/masks etc, though currently nothing gets drawn on the 'screen' and no actual interrupts get fired. Even so, the ROM gets as far as enabling virtual memory. Which doesn't actually seem to work <tt>;o)</tt>. All the same, it's <b>much</b> better than it was before.
+
+<p>To try the new stuff: symlink "Rom" to a copy of RISC OS 3.70, run the emulator, and type <tt>script ro.txt</tt>.
+
+<p>Oh yeah, some thoughts about precise exceptions and register rollback, but I'm not sure if it'd work or be efficient enough. The basic idea is this: allocate two copies of the register bank, with the lower aligned at twice the minimum power of two which will wholly contain one copy of the register bank, the second aligned above it in memory in such a way that the two copies can be flipped between by simply changing one bit of the address.
+
+<p>Define a 'rollback unit' as being (something like) the minimum of a basic block and the gap between memory accesses. Start a rollback unit reading from the lower bank of registers, then with each write do a bitwise OR on the address used to access that register, so that write and subsequent reads will access the upper copy not the lower. Multiple ORs are no-ops. Upper registers are committed to lower registers after the end of the rollback unit if no exception occurs. If an exception does occur, we can easily recover the state at the beginning of the rollback unit just by using the lower register bank and falling back to the emulator.
+
+<p>Problems are: another level of indirection on each register access? No better than just saving all registers before each memory access? I see why Transmeta did it in hardware...
+
 <h3>7 March 2001</h3>
 
 <p>Slightly troubled by ph2. I'd quite like to have a go at implementing the "linear scan" register allocation technique (as documented in a paper discovered by David Sharp), but it doesn't seem to entirely mesh with the <tt>fetch</tt>/<tt>commit</tt> mechanism which I envisaged using. I've tweaked it so temporaries aren't refetched from registers every time they're used. Now the behaviour is to fetch the minimum set of registers necessary in a basic block as they're needed and commit all the (latest) results generated immediately before exiting the block. This just isn't quite right. Specifically, it creates a sort-of triangular register-need shape through each block, where each block starts out needing no registers and then accumulate liveness for registers as it proceeds, then chucking them all away right at the end. Better if registers are committed after the last time they're used, but that means more passes over the code and/or the ability to insert instructions into blocks. Or perhaps I should treat blocks as immutable, and generate new copies with commits in the right place.

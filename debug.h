@@ -16,6 +16,7 @@ typedef enum {
   debug_BREAKLIST,
   debug_TRACE,
   debug_LOAD,
+  debug_ROMLOAD,
   debug_SCRIPT,
   debug_VIRTUAL,
   debug_PHETATRANS,
@@ -47,6 +48,7 @@ extern void debug_breakclear(machineinfo* machine, char* cmd);
 extern void debug_breaklist(machineinfo* machine, char* cmd);
 extern void debug_trace(machineinfo* machine, char* cmd);
 extern void debug_load(machineinfo* machine, char* cmd);
+extern void debug_romload(machineinfo* machine, char* cmd);
 extern void debug_script(machineinfo* machine, char* cmd);
 extern void debug_virtual(machineinfo* machine, char* cmd);
 extern void debug_phetatrans(machineinfo* machine, char* cmd);

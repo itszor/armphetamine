@@ -4,6 +4,7 @@
 #include "registers.h"
 #include "processor.h"
 #include "machine.h"
+#include "decode.h"
 
 void processor_initialise(void)
 {
@@ -105,6 +106,8 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   reg->cpsr.flag.mode = newmode;
   // keep a copy of current mode for use by memory subsystem
   machine->mem->currentmode = newmode & 15;
+  
+  machine->exectab = newmode<16 ? &exec26 : &exec32;
 
 /*  const int rmodebase[] = {7, 7, 2, 2, 2, 2};
   uint5 omode = reg->cpsr.flag.mode&15;

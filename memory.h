@@ -2,8 +2,9 @@
 #define MEMORY_H 1
 
 #include "defs.h"
-#ifdef VIRTUALFRAMEBUFFER
-#include "SDL.h"
+
+#ifdef VIDCSUPPORT
+#include <SDL/SDL.h>
 #endif
 
 struct meminfo;
@@ -22,6 +23,12 @@ typedef struct {
   readfn readword;
 } tlbentry;
 
+typedef struct {
+  uint3 status;
+  uint3 request;
+  uint3 mask;
+} irq_info;
+
 struct meminfo {
   uint5* memory;
   uint5* rom0;
@@ -38,9 +45,43 @@ struct meminfo {
   uint5 faultstatus;         // register 5 (read)
   uint5 faultaddress;        // register 6 (read)
   int mmuactive;
-  #ifdef VIRTUALFRAMEBUFFER
-  SDL_Surface* screen;
-  #endif
+
+#ifdef VIDCSUPPORT
+  struct {
+    SDL_Surface* surf;
+    uint5 hstart;
+    uint5 hend;
+    uint5 xsize;
+    uint5 vstart;
+    uint5 vend;
+    uint5 ysize;
+    uint5 cursx;
+    uint5 cursys;
+    uint5 cursye;
+    uint5 cursheight;
+    uint5 bpp;
+    uint5 paladdr;
+  } video;
+#endif
+
+#ifdef IOMDSUPPORT
+  struct {
+    uint3 t0lolat;
+    uint3 t0hilat;
+    uint3 t1lolat;
+    uint3 t1hilat;
+    uint4 timer0;
+    uint4 timer1;
+    irq_info irqa;
+    irq_info irqb;
+    irq_info irqc;
+    irq_info irqd;
+    irq_info fiq;
+    irq_info sounddma;
+    uint3 clkctl;
+  } io;
+#endif
+
   int writetag;
   uint3 currentmode;
   uint3 memoryfault;

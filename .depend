@@ -17,8 +17,11 @@ decode.o: decode.c machine.h defs.h processor.h registers.h memory.h \
  allocate.h x86asm.h pheta.h bset.h
 disassemble.o: disassemble.c defs.h machine.h processor.h registers.h \
  memory.h hash.h list.h decode.h
-execute.o: execute.c defs.h machine.h processor.h registers.h memory.h \
- hash.h list.h execute.h decode.h fakesys.h
+execute26.o: execute26.c execute.inc.c defs.h machine.h processor.h \
+ registers.h memory.h hash.h list.h execute.h decode.h fakesys.h \
+ asmalu.h
+execute32.o: execute32.c execute.inc.c defs.h machine.h processor.h \
+ registers.h memory.h hash.h list.h execute.h decode.h fakesys.h
 fakesys.o: fakesys.c defs.h machine.h processor.h registers.h memory.h \
  hash.h list.h decode.h execute.h fakesys.h riscos.h
 flush.o: flush.c defs.h flush.h machine.h processor.h registers.h \
@@ -48,7 +51,7 @@ phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h hash.h bset.h phetadism.h
 pqueue.o: pqueue.c cnew.h pqueue.h defs.h
 processor.o: processor.c cnew.h registers.h defs.h processor.h \
- machine.h memory.h hash.h list.h
+ machine.h memory.h hash.h list.h decode.h
 pseudo.o: pseudo.c defs.h machine.h processor.h registers.h memory.h \
  hash.h list.h pseudo.h decode.h codegen.h allocate.h x86asm.h cnew.h \
  execute.h block.h analyse.h
@@ -78,5 +81,7 @@ phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
 vidc20.o: vidc20.c defs.h vidc20.h memory.h
 iomd.o: iomd.c defs.h iomd.h memory.h
 debug.o: debug.c defs.h machine.h processor.h registers.h memory.h \
- hash.h list.h debug.h execute.h decode.h pheta.h bset.h phetadism.h
+ hash.h list.h debug.h execute.h decode.h pheta.h bset.h phetadism.h \
+ vidc20.h iomd.h
 bset.o: bset.c defs.h bset.h cnew.h
+asmalutab.o: asmalutab.c defs.h asmalu.h
