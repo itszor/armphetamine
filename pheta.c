@@ -1944,15 +1944,16 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   {
     uint5 pctemp;
     pheta_basicblock* previous = chunk->currentblock;
+    hashentry* nottaken;
     pheta_basicblock* exitchunk = pheta_newbasicblock(chunk, -1);
-    hashentry* nottaken = hash_lookup(chunk->leaders, next);
     pheta_lsync(chunk);
     // deal with xjmp later
     pctemp = pheta_emit(chunk, ph_CONST,
       (uint5)chunk->virtualaddress + offset*4 + 8);
-    fprintf(stderr, "PC TEMP=%d\n", pctemp);
-    exit(0);
+/*    fprintf(stderr, "PC TEMP=%d\n", pctemp);
+    exit(0);*/
     pheta_emit(chunk, ph_UKJMP, pctemp);
+    nottaken = pheta_getbasicblock(chunk, next);
     pheta_link(previous, inst.bra.cond, exitchunk, nottaken->data);
   }
   return 0;

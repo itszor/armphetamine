@@ -43,16 +43,20 @@ void machine_start(machineinfo* machine)
     uint5 instaddr;
     instructionformat inst;
 
+#ifdef RECOMPILE
     do {
+#endif
       instaddr = PCADDR-8;
       if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
 
+#ifdef RECOMPILE
       if (feednewpc)
         feednewpc = profile_feednseqaddr(machine, machine->pstate, instaddr);
 
     } while (feednewpc);
     
     assert(machine->pstate->start != -1);
+#endif
     
     inst.instruction = memory_readinstword(mem, instaddr);
     
@@ -74,9 +78,11 @@ void machine_start(machineinfo* machine)
       if (retcode==1)
       {
         /* Uses instruction ptr in state before execute has mangled it */
+#ifdef RECOMPILE
         profile_feedseqaddr(machine->pstate, instaddr);
         /* make sure next instruction loaded (re-)enables a profile block */
         feednewpc = 1;
+#endif
       }
     }
       

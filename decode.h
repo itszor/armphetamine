@@ -88,7 +88,7 @@ typedef union {
     uint5 rn       : 4;
     uint5 l        : 1;
     uint5 w        : 1;
-    uint5 ident3   : 1;
+    uint5 imm      : 1;
     uint5 u        : 1;
     uint5 p        : 1;
     uint5 ident4   : 3;

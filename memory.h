@@ -25,9 +25,7 @@ typedef struct {
 
 typedef struct {
   readfn byte;
-  readfn sbyte;
   readfn half;
-  readfn shalf;
   readfn word;
 } mem_readbank;
 
@@ -140,37 +138,63 @@ extern __inline__ uint5* memory_lookup(meminfo* mem, uint5* virtualaddress);
 
 void memory_nullwrite(meminfo* mem, uint5 addr, uint5 data);
 void memory_writefault(meminfo* mem, uint5 addr, uint5 data);
+
 void memory_writevram(meminfo* mem, uint5 addr, uint5 data);
+void memory_writehalfvram(meminfo* mem, uint5 addr, uint5 data);
 void memory_writebytevram(meminfo* mem, uint5 addr, uint5 data);
+
 void iomd_writeword(meminfo* mem, uint5 addr, uint5 data);
 void vidc20_writebyte(meminfo* mem, uint5 addr, uint5 data);
 void vidc20_writeword(meminfo* mem, uint5 addr, uint5 data);
+
 void memory_writebytebank0(meminfo* mem, uint5 addr, uint5 data);
-void memory_writebank0(meminfo* mem, uint5 addr, uint5 data);
+void memory_writehalfbank0(meminfo* mem, uint5 addr, uint5 data);
+void memory_writewordbank0(meminfo* mem, uint5 addr, uint5 data);
+
 void memory_writebytebank1(meminfo* mem, uint5 addr, uint5 data);
-void memory_writebank1(meminfo* mem, uint5 addr, uint5 data);
+void memory_writehalfbank1(meminfo* mem, uint5 addr, uint5 data);
+void memory_writewordbank1(meminfo* mem, uint5 addr, uint5 data);
+
 void memory_writebytebank2(meminfo* mem, uint5 addr, uint5 data);
-void memory_writebank2(meminfo* mem, uint5 addr, uint5 data);
+void memory_writehalfbank2(meminfo* mem, uint5 addr, uint5 data);
+void memory_writewordbank2(meminfo* mem, uint5 addr, uint5 data);
+
 void memory_writebytebank3(meminfo* mem, uint5 addr, uint5 data);
-void memory_writebank3(meminfo* mem, uint5 addr, uint5 data);
+void memory_writehalfbank3(meminfo* mem, uint5 addr, uint5 data);
+void memory_writewordbank3(meminfo* mem, uint5 addr, uint5 data);
 
 uint5 memory_nullread(meminfo* mem, uint5 addr);
 uint5 memory_readfault(meminfo* mem, uint5 addr);
+
 uint5 memory_readvram(meminfo* mem, uint5 addr);
+uint5 memory_readhalfvram(meminfo* mem, uint5 addr);
 uint5 memory_readbytevram(meminfo* mem, uint5 addr);
+
 uint5 memory_readrom0(meminfo* mem, uint5 addr);
+uint5 memory_readhalfrom0(meminfo* mem, uint5 addr);
 uint5 memory_readbyterom0(meminfo* mem, uint5 addr);
+
 uint5 memory_readrom1(meminfo* mem, uint5 addr);
+uint5 memory_readhalfrom1(meminfo* mem, uint5 addr);
 uint5 memory_readbyterom1(meminfo* mem, uint5 addr);
+
 uint5 iomd_readword(meminfo* mem, uint5 addr);
+
 uint5 memory_readbytebank0(meminfo* mem, uint5 addr);
-uint5 memory_readbank0(meminfo* mem, uint5 addr);
+uint5 memory_readhalfbank0(meminfo* mem, uint5 addr);
+uint5 memory_readwordbank0(meminfo* mem, uint5 addr);
+
 uint5 memory_readbytebank1(meminfo* mem, uint5 addr);
-uint5 memory_readbank1(meminfo* mem, uint5 addr);
+uint5 memory_readhalfbank1(meminfo* mem, uint5 addr);
+uint5 memory_readwordbank1(meminfo* mem, uint5 addr);
+
 uint5 memory_readbytebank2(meminfo* mem, uint5 addr);
-uint5 memory_readbank2(meminfo* mem, uint5 addr);
+uint5 memory_readhalfbank2(meminfo* mem, uint5 addr);
+uint5 memory_readwordbank2(meminfo* mem, uint5 addr);
+
 uint5 memory_readbytebank3(meminfo* mem, uint5 addr);
-uint5 memory_readbank3(meminfo* mem, uint5 addr);
+uint5 memory_readhalfbank3(meminfo* mem, uint5 addr);
+uint5 memory_readwordbank3(meminfo* mem, uint5 addr);
 
 extern void memory_postwrite(meminfo* mem, uint5* virtualaddress);
 extern uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
@@ -178,7 +202,7 @@ extern uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 extern uint5 memory_readinstword(meminfo* mem, uint5 address);
 extern uint5 memory_readdataword(meminfo* mem, uint5 address);
 extern void memory_writeword(meminfo* mem, uint5 address, uint5 data);
-extern uint3 memory_readbyte(meminfo* mem, uint5 address);
+extern uint5 memory_readbyte(meminfo* mem, uint5 address);
 extern void memory_writebyte(meminfo* mem, uint5 address, uint3 data);
 
 #define memory_lookup(M,V) ((uint5*)((uint5)(M)->memory+(uint5)(V)))

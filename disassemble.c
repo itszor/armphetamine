@@ -183,7 +183,36 @@ int diss_sdt(machineinfo* machine, instructionformat inst, void* null)
 
 int diss_sdth(machineinfo* machine, instructionformat inst, void* null)
 {
-  fprintf(stderr, "Halfword data transfer");
+  if (inst.sdth.imm)
+  {
+    uint5 offset = inst.instruction & 0xf |
+                   ((inst.instruction & 0xf00) >> 4);
+    if (inst.sdth.p)
+      fprintf(stderr, "%s%s%s%s r%d,[r%d,#%d]%s", inst.sdth.l ? "ldr" : "str",
+        txtcc[inst.generic.cond], inst.sdth.s ? "s" : "",
+        inst.sdth.h ? "h" : "b",
+        inst.sdth.rd, inst.sdth.rn, inst.sdth.u ? offset : -offset,
+        inst.sdth.w ? "!" : "");
+    else
+      fprintf(stderr, "%s%s%s%s r%d,[r%d],#%d", inst.sdth.l ? "ldr" : "str",
+        txtcc[inst.generic.cond], inst.sdth.s ? "s" : "",
+        inst.sdth.h ? "h" : "b",
+        inst.sdth.rd, inst.sdth.rn, inst.sdth.u ? offset : -offset);
+  }
+  else
+  {
+    if (inst.sdth.p)
+      fprintf(stderr, "%s%s%s%s r%d,[r%d,%sr%d]%s", inst.sdth.l ? "ldr" : "str",
+        txtcc[inst.generic.cond], inst.sdth.s ? "s" : "",
+        inst.sdth.h ? "h" : "b",
+        inst.sdth.rd, inst.sdth.rn, inst.sdth.u ? "" : "-", inst.sdth.rm, 
+        inst.sdth.w ? "!" : "");
+    else
+      fprintf(stderr, "%s%s%s%s r%d,[r%d],%sr%d", inst.sdth.l ? "ldr" : "str",
+        txtcc[inst.generic.cond], inst.sdth.s ? "s" : "",
+        inst.sdth.h ? "h" : "b",
+        inst.sdth.rd, inst.sdth.rn, inst.sdth.u ? "" : "-", inst.sdth.rm);
+  }
   return 0;
 }
 

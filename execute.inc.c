@@ -1027,8 +1027,92 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
 int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
   void* null)
 {
-  fprintf(stderr, "SDTH not implemented\n");
-  abort();
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
+  else
+  {
+    registerinfo* reg = machine->reg;
+    meminfo* mem = machine->mem;
+    uint5 base = GET(inst.sdth.rn);
+    uint5 offset;
+    uint5 data;
+        
+    if (inst.sdth.imm)  // it used to be such a pretty baby
+    {
+      offset = (inst.instruction & 0xf) |
+               ((inst.instruction & 0xf00) >> 4);
+    }
+    else
+    {
+      offset = GET(inst.sdth.rm);
+    }
+    
+    if (!inst.sdth.u) offset = -offset;  // down not up;
+
+    if (inst.sdth.p)  // pre-indexing
+    {
+      base += offset;
+    }
+    
+    if (inst.sdth.l)  // load
+    {
+      if (inst.sdth.s)  // signed
+      {
+        if (inst.sdth.h)  // halfword (not byte)
+        {
+          RPUT(inst.sdth.rd, memory_readshalf(mem, base));
+        }
+        else  // byte
+        {
+          RPUT(inst.sdth.rd, memory_readsbyte(mem, base));
+        }
+      }
+      else  // unsigned
+      {
+        if (inst.sdth.h)
+        {
+          RPUT(inst.sdth.rd, memory_readhalf(mem, base));
+        }
+        else  // byte
+        {
+          // I don't think this is possible
+          RPUT(inst.sdth.rd, memory_readbyte(mem, base));
+          fprintf(stderr, "WARNING: Found braindamaged load-byte encoding\n");
+        }
+      }
+    }
+    else  // store
+    {
+      uint5 src = inst.sdt.rd==15 ? RGET(inst.sdt.rd)+INSTSIZE
+                                  : RGET(inst.sdt.rd);
+      if (inst.sdth.h)  // halfword
+      {
+        memory_writehalf(mem, base, src);
+      }
+      else  // byte
+      {
+        fprintf(stderr, "WARNING: Found braindamaged store-byte encoding\n");
+        memory_writebyte(mem, base, src);
+      }
+    }
+    
+    if (!inst.sdth.p)  // post-indexing
+    {
+      base += offset;
+    }
+
+    if (inst.sdth.w || !inst.sdth.p)  // writeback address into base
+    {
+      RPUT(inst.sdth.rn, base);
+    }
+    
+    if (mem->memoryfault)
+    {
+      processor_dataabort(machine);
+      mem->memoryfault = 0;
+      return 1;
+    }
+    INCPC;
+  }
   return 0;
 }
 

@@ -25,8 +25,6 @@ const mem_readbank mem_rfault =
 {
   memory_readfault,
   memory_readfault,
-  memory_readfault,
-  memory_readfault,
   memory_readfault
 };
 
@@ -41,42 +39,34 @@ const mem_readbank mem_rnull =
 {
   memory_nullread,
   memory_nullread,
-  memory_nullread,
-  memory_nullread,
   memory_nullread
 };
 
 const mem_readbank mem_rrom0 =
 {
   memory_readbyterom0,
-  memory_readbyterom0,
-  memory_readrom0,
-  memory_readrom0,
+  memory_readhalfrom0,
   memory_readrom0
 };
 
 const mem_readbank mem_rrom1 =
 {
   memory_readbyterom1,
-  memory_readbyterom1,
-  memory_readbyterom1,
-  memory_readbyterom1,
+  memory_readhalfrom1,
   memory_readrom1
 };
 
 const mem_writebank mem_wvram =
 {
   memory_writebytevram,
-  memory_writebytevram,
+  memory_writehalfvram,
   memory_writevram
 };
 
 const mem_readbank mem_rvram =
 {
   memory_readbytevram,
-  memory_readbytevram,
-  memory_readbytevram,
-  memory_readbytevram,
+  memory_readhalfvram,
   memory_readvram
 };
 
@@ -90,8 +80,6 @@ const mem_writebank mem_wiomd =
 
 const mem_readbank mem_riomd =
 {
-  iomd_readword,
-  iomd_readword,
   iomd_readword,
   iomd_readword,
   iomd_readword
@@ -110,73 +98,63 @@ const mem_writebank mem_wvidc20 =
 const mem_writebank mem_wbank0 =
 {
   memory_writebytebank0,
-  memory_writebank0,
-  memory_writebank0
+  memory_writehalfbank0,
+  memory_writewordbank0
 };
 
 const mem_readbank mem_rbank0 =
 {
   memory_readbytebank0,
-  memory_readbytebank0,
-  memory_readbank0,
-  memory_readbank0,
-  memory_readbank0
+  memory_readhalfbank0,
+  memory_readwordbank0
 };
 
 const mem_writebank mem_wbank1 =
 {
   memory_writebytebank1,
-  memory_writebank1,
-  memory_writebank1
+  memory_writehalfbank1,
+  memory_writewordbank1
 };
 
 const mem_readbank mem_rbank1 =
 {
   memory_readbytebank1,
-  memory_readbytebank1,
-  memory_readbank1,
-  memory_readbank1,
-  memory_readbank1
+  memory_readhalfbank1,
+  memory_readwordbank1
 };
 
 const mem_writebank mem_wbank2 =
 {
   memory_writebytebank2,
-  memory_writebank2,
-  memory_writebank2
+  memory_writehalfbank2,
+  memory_writewordbank2
 };
 
 const mem_readbank mem_rbank2 =
 {
   memory_readbytebank2,
-  memory_readbytebank2,
-  memory_readbank2,
-  memory_readbank2,
-  memory_readbank2
+  memory_readhalfbank2,
+  memory_readwordbank2
 };
 
 const mem_writebank mem_wbank3 =
 {
   memory_writebytebank3,
-  memory_writebank3,
-  memory_writebank3
+  memory_writehalfbank3,
+  memory_writewordbank3
 };
 
 const mem_readbank mem_rbank3 =
 {
   memory_readbytebank3,
-  memory_readbytebank3,
-  memory_readbank3,
-  memory_readbank3,
-  memory_readbank3
+  memory_readhalfbank3,
+  memory_readwordbank3
 };
 
 #ifdef EMULART
 
 const mem_readbank mem_sapcm_serial_read =
 {
-  sa1100_serial_read,
-  sa1100_serial_read,
   sa1100_serial_read,
   sa1100_serial_read,
   sa1100_serial_read
@@ -193,8 +171,6 @@ const mem_readbank mem_sapcm_lcd_read =
 {
   sa1100_lcd_read,
   sa1100_lcd_read,
-  sa1100_lcd_read,
-  sa1100_lcd_read,
   sa1100_lcd_read
 };
 
@@ -207,8 +183,6 @@ const mem_writebank mem_sapcm_lcd_write =
 
 const mem_readbank mem_ostimer_read =
 {
-  ostimer_read,
-  ostimer_read,
   ostimer_read,
   ostimer_read,
   ostimer_read
@@ -357,122 +331,61 @@ void memory_postwrite(meminfo* mem, uint5* virtualaddress)
 }
 #endif
 
-void memory_writebank0(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK0RAM)
-    mem->bank0[physaddress >> 2] = data;
-}
+#define BANKEDWRITER(W,B,T,S) \
+  void memory_write##W##bank##B(meminfo* mem, uint5 physaddress, uint5 data) \
+  { \
+    if ((physaddress &= 0xffffff) < BANK##B##RAM) \
+    ((T*)mem->bank##B)[physaddress >> (S)] = data; \
+  }
 
-void memory_writebytebank0(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK0RAM)
-    ((uint3*)mem->bank0)[physaddress] = data;
-}
+BANKEDWRITER(word,0,uint5,2)
+BANKEDWRITER(word,1,uint5,2)
+BANKEDWRITER(word,2,uint5,2)
+BANKEDWRITER(word,3,uint5,2)
 
-uint5 memory_readbank0(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK0RAM)
-    return mem->bank0[physaddress >> 2];
-  else
-    return 0;
-}
+BANKEDWRITER(half,0,uint4,1)
+BANKEDWRITER(half,1,uint4,1)
+BANKEDWRITER(half,2,uint4,1)
+BANKEDWRITER(half,3,uint4,1)
 
-uint5 memory_readbytebank0(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK0RAM)
-    return ((uint3*)mem->bank0)[physaddress];
-  else
-    return 0;
-}
+BANKEDWRITER(byte,0,uint3,0)
+BANKEDWRITER(byte,1,uint3,0)
+BANKEDWRITER(byte,2,uint3,0)
+BANKEDWRITER(byte,3,uint3,0)
 
-void memory_writebank1(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK1RAM)
-    mem->bank1[physaddress >> 2] = data;
-}
+#define BANKEDREADER(W,B,T,S) \
+  uint5 memory_read##W##bank##B(meminfo* mem, uint5 physaddress) \
+  { \
+    if ((physaddress &= 0xffffff) < BANK##B##RAM) \
+      return ((T*)mem->bank##B)[physaddress >> (S)]; \
+    else \
+      return 0; \
+  }
 
-void memory_writebytebank1(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK1RAM)
-    ((uint3*)mem->bank1)[physaddress] = data;
-}
+BANKEDREADER(word,0,uint5,2)
+BANKEDREADER(word,1,uint5,2)
+BANKEDREADER(word,2,uint5,2)
+BANKEDREADER(word,3,uint5,2)
 
-uint5 memory_readbank1(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK1RAM)
-    return mem->bank1[physaddress >> 2];
-  else
-    return 0;
-}
+BANKEDREADER(half,0,uint4,1)
+BANKEDREADER(half,1,uint4,1)
+BANKEDREADER(half,2,uint4,1)
+BANKEDREADER(half,3,uint4,1)
 
-uint5 memory_readbytebank1(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK1RAM)
-    return ((uint3*)mem->bank1)[physaddress];
-  else
-    return 0;
-}
-
-void memory_writebank2(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK2RAM)
-    mem->bank2[physaddress >> 2] = data;
-}
-
-void memory_writebytebank2(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK2RAM)
-    ((uint3*)mem->bank2)[physaddress] = data;
-}
-
-uint5 memory_readbank2(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK2RAM)
-    return mem->bank2[physaddress >> 2];
-  else
-    return 0;
-}
-
-uint5 memory_readbytebank2(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK2RAM)
-    return ((uint3*)mem->bank2)[physaddress];
-  else
-    return 0;
-}
-
-void memory_writebank3(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK3RAM)
-    mem->bank3[physaddress >> 2] = data;
-}
-
-void memory_writebytebank3(meminfo* mem, uint5 physaddress, uint5 data)
-{
-  if ((physaddress &= 0xffffff) < BANK3RAM)
-    ((uint3*)mem->bank3)[physaddress] = data;
-}
-
-uint5 memory_readbank3(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK3RAM)
-    return mem->bank3[physaddress >> 2];
-  else
-    return 0;
-}
-
-uint5 memory_readbytebank3(meminfo* mem, uint5 physaddress)
-{
-  if ((physaddress &= 0xffffff) < BANK3RAM)
-    return ((uint3*)mem->bank3)[physaddress];
-  else
-    return 0;
-}
+BANKEDREADER(byte,0,uint3,0)
+BANKEDREADER(byte,1,uint3,0)
+BANKEDREADER(byte,2,uint3,0)
+BANKEDREADER(byte,3,uint3,0)
 
 // !!! wraparound at 4mb?
 uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
 {
   return mem->rom0[(physaddress & 0x3fffff) >> 2];
+}
+
+uint5 memory_readhalfrom0(meminfo* mem, uint5 physaddress)
+{
+  return ((uint4*)mem->rom0)[(physaddress & 0xffffff) >> 1];
 }
 
 uint5 memory_readbyterom0(meminfo* mem, uint5 physaddress)
@@ -483,6 +396,11 @@ uint5 memory_readbyterom0(meminfo* mem, uint5 physaddress)
 uint5 memory_readrom1(meminfo* mem, uint5 physaddress)
 {
   return mem->rom1[(physaddress & 0xffffff) >> 2];
+}
+
+uint5 memory_readhalfrom1(meminfo* mem, uint5 physaddress)
+{
+  return ((uint4*)mem->rom1)[(physaddress & 0xffffff) >> 1];
 }
 
 uint5 memory_readbyterom1(meminfo* mem, uint5 physaddress)
@@ -496,6 +414,12 @@ void memory_writebytevram(meminfo* mem, uint5 physaddress, uint5 data)
     ((uint3*)mem->vram)[physaddress] = data;
 }
 
+void memory_writehalfvram(meminfo* mem, uint5 physaddress, uint5 data)
+{
+  if ((physaddress &= 0xffffff) < VRAM)
+    ((uint4*)mem->vram)[physaddress >> 1] = data;
+}
+
 void memory_writevram(meminfo* mem, uint5 physaddress, uint5 data)
 {
   if ((physaddress &= 0xffffff) < VRAM)
@@ -506,6 +430,14 @@ uint5 memory_readbytevram(meminfo* mem, uint5 physaddress)
 {
   if ((physaddress &= 0xffffff) < VRAM)
     return ((uint3*)mem->vram)[physaddress];
+  else
+    return 0;
+}
+
+uint5 memory_readhalfvram(meminfo* mem, uint5 physaddress)
+{
+  if ((physaddress &= 0xffffff) < VRAM)
+    return ((uint4*)mem->vram)[physaddress >> 1];
   else
     return 0;
 }
@@ -999,7 +931,7 @@ void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
   mem->datatlb.write.word(mem, physaddress, data);
 }
 
-uint3 memory_readbyte(meminfo* mem, uint5 virtualaddress)
+uint5 memory_readbyte(meminfo* mem, uint5 virtualaddress)
 {
   uint5 physaddress;
   if (mem->datatlb.modestamp != mem->currentmode ||
@@ -1013,6 +945,60 @@ uint3 memory_readbyte(meminfo* mem, uint5 virtualaddress)
                   (virtualaddress & ~mem->datatlb.mask);
   }
   return mem->datatlb.read.byte(mem, physaddress);
+}
+
+uint5 memory_readhalf(meminfo* mem, uint5 virtualaddress)
+{
+  uint5 physaddress;
+  if (mem->datatlb.modestamp != mem->currentmode ||
+      (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
+  {
+    physaddress = memory_virtualtophysical(mem, virtualaddress, &mem->datatlb);
+  }
+  else
+  {
+    physaddress = mem->datatlb.physical |
+                  (virtualaddress & ~mem->datatlb.mask);
+  }
+  return mem->datatlb.read.half(mem, physaddress);
+}
+
+uint5 memory_readsbyte(meminfo* mem, uint5 virtualaddress)
+{
+  uint5 physaddress;
+  uint5 data;
+  if (mem->datatlb.modestamp != mem->currentmode ||
+      (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
+  {
+    physaddress = memory_virtualtophysical(mem, virtualaddress, &mem->datatlb);
+  }
+  else
+  {
+    physaddress = mem->datatlb.physical |
+                  (virtualaddress & ~mem->datatlb.mask);
+  }
+  data = mem->datatlb.read.byte(mem, physaddress);
+  if (data & 0x80) data |= 0xffffff00;
+  return data;
+}
+
+uint5 memory_readshalf(meminfo* mem, uint5 virtualaddress)
+{
+  uint5 physaddress;
+  uint5 data;
+  if (mem->datatlb.modestamp != mem->currentmode ||
+      (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
+  {
+    physaddress = memory_virtualtophysical(mem, virtualaddress, &mem->datatlb);
+  }
+  else
+  {
+    physaddress = mem->datatlb.physical |
+                  (virtualaddress & ~mem->datatlb.mask);
+  }
+  data = mem->datatlb.read.half(mem, physaddress);
+  if (data & 0x8000) data |= 0xffff0000;
+  return data;
 }
 
 void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint3 data)
@@ -1029,5 +1015,21 @@ void memory_writebyte(meminfo* mem, uint5 virtualaddress, uint3 data)
                   (virtualaddress & ~mem->datatlb.mask);
   }
   mem->datatlb.write.byte(mem, physaddress, data);
+}
+
+void memory_writehalf(meminfo* mem, uint5 virtualaddress, uint3 data)
+{
+  uint5 physaddress;
+  if (mem->datatlb.modestamp != mem->currentmode ||
+      (virtualaddress & mem->datatlb.mask) != mem->datatlb.virtual)
+  {
+    physaddress = memory_virtualtophysical(mem, virtualaddress, &mem->datatlb);
+  }
+  else
+  {
+    physaddress = mem->datatlb.physical |
+                  (virtualaddress & ~mem->datatlb.mask);
+  }
+  mem->datatlb.write.half(mem, physaddress, data);
 }
 
