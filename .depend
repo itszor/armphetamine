@@ -34,7 +34,7 @@ main.o: main.c cnew.h defs.h machine.h processor.h registers.h \
  palloc.h pheta.h bset.h
 memory.o: memory.c defs.h cnew.h memory.h keyboard.h mouse.h hash.h \
  list.h processor.h vidc20.h iomd.h machine.h registers.h sapcm.h \
- fifo.h
+ fifo.h ostimer.h
 nativesupport.o: nativesupport.c defs.h registers.h processor.h \
  memory.h keyboard.h mouse.h hash.h list.h nativesupport.h x86asm.h \
  clist.h machine.h execute.h decode.h fakesys.h block.h pseudo.h \
@@ -116,4 +116,4 @@ recompile.o: recompile.c recompile.h defs.h pheta.h list.h decode.h \
 sapcm.o: sapcm.c defs.h sapcm.h memory.h keyboard.h mouse.h hash.h \
  list.h machine.h processor.h registers.h fifo.h
 ostimer.o: ostimer.c defs.h iomd.h memory.h keyboard.h mouse.h hash.h \
- list.h machine.h processor.h registers.h
+ list.h machine.h processor.h registers.h cnew.h ostimer.h

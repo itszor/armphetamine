@@ -1971,6 +1971,13 @@ int pheta_mul(machineinfo* machine, instructionformat inst, void* chunk)
   return 0;
 }
 
+int pheta_mull(machineinfo* machine, instructionformat inst, void* chunk)
+{
+  fprintf(stderr, "Long mul not implemented in recompiler\n");
+  abort();
+  return 0;
+}
+
 int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   int basereg = pheta_lfetch(chunk, inst.sdt.rn);

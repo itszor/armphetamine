@@ -21,6 +21,8 @@
 #endif
 
 // these may need changing for different compilers/platforms
+typedef unsigned long long uint6;
+typedef signed long long sint6;
 typedef unsigned int uint5;
 typedef signed int sint5;
 typedef unsigned short uint4;

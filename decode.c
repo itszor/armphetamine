@@ -11,6 +11,7 @@ insttab diss = {
 	diss_dp,
 	diss_dp_imm,
 	diss_mul,
+  diss_mull,
 	diss_sdt,
 	diss_bdt,
 	diss_bra,
@@ -28,6 +29,7 @@ insttab exec26 = {
 	exec_dp_26,
 	exec_dp_imm_26,
 	exec_mul_26,
+  exec_mull_26,
 	exec_sdt_26,
 	exec_bdt_26,
 	exec_bra_26,
@@ -45,6 +47,7 @@ insttab exec32 = {
 	exec_dp_32,
 	exec_dp_imm_32,
 	exec_mul_32,
+  exec_mull_32,
 	exec_sdt_32,
 	exec_bdt_32,
 	exec_bra_32,
@@ -62,6 +65,7 @@ insttab execthm = {
 	exec_dp_thm,
 	exec_dp_imm_thm,
 	exec_mul_thm,
+  exec_mull_thm,
 	exec_sdt_thm,
 	exec_bdt_thm,
 	exec_bra_thm,
@@ -98,6 +102,7 @@ insttab phet4 = {
   pheta_dp,
   pheta_dp_imm,
   pheta_mul,
+  pheta_mull,
   pheta_sdt,
   pheta_bdt,
   pheta_bra,
@@ -118,13 +123,25 @@ int dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 	{
 		case 0:	// either data processing op, PSR tranfer or multiply
 		{
-			if (inst.mul.ident2==0 && inst.mul.ident==9)
+			if (inst.mul.ident2<4 && inst.mul.ident==9)
 			{
-				// it's a multiply
-				return action->mul(machine, inst, data);
+        switch (inst.mul.ident2)
+        {
+          case 0:
+				  // it's a multiply
+				  return action->mul(machine, inst, data);
+          
+          case 1:
+          goto actually_dp;  // !!! is this necessary?
+          
+          case 2:
+          case 3:
+          return action->mull(machine, inst, data);
+        }
 			}
 			else
 			{
+        actually_dp:
 				return action->dp(machine, inst, data);
 			}
 		}

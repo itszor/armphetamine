@@ -1,7 +1,7 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -pipe -W -Wall -pedantic -O2 -DQUICKWRITE -DVERSION=\"0.4\" \
+CFLAGS	= -g -pipe -W -Wall -O2 -DQUICKWRITE -DVERSION=\"0.4\" \
 	 -DEMULART
 NASM	= nasm
 

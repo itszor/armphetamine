@@ -37,6 +37,20 @@ typedef union {
     uint5 cond     : 4;
   } mul;
 
+  // Long multiply
+  struct {
+    uint5 rm       : 4;
+    uint5 ident    : 4;
+    uint5 rs       : 4;
+    uint5 rdlo     : 4;
+    uint5 rdhi     : 4;
+    uint5 s        : 1;
+    uint5 a        : 1;
+    uint5 u        : 1;
+    uint5 ident2   : 5;
+    uint5 cond     : 4;
+  } mull;
+
   // Single data swap
   struct {
     uint5 rm       : 4;
@@ -179,7 +193,7 @@ typedef int (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
 
 // instruction command-function table
 struct insttab {
-	inst_fn dp, dp_imm, mul, sdt, bdt, bra, swi, cdt, cdo, crt, sds, und;
+	inst_fn dp, dp_imm, mul, mull, sdt, bdt, bra, swi, cdt, cdo, crt, sds, und;
   inst_fn thumbl;
 };
 

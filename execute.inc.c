@@ -828,6 +828,61 @@ int EXECUTEFN(exec_mul)(machineinfo* machine, instructionformat inst,
   return 0;
 }
 
+/* It's probably possible to code this better, not sure about the
+ * rules for promoting result wrt 32*32->64 operation, so it promotes
+ * both source operands to 64 bits
+ */
+int EXECUTEFN(exec_mull)(machineinfo* machine, instructionformat inst,
+  void* null)
+{
+  IGNORE(null);
+
+  if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
+  else
+  {
+    registerinfo* reg = machine->reg;
+    uint5 op1 = RGET(inst.mull.rm), op2 = RGET(inst.mull.rs);
+    uint6 result;
+    
+    if (inst.mull.u)  // signed
+    {
+      uint6 result;
+      if (inst.mull.a)  // accumulate
+      {
+        result = (uint6)((uint6)RGET(inst.mull.rdlo)
+               + ((uint6)RGET(inst.mull.rdhi)<<32));
+        result += (sint6)op1 * (sint6)op2;
+      }
+      else
+      {
+        result = (sint6)op1 * (sint6)op2;
+      }
+    }
+    else
+    {
+      if (inst.mull.a)  // accumulate
+      {
+        result = (uint6)((uint6)RGET(inst.mull.rdlo)
+               + ((uint6)RGET(inst.mull.rdhi)<<32));
+        result += (sint6)op1 * (sint6)op2;
+      }
+      else
+      {
+        result = (uint6)op1*(uint6)op2;
+      }
+    }
+    if (inst.mul.s)
+    {
+      FLAG(z) = result>>63;
+      FLAG(n) = (result==0) ? 1 : 0;
+    }
+    RPUT(inst.mull.rdlo, result & 0xffffffff);
+    RPUT(inst.mull.rdhi, (result>>32));
+    INCPC;
+  }
+  return 0;
+}
+
 int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
   void* null)
 {

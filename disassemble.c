@@ -136,6 +136,20 @@ int diss_mul(machineinfo* machine, instructionformat inst, void* null)
   return 0;
 }
 
+int diss_mull(machineinfo* machine, instructionformat inst, void* null)
+{
+  char prefix = (inst.mull.u) ? 's' : 'u';
+  if (inst.mull.a)
+    fprintf(stderr, "%cmlal%s%s r%d,r%d,r%d,r%d", prefix, 
+      txtcc[inst.generic.cond], inst.mull.s ? "s" : "", inst.mull.rdlo, 
+      inst.mull.rdhi, inst.mull.rm, inst.mull.rs);
+  else
+    fprintf(stderr, "%cmull%s%s r%d,r%d,r%d,r%d", prefix, 
+      txtcc[inst.generic.cond], inst.mull.s ? "s" : "", inst.mull.rdlo, 
+      inst.mull.rdhi, inst.mull.rm, inst.mull.rs);
+  return 0;
+}
+
 int diss_sdt(machineinfo* machine, instructionformat inst, void* null)
 {
 	if (inst.sdt.i)  // offset=register+shift
