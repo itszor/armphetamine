@@ -1142,12 +1142,6 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
           // prev = physbase;
           PCTRANSFER;
           INC;
-#ifndef ARM26BIT
-          if (inst.bdt.l) // load
-          {
-            processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
-          }
-#endif
         }
       }
     }
@@ -1301,11 +1295,15 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
   {
     registerinfo* reg = machine->reg;
     meminfo* mem = machine->mem;
+
     if ((mem->currentmode & 15) == pm_USR26)
     {
-      processor_und(machine);
-      return 1;
+/*      processor_und(machine);
+      return 1;*/
+      fprintf(stderr, "Warning: attempt to use coprocessor reg transfer in "
+        "usr mode\n");
     }
+    
     /*fprintf(stderr, "Error: unimplemented instruction (crt)\n");
     exit(1);*/
     switch (inst.crt.cpn)
@@ -1323,12 +1321,15 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
               {
                 // identify self as an SA110?
                 case 0: PUT(inst.crt.rd, 0x4401a100); break;
+                // is the following line right?
+                case 1: PUT(inst.crt.rd, mem->mmucontrol); break;
                 case 5: PUT(inst.crt.rd, mem->faultstatus); break;
                 case 6: PUT(inst.crt.rd, mem->faultaddress); break;
                 case 0x8: case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xd: case 0xe: case 0xf:
-                processor_und(machine);
-                return 1;
+               /* processor_und(machine);
+                return 1;*/
+                break;
               }
             }
             break;
@@ -1426,8 +1427,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xd: case 0xe:
                 fprintf(stderr, "------> Throwing undefined instruction\n");
-                processor_und(machine);
-                return 1;
+/*                processor_und(machine);
+                return 1;*/
                 break;
                 
                 case 0xf:
@@ -1448,6 +1449,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
       
       default:
       fprintf(stderr, "Access to unknown coprocessor attempted\n");
+      abort();
       break;
     }
     INCPC;

@@ -231,7 +231,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->bank1 = cnewarray(uint5, BANK1RAM/4);
   mem->bank2 = cnewarray(uint5, BANK2RAM/4);
   mem->bank3 = cnewarray(uint5, BANK3RAM/4);
-  mem->rom0 = cnewarray(uint5, 4*1024*1024/4);
+  mem->rom0 = cnewarray(uint5, 16*1024*1024/4);
   mem->rom1 = cnewarray(uint5, 4*1024*1024/4); // hello, I'm flash
   mem->vram = cnewarray(uint5, VRAM/4);
   mem->writetag = 0;
@@ -251,6 +251,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->sapcm.serial_fifo = cnew(sapcm_serial_fifo);
   mem->sapcm.serial_fifo->in = fifo_create(12);
   mem->sapcm.serial_fifo->out = fifo_create(8);
+  mem->ostimer = ostimer_new();
 #endif
   
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");
@@ -532,7 +533,7 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     break;
 
     default:
-    fprintf(stderr, "Bad physical address %.8x\n", physaddress);
+//    fprintf(stderr, "Bad physical address %.8x\n", physaddress);
     break;
   }
 }

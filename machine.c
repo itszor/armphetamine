@@ -20,7 +20,6 @@ machineinfo* machine_create(uint5 memory)
   machine->breakpoints = hash_new(16);
   machine->trace = 0;
   machine->pstate = profile_initialise();
-	
 	return machine;
 }
 
@@ -31,7 +30,7 @@ void machine_start(machineinfo* machine)
   meminfo* mem = machine->mem;
   const uint5 cycperio = 100;
 #ifdef EMULART
-  sint5 serialclock = 60;
+  sint5 serialclock = SERIALCLOCKPERIOD;
 #endif
 
   machine->cycle = cycperio;
@@ -48,7 +47,7 @@ void machine_start(machineinfo* machine)
     if (machine->trace)
     {
       fprintf(stderr, "%.8x : %.8x : ", instaddr, inst.instruction);
-      dispatch(machine, inst, &diss, 0);
+      dispatch(machine, inst, &diss, (void*)instaddr);
       fprintf(stderr, "\n");
     }
     
@@ -85,7 +84,8 @@ void machine_start(machineinfo* machine)
     if (--serialclock<0)
     {
       sapcm_clock(machine);
-      serialclock = 60;  // approx. 220MHz/60 = 3.6864MHz
+      ostimer_clock(machine);
+      serialclock = SERIALCLOCKPERIOD;
     }
 #endif
   }

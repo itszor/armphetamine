@@ -1,10 +1,5 @@
-romload lart-blob 0x0
-# load lart-initrd 0xc0040000
-load lart-initrd 0xc0000000
-# breakset 0x3815c98
-# breakset 0x3815c84
-# breakset 0x3815c70
-# breakset 0x382a8ac
-# breakset 0x382a8dc
-trace on
+romload lart-blob2  0x00000000
+romload lart-kernel 0x00010000
+romload lart-initrd 0x000d0000
+# breakset 0xc0008000
 run 0x0

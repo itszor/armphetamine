@@ -105,6 +105,7 @@ struct meminfo {
     struct sapcm_dma_channel* dma;
     struct sapcm_serial_fifo* serial_fifo;
   } sapcm;
+  struct ostimer_registers* ostimer;
 #endif
 
   int writetag;

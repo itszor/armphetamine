@@ -454,9 +454,11 @@ void debug_romload(machineinfo* machine, char* cmd)
   }
   fread(m, fileinfo.st_size, 1, f);
   fclose(f);
+  
+  fprintf(stderr, "Base addr %p\n", addr);
 
   for (i=0; i<fileinfo.st_size; i++)
-    ((uint3*)machine->mem->rom0)[i] = m[i];
+    ((uint3*)machine->mem->rom0)[addr+i] = m[i];
   
   free(m);
   fprintf(stderr, "Loaded ROM '%s' to ROM0:%x\n", filename, addr);
