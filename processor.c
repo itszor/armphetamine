@@ -138,7 +138,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   {
     // absolutely no idea if this is right
     reg->r[15] = (reg->r[15] & ~0xfc000003) | (reg->cpsr.value & 0xf0000003) |
-                 ((reg->cpsr.value & 0xa0)<<20);
+                 ((reg->cpsr.value & 0xc0)<<20);
   }
 
 /*  const int rmodebase[] = {7, 7, 2, 2, 2, 2};
