@@ -1,0 +1,159 @@
+<html><head><title>ARMphetamine</title></head>
+<body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
+
+<h3>8 October 2001</h3>
+
+<p>ARMphetamine v2 executes first test programs correctly. It appears to be fast. Very fast. This is just the recompiler by itself (statically) though, no profile gathering or dynamic translation is done.
+
+<h3>5 August 2001</h3>
+
+<p>Well, I think ARMphetamine is just a spare-time project again, after a brief flirtation with being my academic research. Depends really on whether there's anything academically valid to research on dynarec - I'm having a hard time convincing myself and the people around me that there is, so the research is going off at a tangent on the dynamic optimisation side. Essentially it's the same project, but fiddling with the IR a bit, designing an architecture around it, throwing away the ARM frontend then creating loads of run-time optimisations for it. Ssh, don't tell the multinational corporations.
+
+<p>On the original ARMphetamine side, I've spent a couple of days hacking mercilessly at it, so that now it knows how to flatten basic blocks into ordinary x86 code. I don't know if the way I've done this is overkill - since neither depth-first nor breadth-first traversal do anything to keep, ie, loops contiguous as far as I can tell, I've tried to design it so that strongly-connected basic blocks are kept together if possible. I admit to not thinking this through as carefully as I should have so I've probably got the wrong end of the stick entirely. There's a priority queue in there, so that block reordering based on branch taken/not taken frequency can be used to influence the layout of the final program at some future stage.
+
+<p>Read (well, skimmed through carefully really) Andrew Appel's "Modern Compiler Implementation in ML", and was slightly disappointed that there wasn't more in it with respect to optimisation.
+
+<h3>24 June 2001</h3>
+
+<p>OK, I think I might have this code generation thingy sorted. The problem is that the compilation mechanism (register allocation, code generation, exception handling) seems to need to know everything at once. By producing a list of pseudo target instructions with mutable slots where the operands should be, I <i>think</i> I can get closer to that. Each virtual register in the intermediate code corresponds to one of these slots, so each use of that register can be reallocated somewhere else by just changing the value in one slot. This should enable code generation at the same time as register allocation, which makes the exception stuff easier and also since variable lifetimes are known at that point it's easier to allocate temporaries, etc.
+
+<p>That probably doesn't make a lot of sense, sorry. I guess I'll have to explain it properly at some point (if it works, anyway).
+
+<h3>21 June 2001</h3>
+
+<p>Some messy internals are getting far too messy. Time for yet <i>another</i> rethink of the whole code generation thing I think. Disconnected some obsolete code from the Makefile though, and that's about as productive as I get right now.
+
+<h3>30 May 2001</h3>
+
+<p>Ack, nobody told me about SSA & phi nodes. Hmm.
+
+<h3>26 May 2001</h3>
+
+<p>As you can tell, I'm slacking. This is especially poor since ARMphetamine is now my day job. Well, sorta unofficially anyway, so far.
+
+<p>For a sneak-peek at where the project is going at the moment, take a look at <a href="divgraph.ps.gz">this</a> lovely graph of ph2 control flow (produced with the aid of a neat little program called aiSee). If you look very carefully you might be able to see some branch optimisation, highish-level control flow extraction, etc. The ARM source this was produced from (a division routine) is <a href="divide.arm.s">here</a>.
+
+<h3>30 March 2001</h3>
+
+<p>As a bit of a diversion from register allocation and code generation seeing as I've hit a little snag with it (trying to solve an NP complete problem in linear time may be pushing my luck <i>slightly</i>), I've made a start on a Thumb decoder (ARM's 16-bit instruction set extension). Also tweaks to the memory code to add a framework for adding sign-extending and halfword memory transfer operations which are needed by the '7TDMI, plus a new optimisation phase in the recompiler which I haven't mentioned before ("source-destination aliasing", which seems to be useful for IA-32 code generation).
+
+<p>There's a new <a href="design2.html">design document</a>, meant mainly for my own nefarious 'academic' purposes but you might find it interesting anyway (if you've got this far). Some of it is cut-n-pasted from stuff I've previously put on here, but one little idea to do with MMUs and move-to-front buffers is new, I think.
+
+<p>I may make noises about <b>Gameboy Advance</b> emulation at some point, but don't hold your breath since, err, it'd be lots of work... and there's lots of dynarec stuff which needs sorting first. The idea of nice, simple code as single ROM images in flat address space is quite appealing, and might simplify some stuff though. Maybe it can provide some useful test material. Just why <i>am</i> I writing this emulator anyway? Someone remind me?
+
+<p>Going to buy Black &amp; White tomorrow, if I can find it.
+
+<h3>25 March 2001</h3>
+
+<p>Linear scan now works reasonably convincingly, and a new x86 code generator is well on the way to being half-written. Despite there being no attempt at optimisation and only a handful of opcodes being compiled (fetch, commit, lsl, asl, lsr, ror, rol, and, adc, sub, sbc, mul), the code looks pretty good to me (though there are far too many moves - but we can deal with those in due course <tt>;o)</tt>).
+
+<p>The new backend knows about lots more x86 instructions and instruction variants than the old one - it was <i>so</i> cool to see an <tt>add</tt> instruction being converted one-to-one into an <tt>lea</tt> instruction. Still missing are flow control, flag handling, lots of opcodes...
+
+<h3>24 March 2001</h3>
+
+<p>I've implemented linear scan register allocation. This isn't necessarily a good thing, since I stayed awake all night to do it. Now the sun is up though, time for bed I think. It doesn't work even slightly, of course, and the code is utterly revolting <tt>;o)</tt>. Also various changes to ph2 translator, etc.
+
+<h3>23 March 2001</h3>
+
+<p>The run-time assembler has undergone some serious fixing, and now appears to work (at least for the handful of instructions I've tested). Yippee.
+
+<p>Also done much fixing of the MMU &amp; the processor-mode switching code. RISC OS 3.70 boots as far as poking an I/O control byte (at <tt>0x3200000</tt> in the physical address map) in IOMD with some sequence of numbers (0xc3, 0xc2, 0xc0, 0xc2, 0xc3, 0xc3, 0xc2...) in a seemingly infinite loop. (Timers 0/1 don't cause interrupts yet though, maybe that'll help). The only information I have to hand says something about open drains for that address, which despite being something like the smell in the lab of my 'day job', goes right over my head. I'll have to start looking for a RISC PC tech manual, which could be quite hard to find now I think. And I have no money... <tt>:-/</tt>
+
+<h3>16 March 2001</h3>
+
+<p>I've been working on the interpretive core and hardware support, since finding that some lovely person has uploaded a RISC OS 3.70 ROM image 'somewhere on the internet' since last time I looked. Turns out the copy I ripped out of my own Risc PC back home <i>was</i> corrupted somehow (probably my broken level 2 cache at work again), and it wasn't just my paranoia (I <b>knew</b> that loop couldn't have terminated as it was in my copy!).
+
+<p>Both 26-bit and 32-bit cores can live simulateously now, with different copies of the emulator code invoked through function tables and preprocessor abuse. The VIDC20 code knows a bit about video, and IOMD knows a bit about timers and interrupt requests/masks etc, though currently nothing gets drawn on the 'screen' and no actual interrupts get fired. Even so, the ROM gets as far as enabling virtual memory. Which doesn't actually seem to work <tt>;o)</tt>. All the same, it's <b>much</b> better than it was before.
+
+<p>To try the new stuff: symlink "Rom" to a copy of RISC OS 3.70, run the emulator, and type <tt>script ro.txt</tt>.
+
+<p>CVS repository is now on Sourceforge.
+
+<p>Oh yeah, some thoughts about precise exceptions and register rollback, but I'm not sure if it'd work or be efficient enough. The basic idea is this: allocate two copies of the register bank, with the lower aligned at twice the minimum power of two which will wholly contain one copy of the register bank, the second aligned above it in memory in such a way that the two copies can be flipped between by simply changing one bit of the address.
+
+<p>Define a 'rollback unit' as being (something like) the minimum of a basic block and the gap between memory accesses. Start a rollback unit reading from the lower bank of registers, then with each write do a bitwise OR on the address used to access that register, so that write and subsequent reads will access the upper copy not the lower. Multiple ORs are no-ops. Upper registers are committed to lower registers after the end of the rollback unit if no exception occurs. If an exception does occur, we can easily recover the state at the beginning of the rollback unit just by using the lower register bank and falling back to the emulator.
+
+<p>Problems are: another level of indirection on each register access? No better than just saving all registers before each memory access? I see why Transmeta did it in hardware...
+
+<h3>7 March 2001</h3>
+
+<p>Slightly troubled by ph2. I'd quite like to have a go at implementing the "linear scan" register allocation technique (as documented in a paper discovered by David Sharp), but it doesn't seem to entirely mesh with the <tt>fetch</tt>/<tt>commit</tt> mechanism which I envisaged using. I've tweaked it so temporaries aren't refetched from registers every time they're used. Now the behaviour is to fetch the minimum set of registers necessary in a basic block as they're needed and commit all the (latest) results generated immediately before exiting the block. This just isn't quite right. Specifically, it creates a sort-of triangular register-need shape through each block, where each block starts out needing no registers and then accumulate liveness for registers as it proceeds, then chucking them all away right at the end. Better if registers are committed after the last time they're used, but that means more passes over the code and/or the ability to insert instructions into blocks. Or perhaps I should treat blocks as immutable, and generate new copies with commits in the right place.
+
+<p>Still doesn't quite mesh with linear scan though. I have to think about that some more, maybe I'll take a couple of weeks off work to do it <tt>;o)</tt>.
+
+<p>Also, I've possibly bugfixed the runtime assembler re: some bit-manipulation instructions. Still untested. I might get around to testing it one day, but hey, I'm supposed to be working on image analysis all the time. Ho hum.
+
+<h3>2 March 2001</h3>
+<p>A new solution to the global transmap problem: <a href="livehash.html">Active hashing</a>.
+
+<h3>20 February 2001</h3>
+<p>Improvements to ALU shift-generating code. For an example session with the debugger demonstrating ARM->ph2 code translation, <a href="translation.txt">see here</a>.
+
+<h3>17 February 2001</h3>
+<p>Now the debugger knows how to translate ARM code into ph2 code, using the command <tt>phetatrans</tt>. Unfinished enhancements to the crappy "parser" in the debugger mean that this one command temporarily uses a different number syntax to all the rest, ie you have to prepend "0x" to your hex values for the start and end address as passed to this command, but not any others.
+
+<p>I have a couple of new reservations about ph2 in general. I'm mainly worried by how opaque the generated code seems to be, despite my best efforts to keep things looking simple. Even single instructions with register-specified shifts are virtually impossible to understand. That might just be because they're broken though.
+
+<p>Doing register allocation 'properly'  is going to be <em>really</em> hard, I think. I'm thinking things like preliminary 'priming' passes which ensure that register-shifts get allocated to the x86 <tt>cl</tt> register and results from function calls get magically put in <tt>eax</tt> whenever possible, to cut down on unnecessary swapping. Also perhaps it will be necessary or desirable to nominate one particular register for memory-only access in data-processing type operations. Perhaps not always one of the 'source' registers either, like in the case where register result isn't used again except to dump it to memory later, perhaps we might as well just dump it to memory immediately...
+
+<p>I'm considering adding a predicate buffer to each chunk, so each basic block within that chunk just checks whether a particular entry in that buffer (ie, byte-wide memory location) is one or zero, and takes one of two choices depending on the result. How the setting of these predicates can be neatly extracted from low-level flag operations, I don't know exactly. This would replace the scheme where each basic block has a condition associated with it, as currently it's not clear in what sense that condition actually holds - the assumption that the condition is implicit (ie, in the <tt>EFLAGS</tt> register or whatever) is precisely the nasty sort of thing ph2 was trying to avoid.
+
+<p>&lt;Sigh&gt;, so much talk, so little action.
+
+<h3>4 February 2001</h3>
+<p>Debugger enhancements: now offers quite a bit more functionality, including being able to actually emulate programs. Also contains a scripting mechanism: try typing "script startup.txt" when the program starts. (Hint: after succesful execution, r0 contains the result of 0x100 / 0x9, and r1 contains 0x100 % 0x9).
+<p>I <b>really will</b> put this thing on Sourceforge soon. Right after I get some unmetered internet access, anyway. (Mumbles incoherently about <a href="http://www.telewest.com/">Telewest</a>, <a href="http://www.equifax.co.uk/">Equifax</a> and the data protection act. Don't even ask.)
+
+<h3>3 February 2001</h3>
+<p>Started a new in-built mini debugger, which will become the default 'user interface' to ARMphetamine for the time being, I think. I should have written this a long time ago, but it really didn't occur to me how useful it might be. Bugfixes in multi-word load/store emulation, which was broken when the new memory system was written. More functionality added to ARM->pheta2 translator.
+
+<h3>21 January 2001</h3>
+<p>Slightly tidier source available from <a href="#download">download</a>
+section. There's a new, short and unfinished document about the <a href="pheta2.html">new intermediate representation</a>, which it'd be nice to have some feedback on, if you're knowledgable in these things and have the time...
+
+<h3>17 January 2001</h3>
+<p>Moving development onto <a href="http://www.sourceforge.net/">Sourceforge</a>. See <a href="http://www.sourceforge.net/projects/armphetamine">here</a>.
+
+<h3>16 January 2001</h3>
+<p>I've been hacking the source of ARMphetamine slowly and irregularly over
+the last few months. Recent (and not-so-recent) developments include:
+
+<ul>
+  <li>A new intermediate representation (sorry Neil ;-)), which solves some of
+the problems with the old one (but doubtless adds some of its own).
+Only about half the ARM->intermediate translation
+stage has been written though, and none of the intermediate->x86 stage.
+  <li>Some new instructions have been implemented (<code>msr</code>,
+<code>mrs</code>, <code>teqp</code>) in the interpreter.
+  <li>Processor mode switching has been added (<strong>without</strong> a
+register indirection array - you know who you are...)
+  <li>ARM610/710 MMU emulation is in place (yippee!), although it is completely
+untested. Includes a nice, efficient two-entry TLB scheme (one data,
+one code), which is also untested of course. Should support all MMU features
+(memory protection, domains, etc.) without too much overhead.
+  <li>Stub functions for VIDC/IOMD support.
+  <li>Minor improvements to asm ALU core.
+</ul>
+
+The current target is to complete emulation of (the most important bits of) an
+ARM7500 chip, then continue working on the recompiler. New source will become
+available when I've had the chance to clean it up a lot.
+
+<h3>12 July 2000</h3>
+<p>There's a new run-time assembler, but I don't know if it works and it's not used yet. But it's nicer than the old one.
+
+<h3>18 June 2000</h3>
+<p>I've rewritten part of the ALU emulation in x86 assembler, just for fun (speed increase is negligible, though - 5750 vs 5500ish Dhystones/sec). Also, subtle bugfix in dynarec code - BASIC now runs for a little bit longer <tt>;-)</tt>. Available as a snapshot of my CVS directory, see instructions in Download section for extracting it.
+
+
+<hr>
+
+<center><a href="http://www.sourceforge.net"><img
+src="http://www.sourceforge.net/images/sflogo2-steel.png"></center></a>
+
+<hr>
+
+<font size=-1>&copy; <a href="mailto:jules@dynarec.com">Julian Brown</a>, 1999-2002</font>
+
+</body>
+</html>
