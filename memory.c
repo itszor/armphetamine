@@ -393,10 +393,9 @@ BANKEDREADER(byte,1,uint3,0)
 BANKEDREADER(byte,2,uint3,0)
 BANKEDREADER(byte,3,uint3,0)
 
-// !!! wraparound at 4mb?
 uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
 {
-  return mem->rom0[(physaddress & 0x3fffff) >> 2];
+  return mem->rom0[(physaddress & 0xffffff) >> 2];
 }
 
 uint5 memory_readhalfrom0(meminfo* mem, uint5 physaddress)
@@ -765,7 +764,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   if ((mem->mmucontrol & 2) && (virtualaddress & 3)) {
   /* !!! ok, this is disabled 'cos it triggers on bytes, which is stupid */
     fprintf(stderr, "Alignment fault!\n");
-    mem->memoryfault = 1;
+//    mem->memoryfault = 1;
   }
 
   tableindex = virtualaddress >> 20;
@@ -993,6 +992,7 @@ uint5 memory_readinstword(meminfo* mem, uint5 virtualaddress)
 void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
 {
   uint5 physaddress;
+  static int dec = 8;
 /*  fprintf(stderr, "Write data word %.8x to virtual addr %.8x\n", data, 
           virtualaddress);*/
   if (mem->datatlb.modestamp != mem->currentmode ||
@@ -1004,6 +1004,10 @@ void memory_writeword(meminfo* mem, uint5 virtualaddress, uint5 data)
   {
     physaddress = mem->datatlb.physical |
                   (virtualaddress & ~mem->datatlb.mask);
+  }
+  if (physaddress==0xc0004000) {
+    fprintf(stderr, "Writing %.8x to %.8x\n", data, physaddress);
+//    if (!--dec) ((machineinfo*)mem->parent)->trace = 1;
   }
   mem->datatlb.write.word(mem, physaddress, data);
 }

@@ -11,6 +11,7 @@ romload lart-initrd      0x00100000
 # break 0xc00379bc
 # break 0xc0083220
 # break 0xc00379bc
+break 0xc001a880
 run 0x0
 # clear 0x00020090
 # trace on

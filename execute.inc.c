@@ -1571,6 +1571,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0xd:
                 fprintf(stderr, "> Read process ID\n");
                 PCFLAGPUT(inst.crt.rd, reg->process_id);
+                abort();
                 break;
                 
                 case 0xe:
@@ -1702,6 +1703,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 {
                   fprintf(stderr, "> Write process ID\n");
                   reg->process_id = srcreg;
+                  abort();
                 }
                 break;
                 
