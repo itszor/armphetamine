@@ -40,6 +40,20 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <h1><a name="news">News</a></h1>
 
+<h3>21 June 2001</h3>
+
+<p>Some messy internals are getting far too messy. Time for yet <i>another</i> rethink of the whole code generation thing I think. Disconnected some obsolete code from the Makefile though, and that's about as productive as it gets.
+
+<h3>30 May 2001</h3>
+
+<p>Ack, nobody told me about SSA & phi nodes. Hmm.
+
+<h3>26 May 2001</h3>
+
+<p>As you can tell, I'm slacking. This is especially poor since ARMphetamine is now my day job. Well, sorta unofficially anyway, so far.
+
+<p>For a sneak-peek at where the project is going at the moment, take a look at <a href="divgraph.ps.gz">this</a> lovely graph of ph2 control flow (produced with the aid of a neat little program called aiSee). If you look very carefully you might be able to see some branch optimisation, highish-level control flow extraction, etc. The ARM source this was produced from (a division routine) is <a href="divide.arm.s">here</a>.
+
 <h3>30 March 2001</h3>
 
 <p>As a bit of a diversion from register allocation and code generation seeing as I've hit a little snag with it (trying to solve an NP complete problem in linear time may be pushing my luck <i>slightly</i>), I've made a start on a Thumb decoder (ARM's 16-bit instruction set extension). Also tweaks to the memory code to add a framework for adding sign-extending and halfword memory transfer operations which are needed by the '7TDMI, plus a new optimisation phase in the recompiler which I haven't mentioned before ("source-destination aliasing", which seems to be useful for IA-32 code generation).

@@ -13,6 +13,8 @@ typedef struct {
   uint5 disp;
 } rtasm_mtype;
 
+extern nativeblockinfo* rtasm_new(void);
+extern void rtasm_delete(nativeblockinfo* nat);
 extern void rtasm_putbyte(nativeblockinfo* nat, uint3 byte);
 extern void rtasm_opsize16(nativeblockinfo* nat);
 extern void rtasm_offsize16(nativeblockinfo* nat);

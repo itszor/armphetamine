@@ -788,7 +788,7 @@ static const genx86_variant genx86_tab[] =
 
 void genx86_test(void)
 {
-  nativeblockinfo* nat = x86asm_newnative();
+  nativeblockinfo* nat = rtasm_new();
   
   rtasm_opsize16(nat);
   rtasm_add_ax_imm16(nat, 54);
@@ -817,7 +817,7 @@ void genx86_test(void)
   
   x86dism_block(nat);
   
-  x86asm_deletenative(nat);
+  rtasm_delete(nat);
 }
 
 static const char* allocname[] = {
@@ -847,6 +847,11 @@ palloc_info* genx86_closesplit(palloc_info* a, uint5 line)
     return a;
 }
 */
+
+void genx86_out2(nativeblockinfo* nat, genx86_op inst)
+{
+
+}
 
 #define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
                            ((S1)*pal_NUMTYPES) + (S2))
@@ -1282,7 +1287,7 @@ void genx86_preserve(nativeblockinfo* nat, pheta_chunk* chunk, list* map)
 
 nativeblockinfo* genx86_translate(pheta_chunk* chunk)
 {
-  nativeblockinfo* nat = x86asm_newnative();
+  nativeblockinfo* nat = rtasm_new();
   uint5 startline = 0;
   
   genx86_translate_inner(nat, chunk, chunk->root, &startline);

@@ -139,7 +139,7 @@ int main(void)
   riscosstate = riscos_initialise();
   
 //	fprintf(stderr, "Tabulating translation rules...\n");
-	machine->translaterules = generators_register();
+/*	machine->translaterules = generators_register();*/
 	
 //	fprintf(stderr, "mem->memory=%x\n", (int)mem->memory);
 

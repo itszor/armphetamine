@@ -13,9 +13,7 @@
 #include "palloc.h"
 #include "clist.h"
 #include "phetadism.h"
-
-// this should be moved somewhere sensible
-extern uint5 setbits(uint5);
+#include "bset.h"
 
 static const uint5 ccflags[] =
 {
@@ -1966,12 +1964,12 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 
     if (inst.bdt.u)  // upwards
       offsetby = pheta_emit(chunk, ph_ADD, basereg,
-        pheta_emit(chunk, ph_CONSTB, 4*setbits(inst.bdt.reglist)));
+        pheta_emit(chunk, ph_CONSTB, 4*bset_setbits(inst.bdt.reglist)));
     else
       offsetby = pheta_emit(chunk, ph_SUB, basereg,
-        pheta_emit(chunk, ph_CONSTB, 4*setbits(inst.bdt.reglist)));
+        pheta_emit(chunk, ph_CONSTB, 4*bset_setbits(inst.bdt.reglist)));
 
-    pheta_cycles(chunk, setbits(inst.bdt.reglist));
+    pheta_cycles(chunk, bset_setbits(inst.bdt.reglist));
 
     pheta_lcommit(chunk, inst.bdt.rn, offsetby);
   }

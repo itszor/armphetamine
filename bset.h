@@ -12,6 +12,9 @@ typedef struct {
 #define bset_CLEAR(B,N) ((B)->bits[(N)>>5] &= ~(1<<((N)&31)))
 #define bset_TEST(B,N) ((B)->bits[(N)>>5] & (1<<((N)&31)))
 
+// ok, this is an odd one out
+extern uint5 bset_setbits(uint5 word);
+
 extern void bset_union(bset_info* dest, bset_info* src1, bset_info* src2);
 extern void bset_intersection(bset_info* dest, bset_info* src1,
                               bset_info* src2);

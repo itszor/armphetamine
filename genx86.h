@@ -66,10 +66,74 @@ typedef enum {
   ab_BT
 } genx86_ab86;
 
+/*
+
+Allocation types could be:
+  - immediate
+  - register
+  - [register+displacement]
+  - [register+register*scale]
+  - [register+register*scale+displacement]
+
+*/
+
+typedef enum {
+  gowidth_BIT,
+  gowidth_BYTE,
+  gowidth_WORD,
+  gowidth_DWORD,
+  gowidth_QWORD
+} genx86_operand_width;
+
+typedef enum {
+  gotype_IMMEDIATE,
+  gotype_REGISTER,
+  gotype_INDREG,
+  gotype_INDREGPLUSDISP8,
+  gotype_INDREGPLUSDISP32,
+  gotype_INDREGPLUSSCALEDREG,
+  gotype_INDREGPLUSSCALEDREGPLUSDISP8,
+  gotype_INDREGPLUSSCALEDREGPLUSDISP32,
+  gotype_ADDRESS,
+  gotype_NUMTYPES
+} genx86_operand_type;
+
 typedef struct {
-  genx86_ab86 type;
-  palloc_type* op1;
-  palloc_type* op2;
+  genx86_operand_type type;
+  genx86_operand_width width;
+  union {
+    uint5 imm;
+    uint5 reg;
+    uint5 addr;
+    struct {
+      uint5 base;
+      uint5 disp;
+    } regdisp;
+    struct {
+      uint5 base;
+      uint5 offset;
+      uint3 scale;
+    } regscale;
+    struct {
+      uint5 base;
+      uint5 offset;
+      uint5 disp;
+      uint3 scale;
+    } regscaledisp;
+  } data;
+} genx86_operand;
+
+/*
++++ Each op points to an entry in a table corresponding to each virtual register. List-form code might be generated at an earlyish stage of compilation, say after the source-dest aliasing phase. Then, register non-orthogonalities can be used to guide allocation decisions, especially function calling conventions etc.
+
+Temporaries in x86 code can be handled by extending the virtual register mapping array thingy?
+*/
+
+typedef struct {
+  genx86_ab86 operator;
+  genx86_operand* op1;
+  genx86_operand* op2;
+  genx86_operand* op3;
 } genx86_op;
 
 typedef void (*genx86_r32_rm32)(nativeblockinfo*, uint3, rtasm_mtype);

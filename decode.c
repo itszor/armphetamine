@@ -74,6 +74,7 @@ insttab execthm = {
 };
 
 // intermediate code translator function table
+/*
 insttab pseudo = {
   pseudo_dp,
 	pseudo_dp_imm,
@@ -89,7 +90,9 @@ insttab pseudo = {
 	pseudo_und,
   NULL
 };
+*/
 
+// new-style intermediate code
 insttab phet4 = {
   pheta_dp,
   pheta_dp_imm,

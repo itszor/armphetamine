@@ -110,6 +110,11 @@ typedef struct {
   uint3 opcode;
 } pheta_instr;
 
+typedef struct {
+  clist* base;
+  uint5 cycles;
+} pheta_transition;
+
 typedef struct pheta_basicblock_t {
   clist* base;
   uint5 length;
@@ -124,6 +129,8 @@ typedef struct pheta_basicblock_t {
   struct pheta_basicblock_t* trueblk;
   struct pheta_basicblock_t* falseblk;
   struct pheta_basicblock_t* parent;
+  pheta_transition truetrans;
+  pheta_transition falsetrans;
   clist* predecessor;  // flag resolution needs all predecessors for a block
   struct pheta_basicblock_t* scsubgraph;
   char* comment;
