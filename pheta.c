@@ -126,6 +126,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
   hashtable* leaders = hash_new(8);
   pheta_chunk* chunk = pheta_newchunk(base, length);
   hashentry* p;
+  uint5 tail;
   
   chunk->leaders = leaders;
   
@@ -215,6 +216,9 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
     }
   }
 
+  tail = pheta_emit(chunk, ph_CONST, base+i*sizeof(uint5));
+  pheta_emit(chunk, ph_UKJMP);
+
   if (chunk->currentblock) pheta_lsync(chunk);
 
   // this is a memory leak waiting to happen
@@ -277,7 +281,6 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
   switch (opcode)
   {
     case ph_CONST:
-    case ph_UKJMP:
     instr->data.con.dest = dest = chunk->tempno++;
     instr->data.con.imm = va_arg(ap, uint5);
     break;
@@ -303,6 +306,7 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     break;
 
     case ph_SPILL:
+    case ph_UKJMP:
     instr->data.op.src1 = va_arg(ap, uint5);
     break;
 
