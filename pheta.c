@@ -69,6 +69,7 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->predno = 1;
   p->force = -1;
   p->currentblock = 0;
+  p->stacksize = 0;
     
   return p;
 }

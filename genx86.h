@@ -62,5 +62,7 @@ typedef struct {
 } genx86_variant;
 
 extern void genx86_test(void);
+extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
+                       palloc_info* src1, palloc_info* src2, uint5 line);
 
 #endif

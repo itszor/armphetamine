@@ -29,7 +29,6 @@ struct palloc_info {
   union {
     struct {
       uint5 num;
-/*      uint5 arm_affiliation;*/
     } ireg;
     uint5 value;
     pqueue* extra;
@@ -40,6 +39,13 @@ struct palloc_info {
 
 typedef struct palloc_info palloc_info;
 typedef struct palloc_liverange palloc_liverange;
+
+typedef struct {
+  palloc_info upper;
+  palloc_info lower;
+  uint5 splitline;
+} palloc_splitalloc;
+
 
 extern void palloc_srcdestalias(pheta_chunk* chunk);
 extern void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,

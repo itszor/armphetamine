@@ -109,6 +109,7 @@ typedef struct {
   int virtualaddress;  // this is a horrible place for this
   uint5 start;
   uint5 length;
+  uint5 stacksize;
   hashtable* leaders;
   pheta_basicblock* root;
   pheta_basicblock* currentblock;

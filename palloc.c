@@ -63,6 +63,7 @@ void palloc_constant(pheta_chunk* chunk)
 }
 
 // allocate non-orthogonal target registers (especially x86 specific!)
+// (needs to be rewritten to take account of live ranges properly)
 void palloc_nonorthog(pheta_chunk* chunk)
 {
   list* scanblock;
@@ -455,25 +456,15 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
  
         if (chunk->alloc[delrange->reg].type!=pal_SPLIT)
         {
-          list* head;
+          palloc_splitalloc* split;
           chunk->alloc[delrange->reg].type = pal_SPLIT;
-          head = chunk->alloc[delrange->reg].info.extra = 0;
+          split = chunk->alloc[delrange->reg].info.extra =
+            cnew(palloc_splitalloc);
 
-          list_add(&head);
-          splitrange = head->data = cnew(palloc_liverange);
+          split->upper = chunk->alloc[delrange->reg];
 
-          splitrange->startline = startline + lineno;
-          splitrange->length = delrange->length - lineno;
-          splitrange->reg = delrange->reg;
-          fprintf(stderr, "Inserted split range:\n"
-            "Part one: start=%d, length=%d, reg=%d\n",
-            splitrange->startline, splitrange->length, splitrange->reg);
-
-          list_add(&head);
-          head->data = delrange;
-          delrange->length = splitrange->startline - delrange->startline;
-          fprintf(stderr, "Part two: start=%d, length=%d, reg=%d\n",
-            delrange->startline, delrange->length, delrange->reg);
+          split->lower.type = pal_STACK;
+          split->lower.info.value = (chunk->stacksize++)*4;
         }
         else
         {
