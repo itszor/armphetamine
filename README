@@ -2,8 +2,8 @@ This is a recompiling ARM emulator core. It is still in development.
 
 Julian Brown <brown@cs.bris.ac.uk>
 
-Very preliminary instructions!
-==============================
+Very preliminary instructions
+=============================
 
 You can build ARMphetamine into several different machine configurations:
 
@@ -20,10 +20,47 @@ sure you "make clean" between switching configuration!
 LART - http://www.lart.tudelft.nl
 =================================
 
-This is a board produced by Technical University Delft, containing a
-StrongARM SA1100, memory and support logic. This emulator is independent
-of them, and does not work properly. Don't hassle them about it though. I
-don't even have a LART board to compare my emulator with! Oh well.
+This is a board produced by the Technical University of Delft, comprising
+a StrongARM SA1100, memory and support logic. This emulator is independent
+of them, and does not work properly. Don't hassle them about it. I don't
+even have a LART board to compare my emulator with! But it seems like
+just about the simplest full machine I can test the core with. For a
+teaser, the "right" combination of bootloader, kernel and ramdisk will
+get as far as trying to mount a root partition (though only with
+interpretive emulation, mind!), though it then fails for some reason.
+
+Debug interface
+---------------
+
+The LART machine starts in an interactive shell, with a seperate window
+for LART (serial) input/output. The commands available are:
+
+run <address> - start execution from <address>
+continue - restart execution from after a breakpoint
+step - execute single instruction and return to debugger
+disassemble <start> [<end>] - disassemble code (around PC if no argument)
+last <n> - disassemble last <n> instructions executed
+memory <start> [<end>] - show (virtual) memory contents
+registers - show ARM registers
+setreg <reg> <value) - set register contents
+break <addr> - set breakpoint on <addr>
+clear <addr> - clear breakpoint from <addr>
+list - list breakpoints
+trace <on|off> - turns on/off instruction tracing
+load <filename> <addr> - load filename to (memory) address
+romload <filename> <addr> - hack to load filename into ROM
+script <filename> - execute a script of debugger commands
+virtual <addr> - perform virtual:physical address calculation
+phetatrans <start> <end> - test harness for code translation
+quit - exit shell
+help - lists debugger commands
+
+The debugger is somewhat lacking, since there is no way to pause execution
+if you haven't set a breakpoint first.
+
+For an example, see script "lartup.txt". Given the right filenames for
+bootloader, kernel and ramdisk, this script should boot up ARM Linux on
+the LART board. You can type "make lartrun" to test it.
 
 Riscose - http://riscose.sourceforge.net
 ========================================
@@ -40,6 +77,7 @@ Where $(..) are replaced by the right directories. Then you need to hack
   ./configure --enable-arm=armphetamine
   make
 
-Unfortunately at the time of writing Riscose doesn't work very well,
-so you won't get much further than this. Plus, some code is missing from
-the ARMphetamine side of things.
+ARMphetamine is built as a library, libarmphetamine.a. Unfortunately
+at the time of writing Riscose doesn't work very well, so you won't get
+much further than this. Plus, some code is missing from the ARMphetamine
+side of things.
