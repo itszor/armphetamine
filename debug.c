@@ -533,8 +533,8 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_init(mychunk);
   fprintf(stderr, "Constant allocating\n");
   palloc_constant(mychunk);
-  fprintf(stderr, "Outputting gdl prior to branch optimisation\n");
-  pheta_gdlprint(mychunk, "controlgraphpre.gdl");
+/*  fprintf(stderr, "Outputting gdl prior to branch optimisation\n");
+  pheta_gdlprint(mychunk, "controlgraphpre.gdl");*/
   fprintf(stderr, "Transitive branch optimising\n");
   pheta_optimise_transitive_branch(mychunk);
   pheta_cull_unused_nodes(mychunk);
@@ -551,8 +551,8 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Fixing up flags & predicates\n");
   pheta_fixup_flags(mychunk);
   phetadism_chunk(mychunk);
-  fprintf(stderr, "Outputting gdl\n");
-  pheta_gdlprint(mychunk, "controlgraph.gdl");
+  fprintf(stderr, "Outputting daVinci\n");
+  pheta_davinciprint(mychunk, "controlgraph.daVinci");
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);

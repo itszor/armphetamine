@@ -763,6 +763,105 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
   fclose(f);
 }
 
+// aw, my aiSee licence has expired, time for another graph vis program...
+void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
+{
+  FILE* f = fopen(outfile, "w");
+  list* scan;
+  
+  fprintf(f, "[");
+
+  fprintf(f, "l(\"start\",n(\"\",[a(\"OBJECT\",\"Start\"),"
+              "a(\"_GO\",\"ellipse\")],\n");
+  fprintf(f, "[l(\"start->%p\",e(\"start\",[],r(\"%p\")))])),", chunk->root,
+    chunk->root);
+    
+  fprintf(f, "l(\"end\",n(\"\",[a(\"OBJECT\",\"End\"),"
+              "a(\"_GO\",\"ellipse\")],[])),\n");
+
+  for (scan=chunk->blocks; scan; scan=scan->prev)
+  {
+    pheta_basicblock* blk = scan->data;
+    clist* pred, *inst;
+    uint5 i;
+    extern const char* txtcc[];
+    pheta_instr* prev;
+    
+ /*   fprintf(f, "  node: {\n");
+    fprintf(f, "  }\n");*/
+
+    fprintf(f, "  l(\"%p\",n(\"%p\",[a(\"OBJECT\",\"", blk, blk);
+
+    for (inst=blk->base->next, i=0; inst->data; inst=inst->next, i++)
+    {
+      pheta_instr* instr = inst->data;
+
+      fprintf(f, "%.4x:", i);
+      phetadism_instruction(f, instr);
+      fprintf(f, "\\n");
+    }
+    
+    fprintf(f, "Condition '%s%s'", (blk->predicate&16)?"native-":"", 
+      txtcc[blk->predicate&15]);
+    
+    fprintf(f, "\")],\n[");
+/*
+    fprintf(f, "  node: {\n");
+    fprintf(f, "    title: \"%.8x:%s%s\"\n", blk,
+      (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
+    fprintf(f, "    shape: rhomboid\n");
+    fprintf(f, "  }\n");*/
+
+  /*  if (i>0)
+    {
+      fprintf(f, "  edge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%.8x:%.4x:", blk, i-1);
+      phetadism_instruction(f, prev);
+      fprintf(f, "\"\n    targetname: \"%.8x:%s%s\"\n", blk,
+        (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
+      fprintf(f, "  }\n");
+    }
+
+    fprintf(f, "  }\n");*/
+
+    if (blk->trueblk)
+    {
+      fprintf(f, "  l(\"Edge %p->%p\",e(\"\",[],r(\"%p\")))\n",
+        blk, blk->trueblk, blk->trueblk);
+    }
+
+    if (blk->trueblk && blk->falseblk) fprintf(f, ",");
+
+    if (blk->falseblk)
+    {
+      fprintf(f, "  l(\"Edge %p->%p\","
+                 "e(\"\",[a(\"EDGECOLOR\",\"red\")],r(\"%p\")))\n",
+        blk, blk->falseblk, blk->falseblk);
+    }
+
+    if (!blk->trueblk && !blk->falseblk)
+    {
+      fprintf(f, "  l(\"Edge %p->end\","
+                 "e(\"\",[],r(\"end\")))\n", blk);
+    }
+    
+    if (blk->scsubgraph)
+    {
+      fprintf(f, ",");
+
+      fprintf(f, "  l(\"\", e(\"\",[a(\"EDGECOLOR\",\"green\")],"
+                 "r(\"%p\")))\n", blk->scsubgraph);
+    }
+    
+    fprintf(f, "]))\n");
+    if (scan->prev) fprintf(f, ",");
+  }
+  
+  fprintf(f, "]\n");
+  fclose(f);
+}
+
 void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag)
 {
