@@ -1022,6 +1022,13 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                         rtasm_reg(inst->op[0]->data.reg), 
                         inst->op[1]->data.imm);
                     }
+                    else if (genx86_tab[opcode].rm32_i32)
+                    {
+                      genx86_tab[opcode].rm32_i32(nat,
+                        rtasm_reg(inst->op[0]->data.reg),
+                        inst->op[1]->data.imm);
+                    }
+                    else ERR;
                   }
                   break;
                   
@@ -1033,6 +1040,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                         rtasm_reg(inst->op[0]->data.reg),
                         inst->op[1]->data.imm);
                     }
+                    else ERR;
                   }
                   break;
                   
@@ -1606,13 +1614,15 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             break;
                           }
                         }
-                        else ERR;
+                        else goto promote_rm32_i8_to_rm32_i32;
                       }
                       break;
                     }
                   }
                   break;
                 
+                  // nasty nasty nasty
+                  promote_rm32_i8_to_rm32_i32:
                   case gowidth_DWORD:
                   {
                     switch (inst->op[0]->type)
@@ -2434,12 +2444,16 @@ void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
     {
       uint5 creg = palloc_close(chunk, range->reg);
       list_add(&buf->commit);
+      /* This is tricky, because a register alias can have a different
+       * guest-machine register affiliation than the register it's aliased
+       * to. The alias doesn't have a physical host register itself though.
+       */
       buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
       dfc->var = &chunk->alloc[creg];
-      dfc->src = chunk->alloc[creg].arm_affiliation;
+      dfc->src = chunk->alloc[range->reg].arm_affiliation;
       dfc->loc = buf->buffer->prev;
       fprintf(stderr, "Attempting to recover %d, arm: %d\n", range->reg,
-        chunk->alloc[creg].arm_affiliation);
+        chunk->alloc[range->reg].arm_affiliation);
     }
   }
 }
@@ -2471,7 +2485,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       dfc->src = instr->data.op.src1;
       dfc->loc = buf->buffer->prev;
 
-      chunk->alloc[instr->data.op.dest].arm_affiliation = instr->data.op.src1;
+  // no point in doing this?
+  /* chunk->alloc[instr->data.op.dest].arm_affiliation = instr->data.op.src1;*/
 /*
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       uint5 armsrc = instr->data.op.src1;
@@ -3113,20 +3128,16 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
   for (scan=buf->fetch; scan; scan=scan->prev)
   {
     genx86_delayedfetchcommit* dfc = scan->data;
-    if (dfc->var->type == pal_IREG)
+    if (dfc->var->type==pal_IREG)
     {
-      genx86_operand* reg = cnew(genx86_operand);
       genx86_operand* mem = cnew(genx86_operand);
-      reg->type = gotype_REGISTER;
-      reg->width = gowidth_DWORD;
-      reg->data.reg = dfc->var->info.ireg.num;
       mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8 : 
                                      gotype_INDREGPLUSDISP32;
       mem->width = gowidth_DWORD;
       mem->data.regdisp.base = EBP;
       mem->data.regdisp.disp = dfc->src*4;
       fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->info.ireg.num);
-      genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, reg, mem, 0);
+      genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, dfc->var->slot, mem, 0);
     }
   }
   
@@ -3136,21 +3147,27 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
     fprintf(stderr, "Trying commit %d to %d\n", 
       dfc->var->info.ireg.num, dfc->src);
     fprintf(stderr, "chunk->alloc[dfc->var].type=%d\n", dfc->var->type);
-    if (dfc->var->type == pal_IREG)
+    switch (dfc->var->type)
     {
-      genx86_operand* reg = cnew(genx86_operand);
-      genx86_operand* mem = cnew(genx86_operand);
-      reg->type = gotype_REGISTER;
-      reg->width = gowidth_DWORD;
-      reg->data.reg = dfc->var->info.ireg.num;
-      mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8
-                                   : gotype_INDREGPLUSDISP32;
-      mem->width = gowidth_DWORD;
-      mem->data.regdisp.base = EBP;
-      mem->data.regdisp.disp = dfc->src*4;
-      fprintf(stderr, "Commit %d to %d\n", dfc->var->info.ireg.num,
-        dfc->src);
-      genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, mem, reg, 0);
+      case pal_IREG:
+      case pal_CONST:
+      case pal_CONSTB:
+      {
+        genx86_operand* mem = cnew(genx86_operand);
+        mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8
+                                     : gotype_INDREGPLUSDISP32;
+        mem->width = gowidth_DWORD;
+        mem->data.regdisp.base = EBP;
+        mem->data.regdisp.disp = dfc->src*4;
+        fprintf(stderr, "Commit %d to %d\n", dfc->var->info.ireg.num,
+          dfc->src);
+        genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, mem, dfc->var->slot,
+          0);
+      }
+      break;
+      
+      default:
+      break;
     }
   }
 }

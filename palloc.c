@@ -140,12 +140,11 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       {
         uint5 dest = instr->data.op.dest;
         uint5 src = instr->data.op.src1;
-        if (chunk->alloc[dest].type==pal_UNSET &&
-            chunk->alloc[src].type!=pal_CONST &&
-            chunk->alloc[src].type!=pal_CONSTB)
+        if (chunk->alloc[dest].type==pal_UNSET)
         {
           chunk->alloc[dest].type = pal_ALIAS;
           chunk->alloc[dest].info.value = src;
+          chunk->alloc[dest].arm_affiliation = -1;
         }
       }
       break;

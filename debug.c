@@ -574,19 +574,19 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   genx86_insert_spill_code(mychunk);
   fprintf(stderr, "Completing allocation\n");
   genx86_complete_alloc(mychunk);
+  fprintf(stderr, "Allocation state:\n");
+  palloc_print(mychunk);
   fprintf(stderr, "Flattening code\n");
   genx86_flatten_code(mychunk);
  /* fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);*/
-  fprintf(stderr, "Closing aliases\n");
+ /* fprintf(stderr, "Closing aliases\n");
   palloc_closealias(mychunk);
-  fprintf(stderr, "Allocation state:\n");
-  palloc_print(mychunk);
   fprintf(stderr, "Generating x86 code\n");
   palloc_clearmarkers(mychunk);
   nat = genx86_translate(mychunk);
   fprintf(stderr, "Complete x86 dump\n");
-  x86dism_block(nat);
+  x86dism_block(nat);*/
   // pheta_destroychunk(mychunk);  (when it's written...)
 }
 

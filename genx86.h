@@ -149,6 +149,18 @@ Temporaries in x86 code can be handled by extending the virtual register mapping
 typedef struct {
   genx86_ab86 operator;
   genx86_operand *op[3];
+  union {
+    struct {
+      uint5 op0born : 1;  /* might be useful for peephole optimisation */
+      uint5 op0kill : 1;
+      uint5 op1born : 1;
+      uint5 op1kill : 1;
+      uint5 op2born : 1;
+      uint5 op2kill : 1;
+      uint5 unused  : 26;
+    } flags;
+    uint5 all;
+  } data;
 } genx86_op;
 
 typedef struct {

@@ -5,5 +5,6 @@
 
 simple:
 	mov r0,#1024
+	mov r2,#5
 	ldr r1,[r0,#12]!
-	mov pc,r14
+	add r2,r2,r2
