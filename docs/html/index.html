@@ -2,13 +2,53 @@
 <body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
 <h2><center><img alt="ARMphetamine" src="images/ap.png"></center></h2>
 
-<p align=center>[ <a href="#news">news</a> | <a
-href="#overview">overview</a> | <a href="#status">status</a> | <a
+<p align=center>[ <a
+href="#overview">overview</a> | <a href="#news">news</a> | <a href="#status">status</a> | <a
 href="#documentation">documentation</a> | <a
 href="#download">download</a> | <a href="#feedback">feedback</a> 
 | <a href="#links">links</a> ]
 
+<h1><a name="overview">Overview</a></h1>
+
+<p>ARMphetamine is a project to create a fast and accurate ARM processor emulator. A technique known as "dynamic recompilation" will be used so that the highest possible speed can be achieved for emulated code - ARM code programs are translated into native code as they are being emulated. The current development platform is Linux/x86.
+
+<p>The code is currently being rewritten to aid support of the features which had to be left out of the original code due to time constraints. When it's back in shape, I promise it'll be better than ever before.
+
+<p>ARMphetamine supports, or will support:
+
+<ul>
+<li>26-bit/32-bit (ARM610/710/SA110) code emulation (fairly complete)
+<li>Thumb mode (incomplete, untested)
+<li>Full memory-management unit (MMU) with domain access control, etc. (not extensively tested)
+<li>ARM7500/Risc PC-style physical memory map. Will later be configurable to suit different types of system.
+<li>ARM7500/Risc PC support hardware: VIDC20, IOMD (sketchy)
+<li>Dynamic binary translation (experimental)
+<ul>
+<li>IA-32 target architecture
+<li>Full cross-block register allocation, currently based on the linear scan algorithm (mostly working!)
+<li>Direct binary-code generation (partly working!)
+<li>Peephole optimiser (possibility)
+<li>More targets (possibility)
+</ul>
+<li>Built-in debugger
+<li>Bells, whistles, etc.
+</ul>
+
+<p>There is currently no projected release date. It would be a foolish thing to try to guess. If you'd be interested in building an emulator around ARMphetamine or incorporating it in an existing project, feel free to get in touch.
+
+<hr>
+
 <h1><a name="news">News</a></h1>
+
+<h3>30 March 2001</h3>
+
+<p>As a bit of a diversion from register allocation and code generation seeing as I've hit a little snag with it (trying to solve an NP complete problem in linear time may be pushing my luck <i>slightly</i>), I've made a start on a Thumb decoder (ARM's 16-bit instruction set extension). Also tweaks to the memory code to add a framework for adding sign-extending and halfword memory transfer operations which are needed by the '7TDMI, plus a new optimisation phase in the recompiler which I haven't mentioned before ("source-destination aliasing", which seems to be useful for IA-32 code generation).
+
+<p>There's a new <a href="design2.html">design document</a>, meant mainly for my own nefarious 'academic' purposes but you might find it interesting anyway (if you've got this far). Some of it is cut-n-pasted from stuff I've previously put on here, but one little idea to do with MMUs and move-to-front buffers is new, I think.
+
+<p>I may make noises about <b>Gameboy Advance</b> emulation at some point, but don't hold your breath since, err, it'd be lots of work... and there's lots of dynarec stuff which needs sorting first. The idea of nice, simple code as single ROM images in flat address space is quite appealing, and might simplify some stuff though. Maybe it can provide some useful test material. Just why <i>am</i> I writing this emulator anyway? Someone remind me?
+
+<p>Going to buy Black &amp; White tomorrow, if I can find it.
 
 <h3>25 March 2001</h3>
 
@@ -120,15 +160,10 @@ available when I've had the chance to clean it up a lot.
 
 <hr>
 
-<h1><a name="overview">Overview</a></h1>
-
-<p>ARMphetamine is a project to create a fast and accurate ARM emulator for IBM PC-compatible computers running Linux. A technique known as "dynamic recompilation" is used so that high speeds can be achieved - ARM code programs are translated into native Pentium code as they are being emulated.
-
-<hr>
 
 <h1><a name="status">Status</a></h1>
 
-<p>Some preliminary comparative benchmarks are available:
+<p>Some preliminary (old!) comparative benchmarks are available:
 
 <p><table align=center>
 <tr>
@@ -243,6 +278,7 @@ ARM) emulator
 <li>University <a href="http://www.cs.bris.ac.uk/~brown">home page</a>
 
 </ul>
+
 <hr>
 
 <font size=-1>&copy; <a href="mailto:jules@dynarec.com">Julian Brown</a>, 1999-2001</font>
