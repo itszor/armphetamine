@@ -5,6 +5,6 @@ romload lart-initrd 0x00100000
 # trace on
 breakset 0x00020090
 run 0x0
-breakclear 0x00020090
-trace on
-run 0x00020090
+# breakclear 0x00020090
+# trace on
+# run 0x00020090

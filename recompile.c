@@ -40,6 +40,7 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   phetadism_chunk(mychunk);
   fprintf(stderr, "Outputting daVinci\n");
   pheta_davinciprint(mychunk, "controlgraph.daVinci");
+  pheta_gdlprint(mychunk, "controlgraph.gdl");
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);

@@ -1451,6 +1451,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
       return 1;*/
       fprintf(stderr, "Warning: attempt to use coprocessor reg transfer in "
         "usr mode\n");
+      INCPC;
+      return 0;
     }
     
     /*fprintf(stderr, "Error: unimplemented instruction (crt)\n");
@@ -1468,15 +1470,15 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
               switch (inst.crt.crn)  // coproc register number
               {
                 // identify self as an SA110?
-                case 0: PUT(inst.crt.rd, 0x4401a100); break;
+                case 0: PCFLAGPUT(inst.crt.rd, 0x4401a100); break;
                 // is the following line right?
-                case 1: PUT(inst.crt.rd, mem->mmucontrol); break;
-                case 5: PUT(inst.crt.rd, mem->faultstatus); break;
-                case 6: PUT(inst.crt.rd, mem->faultaddress); break;
+                case 1: PCFLAGPUT(inst.crt.rd, mem->mmucontrol); break;
+                case 5: PCFLAGPUT(inst.crt.rd, mem->faultstatus); break;
+                case 6: PCFLAGPUT(inst.crt.rd, mem->faultaddress); break;
                 case 0x8: case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xd: case 0xe: case 0xf:
-               /* processor_und(machine);
-                return 1;*/
+                processor_und(machine);
+                return 1;
                 break;
               }
             }
@@ -1488,6 +1490,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
         }
         else  // ARM -> coprocessor (MCR)
         {
+          uint5 srcreg = inst.crt.rd==15 ? RGET(inst.crt.rd)+4
+                                         : RGET(inst.crt.rd);
           switch (inst.crt.cpopc)
           {
             case 0:
@@ -1497,11 +1501,11 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 1:
                 {
                   uint5 oldstate = mem->mmucontrol;
-                  uint5 newstate = RGET(inst.crt.rd);
+                  uint5 newstate = srcreg;
                   fprintf(stderr, "> Set MMU control: %x\n",
                     newstate);
 
-                  if (((oldstate ^ newstate) & 1) == 1)
+                  if ((oldstate & 1) != (newstate & 1))
                   {
                     uint5 instaddr;
                     instructionformat inst;
@@ -1511,7 +1515,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                     // because the virtual memory system has some latency
                     // when switching on and off. These little things just
                     // kill you honestly.
-                    fprintf(stderr, "Virtual memory state changed!\n");
+                    fprintf(stderr, "Virtual memory state changed! ");
                     for (i=0; i<2; i++)
                     {
                       instaddr = PCADDR-INSTSIZE*2;
@@ -1523,6 +1527,9 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                       dispatch(machine, inst, machine->exectab, 0);
                     }
 /*                    machine->trace = 1;*/
+                    fprintf(stderr, "[%s]\n", newstate ? "on" : "off");
+                    fprintf(stderr, "(old state was %s)\n",
+                      mem->mmucontrol & 1 ? "on" : "off");
                     mem->mmucontrol = newstate;
                     return 1;
                   }
@@ -1532,17 +1539,16 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 2:
                 {
-                  fprintf(stderr, "> Set translation base: %x\n",
-                    RGET(inst.crt.rd));
-                  mem->translationbase = RGET(inst.crt.rd);
+                  fprintf(stderr, "> Set translation base: %x\n", srcreg);
+                  mem->translationbase = srcreg;
                 }
                 break;
                 
                 case 3:
                 {
                   fprintf(stderr, "> Set domain access control: %x\n",
-                    RGET(inst.crt.rd));
-                  mem->domainaccesscontrol = RGET(inst.crt.rd);
+                    srcreg);
+                  mem->domainaccesscontrol = srcreg;
                 }
                 break;
                 

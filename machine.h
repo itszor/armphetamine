@@ -38,6 +38,6 @@ typedef struct machineinfo machineinfo;
 #endif
 
 extern machineinfo* machine_create(uint5 memory);
-extern void machine_start(machineinfo* machine);
+extern void machine_start(machineinfo* machine, uint5 cont);
 
 #endif

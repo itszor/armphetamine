@@ -48,6 +48,17 @@
 #  define PUT(X,V) reg->r[X] = (V)
 #endif
 
+#ifdef ARM26BIT
+#  define PCFLAGPUT(X,V) reg->r[X] = ((X)!=15) ? (V) \
+                         : ((reg->r[15] & 0x0fffffff) | ((V) & 0xf0000000))
+#else
+#  define PCFLAGPUT(X,V) ({ \
+  if ((X)==15) \
+    reg->cpsr.value = (reg->cpsr.value & 0x0fffffff) | ((V) & 0xf0000000); \
+  else \
+    reg->r[X] = (V); })
+#endif
+
 // raw versions
 #define RGET(X) (reg->r[X])
 #define RPUT(X,V) reg->r[X] = (V)

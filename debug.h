@@ -8,6 +8,7 @@
 typedef enum {
   debug_COMMENT,
   debug_RUN,
+  debug_CONTINUE,
   debug_DISASSEMBLE,
   debug_MEMORY,
   debug_REGISTERS,
@@ -41,6 +42,7 @@ extern int debug_hexargs(char* cmd, ...);
 // debugger commands
 extern void debug_null(machineinfo* machine, char* cmd);
 extern void debug_run(machineinfo* machine, char* cmd);
+extern void debug_continue(machineinfo* machine, char* cmd);
 extern void debug_disassemble(machineinfo* machine, char* cmd);
 extern void debug_memory(machineinfo* machine, char* cmd);
 extern void debug_registers(machineinfo* machine, char* cmd);

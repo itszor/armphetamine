@@ -37,10 +37,12 @@ void x86dism_partblock(nativeblockinfo* nat, uint5 start, uint5 length)
     fprintf(stderr, "\n");
     return;
   }
-	
+
+	/*
 	execl("/usr/bin/objdump", "--full-contents", "--target", "binary",
 	      "--architecture=i386", "--disassemble-all",
         template, 0);
-/*  execl("/usr/bin/ndisasm", "", "-a", "-b", "32", "-o", startaddrstring,
-    "-p", "intel", template, 0);*/
+	*/
+  execl("/usr/local/bin/ndisasm", "", "-a", "-b", "32", "-o", startaddrstring,
+    "-p", "intel", template, 0);
 }

@@ -43,6 +43,7 @@ static const debug_cmd commands[] =
 {
   { "#",           debug_COMMENT,     debug_null        },
   { "run",         debug_RUN,         debug_run         },
+  { "continue",    debug_CONTINUE,    debug_continue    },
   { "disassemble", debug_DISASSEMBLE, debug_disassemble },
   { "memory",      debug_MEMORY,      debug_memory      },
   { "registers",   debug_REGISTERS,   debug_registers   },
@@ -109,8 +110,8 @@ void debug_command(machineinfo* machine, char* cmd)
 int debug_getnum(char* cmd)
 {
   int val;
-  if (sscanf(cmd, " 0x%x", &val)) return val;
-  if (sscanf(cmd, " %d", &val)) return val;
+  if (cmd && sscanf(cmd, " 0x%x", &val)) return val;
+  if (cmd && sscanf(cmd, " %d", &val)) return val;
   return -1;
 }
 
@@ -184,11 +185,18 @@ void debug_run(machineinfo* machine, char* cmd)
     fprintf(stderr, "Running from current address\n");
   }
   
-  machine_start(machine);
+  machine_start(machine, 0);
+}
+
+void debug_continue(machineinfo* machine, char* cmd)
+{
+  IGNORE(cmd);
+  machine_start(machine, 1);
 }
 
 void debug_disassemble(machineinfo* machine, char* cmd)
 {
+  registerinfo* reg = machine->reg;
   uint5 start, end;
   
   strsep(&cmd, " \t");
@@ -196,12 +204,16 @@ void debug_disassemble(machineinfo* machine, char* cmd)
   strsep(&cmd, " \t");
   end = debug_getnum(cmd);
   
-  if (end==-1u && start!=-1u) end = start+32;
+  if (end==-1u && start!=-1u) end = start+64;
   
   if (start==-1u)
   {
-    fprintf(stderr, "Please specify a start address or range\n");
-    return;
+    uint5 pc = reg->cpsr.flag.mode<16 ? (reg->r[15] & ~0xfc000003)-8
+                                      : reg->r[15]-8;
+    fprintf(stderr, "Disassembling around PC (%x)\n", pc);
+    start = pc-32;
+    if ((sint5)start < 0) start = 0;
+    end = start+64;
   }
   
   start &= ~3;

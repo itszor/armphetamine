@@ -35,7 +35,7 @@ machineinfo* machine_create(uint5 memory)
                          : (reg->cpsr.flag.X))
 
 // emulation loop, debugging version
-void machine_start(machineinfo* machine)
+void machine_start(machineinfo* machine, uint5 cont)
 {
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
@@ -78,7 +78,7 @@ void machine_start(machineinfo* machine)
       fprintf(stderr, "\n");
     }
     
-    if (hash_lookup(machine->breakpoints, instaddr))
+    if (hash_lookup(machine->breakpoints, instaddr) && !cont)
     {
       fprintf(stderr, "Breakpoint at %.8x\n", instaddr);
       return;
@@ -107,6 +107,9 @@ void machine_start(machineinfo* machine)
 #endif
       }
     }
+    
+    // stop continuing from a breakpoint
+    if (cont) cont = 0;
       
 #ifdef IOMDSUPPORT
     if (--machine->cycle<0)
