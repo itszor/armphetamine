@@ -555,6 +555,8 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
   palloc_printspans(mychunk);
+  fprintf(stderr, "Outputting gdl\n");
+  pheta_gdlprint(mychunk, "controlgraph.gdl");
   fprintf(stderr, "Doing linear scan allocation\n");
 /*  fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);*/

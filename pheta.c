@@ -12,6 +12,7 @@
 #include "pqueue.h"
 #include "palloc.h"
 #include "clist.h"
+#include "phetadism.h"
 
 // this should be moved somewhere sensible
 extern uint5 setbits(uint5);
@@ -638,6 +639,146 @@ void pheta_predecessor(pheta_chunk* chunk)
       }
     }
   }
+}
+
+void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
+{
+  FILE* f = fopen(outfile, "w");
+  list* scan;
+  
+  fprintf(f, "graph: {\n");
+  fprintf(f, "  splines: yes\n");
+  fprintf(f, "  layoutalgorithm: dfs finetuning: no\n");
+  fprintf(f, "  display_edge_labels: yes\n");
+  
+  fprintf(f, "  node: {\n");
+  fprintf(f, "    title: \"start\"\n");
+  fprintf(f, "    shape: ellipse\n");
+  fprintf(f, "  }\n");
+  
+  fprintf(f, "  edge: {\n");
+  fprintf(f, "    thickness: 4\n");
+  fprintf(f, "    sourcename: \"start\"\n");
+  fprintf(f, "    targetname: \"%p\"\n", chunk->root);
+  fprintf(f, "  }\n");
+
+  fprintf(f, "  node: {\n");
+  fprintf(f, "    title: \"end\"\n");
+  fprintf(f, "    shape: ellipse\n");
+  fprintf(f, "  }\n");
+
+  for (scan=chunk->blocks; scan; scan=scan->prev)
+  {
+    pheta_basicblock* blk = scan->data;
+    clist* pred, *inst;
+    uint5 i;
+    extern const char* txtcc[];
+    pheta_instr* prev;
+    
+ /*   fprintf(f, "  node: {\n");
+    fprintf(f, "  }\n");*/
+
+    fprintf(f, "  graph: {\n");
+    fprintf(f, "    title: \"%p\"\n", blk);
+    fprintf(f, "    status: folded\n");
+
+    for (inst=blk->base->next, i=0; inst->data; inst=inst->next, i++)
+    {
+      pheta_instr* instr = inst->data;
+      fprintf(f, "  node: {\n");
+      fprintf(f, "    title: \"%.8x:%.4x:", blk, i);
+      phetadism_instruction(f, instr);
+      fprintf(f, "\"\n  }\n");
+
+      if (i>0)
+      {
+        fprintf(f, "  edge: {\n");
+        fprintf(f, "    thickness: 4\n");
+        fprintf(f, "    sourcename: \"%.8x:%.4x:", blk, i-1);
+        phetadism_instruction(f, prev);
+        fprintf(f, "\"\n    targetname: \"%.8x:%.4x:", blk, i);
+        phetadism_instruction(f, instr);
+        fprintf(f, "\"\n  }\n");
+      }
+
+      prev = instr;
+    }
+
+    fprintf(f, "  node: {\n");
+    fprintf(f, "    title: \"%.8x:%s%s\"\n", blk,
+      (blk->predicate&16)?"native":"", txtcc[blk->predicate&15]);
+    fprintf(f, "    shape: rhomboid\n");
+    fprintf(f, "  }\n");
+
+    if (i>0)
+    {
+      fprintf(f, "  edge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%.8x:%.4x:", blk, i-1);
+      phetadism_instruction(f, prev);
+      fprintf(f, "\"\n    targetname: \"%.8x:%s%s\"\n", blk,
+        (blk->predicate&16)?"native":"", txtcc[blk->predicate&15]);
+      fprintf(f, "  }\n");
+    }
+
+    fprintf(f, "  }\n");
+
+    if (blk->trueblk)
+    {
+      fprintf(f, "  edge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%p\"\n", blk);
+      fprintf(f, "    targetname: \"%p\"\n", blk->trueblk);
+      if (blk->falseblk) fprintf(f, "    label: \"true\"\n");
+      fprintf(f, "  }\n");
+    }
+
+    if (blk->falseblk)
+    {
+      fprintf(f, "  edge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%p\"\n", blk);
+      fprintf(f, "    targetname: \"%p\"\n", blk->falseblk);
+      fprintf(f, "    label: \"false\"\n");
+      fprintf(f, "    color: red\n");
+      fprintf(f, "  }\n");
+    }
+
+    if (!blk->trueblk && !blk->falseblk)
+    {
+      fprintf(f, "  edge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%p\"\n", blk);
+      fprintf(f, "    targetname: \"end\"\n");
+      fprintf(f, "  }\n");
+    }
+
+    if (blk->parent)
+    {
+      fprintf(f, "  backedge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%p\"\n", blk);
+      fprintf(f, "    targetname: \"%p\"\n", blk->parent);
+      fprintf(f, "    label: \"parent\"\n");
+      fprintf(f, "    color: blue\n");
+      fprintf(f, "  }\n");
+    }
+  /*  
+    for (pred=blk->predecessor->next; pred->data; pred=pred->next)
+    {
+      pheta_basicblock* target = pred->data;
+      fprintf(f, "  backedge: {\n");
+      fprintf(f, "    thickness: 4\n");
+      fprintf(f, "    sourcename: \"%p\"\n", blk);
+      fprintf(f, "    targetname: \"%p\"\n", target);
+      fprintf(f, "    label: \"pre\"\n");
+      fprintf(f, "    color: red\n");
+      fprintf(f, "  }\n");
+    }*/
+  }
+  
+  fprintf(f, "}\n");
+  fclose(f);
 }
 
 void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
