@@ -1673,8 +1673,10 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
         fprintf(stderr, "Access to unknown coprocessor attempted (%d)\n",
           inst.crt.cpn);
         fprintf(stderr, "PC=%.8x\n", reg->r[15]);
+        #ifdef EMULART
         debug_command(machine, cmd);
         debug_command(machine, cmd2);
+        #endif
         free(cmd);
         free(cmd2);
         abort();

@@ -13,11 +13,19 @@
 #include "fakesys.h"
 #endif
 
+#if defined(ROHLE) || defined(RISCOSE)
+uint5 native_execution = 0;
+#endif
+
 void nativesupport_invoke2(machineinfo* machine, uint3* code)
 {
   registerinfo* reg = machine->reg;
   
   fprintf(stderr, "--> entering native code\n");
+  
+#if defined(ROHLE) || defined(RISCOSE)
+  native_execution = 1;
+#endif
   
   asm __volatile__(
     "pushl %%ebp\n\t"
@@ -27,6 +35,10 @@ void nativesupport_invoke2(machineinfo* machine, uint3* code)
     :
     : "a" (reg), "b" (code)
     : "cx", "dx", "si", "di", "memory");
+  
+#if defined(ROHLE) || defined(RISCOSE)
+  native_execution = 0;
+#endif
   
   fprintf(stderr, "<-- leaving native code\n");
 

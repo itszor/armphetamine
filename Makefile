@@ -1,7 +1,9 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
+AR	= ar
 #CFLAGS	= -g -DVERSION=\"0.4\" -DEMULART
+ARFLAGS	= cru
 NASM	= nasm
 AS	= as
 
@@ -42,6 +44,10 @@ ROHLE =         mach/rohle
 
 ROHLEOBJS =     $(ROHLE)/fakesys.o $(ROHLE)/riscos.o $(ROHLE)/rohlemem.o
 
+RISCOSE =	mach/riscose/src/armphetamine
+
+RISCOSEOBJS =	$(RISCOSE)/regaccess.o
+
 RISCPC =        mach/riscpc
 
 RISCPCOBJS =    $(RISCPC)/iomd.o $(RISCPC)/keyboard.o $(RISCPC)/mouse.o \
@@ -64,6 +70,12 @@ ROHLEINCLUDE =  -I. -Ilibjtype -Icore -Ishell/debug -Imach/rohle -Idynarec \
 
 ROHLECFLAGS =   -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DROHLE
 
+RISCOSEINCLUDE =	-I. -Ilibjtype -Icore -Ishell/debug -Imach/riscose \
+		-Idynarec -Idynarec/arch/x86 -I/usr/include \
+		-I/usr/local/include -I/usr/include/readline
+
+RISCOSECFLAGS =	-g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DRISCOSE
+
 RISCPCCFLAGS =  -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DRISCPCEMU
 
 RISCPCINCLUDE = -I. -Ilibjtype -Icore -Ishell/debug -Imach/riscpc -Idynarec \
@@ -71,15 +83,16 @@ RISCPCINCLUDE = -I. -Ilibjtype -Icore -Ishell/debug -Imach/riscpc -Idynarec \
                 -I/usr/include/readline 
 
 # Change these for different machine!
-CFLAGS =        $(LARTCFLAGS)
+CFLAGS =        $(RISCOSECFLAGS)
 
-INCLUDE =       $(LARTINCLUDE)
+INCLUDE =       $(RISCOSEINCLUDE)
 
-OBJ =	$(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) $(DEBUGOBJS)
+OBJ =	$(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(RISCOSEOBJS)
 
-TARGET =        virtualart
-#TARGET =       rohle
-#TARGET =       riscpcemu
+#TARGET =        mach/lart/virtualart
+#TARGET =	mach/rohle/rohle
+TARGET =	$(RISCOSE)/libarmphetamine.a
+#TARGET =       mach/riscpc/riscpcemu
 
 STRUCTOBJ =	$(DRX86)/structsupport.o
 
@@ -88,7 +101,7 @@ TEMPFILES =     $(DRX86)/genx86_tab.c $(DRX86)/rtasm_fns.c \
 
 TESTS =	divide simple armtest
 
-LIBS = -lm -lreadline -lhistory -lncurses -lutil -lSDL
+LIBS = -lm -lreadline -lhistory -lncurses -lutil
 
 .PHONY: clean cleaner package webpkg romdump lartrun
 
@@ -104,8 +117,11 @@ cleaner:
 lartrun:	virtualart
 	./virtualart "script lartup.txt"
 
-$(TARGET): $(OBJ)
-	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LIBS) 
+$(RISCOSE)/libarmphetamine.a:	$(OBJ)
+	$(AR) $(ARFLAGS) $@ $(OBJ)
+
+#$(TARGET): $(OBJ)
+#	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LIBS) 
 
 simple.o:	simple.arm.s
 	arm-linux-as $< -o $@
