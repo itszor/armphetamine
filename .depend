@@ -110,4 +110,5 @@ profile.o: profile.c profile.h defs.h transmap.h hash.h list.h pheta.h \
  mouse.h bset.h pqueue.h clist.h cnew.h
 recompile.o: recompile.c recompile.h defs.h pheta.h list.h decode.h \
  machine.h processor.h registers.h memory.h keyboard.h mouse.h hash.h \
- bset.h pqueue.h clist.h x86asm.h
+ bset.h pqueue.h clist.h palloc.h genx86.h x86asm.h rtasm.h \
+ rtasm_fns.h

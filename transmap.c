@@ -33,3 +33,4 @@ void transmap_invalidatepage(meminfo* mem, uint5 page)
 void transmap_invalidateall(meminfo* mem)
 {
 }
+
