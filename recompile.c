@@ -29,8 +29,8 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
 //  palloc_fetchmem(mychunk);
   fprintf(stderr, "Using dfs to get parents\n");
   pheta_dfs(mychunk);
-  fprintf(stderr, "Commit shuffling\n");
-  palloc_shufflecommit(mychunk);
+/*  fprintf(stderr, "Commit shuffling\n");
+  palloc_shufflecommit(mychunk);*/
   fprintf(stderr, "Getting predecessors\n");
   pheta_predecessor(mychunk);
   fprintf(stderr, "Finding strongly-connected components\n");

@@ -287,7 +287,7 @@ extern int pheta_dp(machineinfo* machine, instructionformat inst,
 extern int pheta_dp_imm(machineinfo* machine, instructionformat inst,
   void* chunk);
   
-extern void pheta_dp_guts(machineinfo* machine, instructionformat inst,
+extern int pheta_dp_guts(machineinfo* machine, instructionformat inst,
   pheta_chunk* chunk, uint5 op2);
   
 extern int pheta_mul(machineinfo* machine, instructionformat inst,

@@ -8,10 +8,10 @@ disassemble.o: disassemble.c defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h decode.h
 execute26.o: execute26.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
- decode.h fakesys.h debug.h
+ decode.h fakesys.h debug.h intctrl.h
 execute32.o: execute32.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
- decode.h fakesys.h debug.h
+ decode.h fakesys.h debug.h intctrl.h
 fakesys.o: fakesys.c defs.h machine.h processor.h registers.h memory.h \
  keyboard.h mouse.h hash.h list.h decode.h execute.h fakesys.h \
  riscos.h
@@ -34,7 +34,7 @@ main.o: main.c cnew.h defs.h machine.h processor.h registers.h \
  palloc.h pheta.h bset.h
 memory.o: memory.c defs.h cnew.h memory.h keyboard.h mouse.h hash.h \
  list.h processor.h vidc20.h iomd.h machine.h registers.h sapcm.h \
- fifo.h ostimer.h
+ fifo.h ostimer.h intctrl.h
 nativesupport.o: nativesupport.c defs.h registers.h processor.h \
  memory.h keyboard.h mouse.h hash.h list.h nativesupport.h x86asm.h \
  clist.h machine.h execute.h decode.h fakesys.h block.h pseudo.h \
@@ -100,7 +100,7 @@ decodet.o: decodet.c decode.h defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h
 executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
- decode.h fakesys.h debug.h
+ decode.h fakesys.h debug.h intctrl.h
 clist.o: clist.c cnew.h defs.h clist.h list.h
 relocate.o: relocate.c relocate.h defs.h list.h cnew.h
 structsupport.o: structsupport.c defs.h memory.h keyboard.h mouse.h \

@@ -799,10 +799,13 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
           uint5 pageindex = 0, physaddress;
           uint3 fullpage = 0;
 
+          pageindex = virtualaddress & 0xffff;
+          physaddress = (secondleveldescriptor & 0xffff0000) | pageindex;
+
           if (domainaccess==1)  // client
           {
             uint5 rsbits = (mem->mmucontrol >> 8) & 3;
-            uint5 subpage = (pageindex >> 10) & 3;
+            uint5 subpage = (pageindex >> 14) & 3;
             uint3 ap = (secondleveldescriptor >> (2*subpage+4)) & 3;
             uint3 ap0 = (secondleveldescriptor >> 4) & 3;
             uint3 ap1 = (secondleveldescriptor >> 6) & 3;
@@ -814,16 +817,15 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
             if (!isuser) fltbase += 2;
 
-            memory_physicalmap(tlb, secondleveldescriptor,
+            memory_physicalmap(tlb, physaddress,
               apfault[fltbase+0], apfault[fltbase+1]);
           }
           else  // manager, no permission checking
           {
-            memory_physicalmap(tlb, secondleveldescriptor, 1, 1);
+            memory_physicalmap(tlb, physaddress, 1, 1);
             fullpage = 1;
           }
-          pageindex = virtualaddress & 0xffff;
-          physaddress = (secondleveldescriptor & 0xffff0000) | pageindex;
+
           if (fullpage)  // valid for entire 64k
           {
             tlb->mask = 0xffff0000;
@@ -846,10 +848,13 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
           uint5 pageindex = 0, physaddress;
           uint3 fullpage = 0;
           
+          pageindex = virtualaddress & 0xfff;  
+          physaddress = (secondleveldescriptor & 0xfffff000) | pageindex;
+
           if (domainaccess==1)  // client
           {
             uint5 rsbits = (mem->mmucontrol >> 8) & 3;
-            uint5 subpage = (pageindex >> 14) & 3;
+            uint5 subpage = (pageindex >> 10) & 3;
             uint5 ap = (secondleveldescriptor >> (2*subpage+4)) & 3;
             uint3 ap0 = (secondleveldescriptor >> 4) & 3;
             uint3 ap1 = (secondleveldescriptor >> 6) & 3;
@@ -861,16 +866,16 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
             if (!isuser) fltbase += 2;
 
-            memory_physicalmap(tlb, secondleveldescriptor,
+            fprintf(stderr, "fltbase=%d\n", fltbase);
+
+            memory_physicalmap(tlb, physaddress,
               apfault[fltbase+0], apfault[fltbase+1]);
           }
           else  // manager, no permission checking
           {
-            memory_physicalmap(tlb, secondleveldescriptor, 1, 1);
+            memory_physicalmap(tlb, physaddress, 1, 1);
             fullpage = 1;
           }
-          pageindex = virtualaddress & 0xfff;  
-          physaddress = (secondleveldescriptor & 0xfffff000) | pageindex;
 
           if (fullpage)  // valid for full 4k
           {
@@ -884,6 +889,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
             tlb->physical = physaddress & 0xfffffc00;
             tlb->virtual = virtualaddress & 0xfffffc00;
           }
+
           tlb->modestamp = mem->currentmode;
           return physaddress;
         }
@@ -903,6 +909,9 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
         mem->memoryfault = 1;
       }
       
+      sectionindex = virtualaddress & 0x000fffff;
+      physaddress = (firstleveldescriptor & 0xfff00000) | sectionindex;
+
       if (domainaccess==1)
       {
         uint5 rsbits = (mem->mmucontrol >> 8) & 3;
@@ -911,16 +920,14 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
         if (!isuser) fltbase += 2;
 
-        memory_physicalmap(tlb, firstleveldescriptor,
+        memory_physicalmap(tlb, physaddress,
           apfault[fltbase+0], apfault[fltbase+1]);
       }
       else
       {
-        memory_physicalmap(tlb, firstleveldescriptor, 1, 1);
+        memory_physicalmap(tlb, physaddress, 1, 1);
       }
 
-      sectionindex = virtualaddress & 0x000fffff;
-      physaddress = (firstleveldescriptor & 0xfff00000) | sectionindex;
       tlb->mask = 0xfff00000;
       tlb->physical = physaddress & 0xfff00000;
       tlb->virtual = virtualaddress & 0xfff00000;
