@@ -853,14 +853,11 @@ palloc_info* genx86_closesplit(palloc_info* a, uint5 line)
 #define COMPOUND3(A,B,C) \
   ((A)*gotype_NUMTYPES*gotype_NUMTYPES+(B)*gotype_NUMTYPES+(C))
 
-#define ERR { fprintf(stderr, "Specialisation error at %d. " \
-  "Opcode=%s, pattern=%s:%s:%s.\n", \
-  __LINE__, abname[opcode], allocname[dest->type], allocname[src1->type], \
-  allocname[src2->type]); abort(); }
+#define ERR { fprintf(stderr, "Broke at line %d", __LINE__); exit(1); }
 
 void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
 {
-  uint5 ops = 0, opcode = inst->type;
+  uint5 ops = 0, opcode = inst->operator;
 
   if (inst->op[0]) ops++;
   if (inst->op[1]) ops++;
@@ -888,11 +885,11 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
             {
               if (genx86_tab[opcode].i8)
               {
-                genx86_tab[opcode].i8(nat, inst->op[0]->imm);
+                genx86_tab[opcode].i8(nat, inst->op[0]->data.imm);
               }
               else if (genx86_tab[opcode].i32)
               {
-                genx86_tab[opcode].i32(nat, inst->op[0]->imm);
+                genx86_tab[opcode].i32(nat, inst->op[0]->data.imm);
               }
               else ERR;
             }
@@ -902,7 +899,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
             {
               if (genx86_tab[opcode].i32)
               {
-                genx86_tab[opcode].i32(nat, inst->op[0]->imm);
+                genx86_tab[opcode].i32(nat, inst->op[0]->data.imm);
               }
               else ERR;
             }
@@ -924,7 +921,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
           {
             if (genx86_tab[opcode].rm32)
             {
-              genx86_tab[opcode].rm32(nat, rtasm_reg(inst->op[0]->reg));
+              genx86_tab[opcode].rm32(nat, rtasm_reg(inst->op[0]->data.reg));
             }
             else ERR;
           }
@@ -946,6 +943,13 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                   genx86_tab[opcode].rm32_r32(nat, 
                     rtasm_reg(inst->op[0]->data.reg), inst->op[1]->data.reg);
                 }
+                else if (inst->op[1]->data.reg==ECX && 
+                         genx86_tab[opcode].rm32_c)
+                {
+                  genx86_tab[opcode].rm32_c(nat,
+                    rtasm_reg(inst->op[0]->data.reg));
+                }
+                else ERR;
               }
               break;
               
@@ -973,6 +977,9 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                         inst->op[1]->data.imm);
                     }
                   }
+                  break;
+                  
+                  default: ERR;
                   break;
                 }
               }
@@ -1046,6 +1053,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     inst->op[1]->data.regscaledisp.offset));
                 }
               }
+              break;
+              
+              default:
+              ERR;
               break;
             }  // switch (op[1]->type)
           }
@@ -1154,6 +1165,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                       }
                     }
                     break;
+                    
+                    default:
+                    ERR;
+                    break;
                   }  // switch (op1 type)
                 }
                 break;
@@ -1255,8 +1270,16 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                       }
                     }
                     break;
+                    
+                    default:
+                    ERR;
+                    break;
                   }  // switch (op1 type)
                 }
+                break;
+                
+                default:
+                ERR;
                 break;
               }
             }
@@ -1291,46 +1314,50 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                 case gotype_INDREGPLUSDISP8:
                 {
                   genx86_tab[opcode].rm32(nat, 
-                    rtasm_ind8(inst->op[0]->regdisp.base, 
-                    inst->op[0]->regdisp.disp));
+                    rtasm_ind8(inst->op[0]->data.regdisp.base, 
+                    inst->op[0]->data.regdisp.disp));
                 }
                 break;
                 
                 case gotype_INDREGPLUSDISP32:
                 {
                   genx86_tab[opcode].rm32(nat, 
-                    rtasm_ind32(inst->op[0]->regdisp.base, 
-                    inst->op[0]->regdisp.disp));
+                    rtasm_ind32(inst->op[0]->data.regdisp.base, 
+                    inst->op[0]->data.regdisp.disp));
                 }
                 break;
                 
                 case gotype_INDREGPLUSSCALEDREG:
                 {
                   genx86_tab[opcode].rm32(nat, 
-                    rtasm_scind(inst->op[0]->regscale.base,
-                    inst->op[0]->regscale.index,
-                    inst->op[0]->regscale.scale));
+                    rtasm_scind(inst->op[0]->data.regscale.base,
+                    inst->op[0]->data.regscale.index,
+                    inst->op[0]->data.regscale.scale));
                 }
                 break;
                 
                 case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
                 {
                   genx86_tab[opcode].rm32(nat, rtasm_scind8(
-                    inst->op[0]->regscale.base,
-                    inst->op[0]->regscale.index,
-                    inst->op[0]->regscale.scale,
-                    inst->op[0]->regscale.offset));
+                    inst->op[0]->data.regscaledisp.base,
+                    inst->op[0]->data.regscaledisp.index,
+                    inst->op[0]->data.regscaledisp.scale,
+                    inst->op[0]->data.regscaledisp.offset));
                 }
                 break;
 
                 case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                 {
                   genx86_tab[opcode].rm32(nat, rtasm_scind32(
-                    inst->op[0]->regscale.base,
-                    inst->op[0]->regscale.index,
-                    inst->op[0]->regscale.scale,
-                    inst->op[0]->regscale.offset));
+                    inst->op[0]->data.regscaledisp.base,
+                    inst->op[0]->data.regscaledisp.index,
+                    inst->op[0]->data.regscaledisp.scale,
+                    inst->op[0]->data.regscaledisp.offset));
                 }
+                break;
+                
+                default:
+                ERR;
                 break;
               }
             }
@@ -1340,15 +1367,15 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
           
           case 2:
           {
-            switch (inst->op[1]->data.type)
+            switch (inst->op[1]->type)
             {
               case gotype_IMMEDIATE:
               {
-                switch (inst->op[1]->data.width)
+                switch (inst->op[1]->width)
                 {
                   case gowidth_BYTE:
                   {
-                    switch (inst->op[0]->data.width)
+                    switch (inst->op[0]->width)
                     {
                       case gowidth_BYTE:
                       {
@@ -1367,7 +1394,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSDISP8:
                             {
                               genx86_tab[opcode].rm8_i8(nat, 
-                                rtasm_ind8(inst->op[0]->regdisp.base, 
+                                rtasm_ind8(inst->op[0]->data.regdisp.base, 
                                 inst->op[0]->data.regdisp.disp),
                                 inst->op[1]->data.imm);
                             }
@@ -1376,7 +1403,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSDISP32:
                             {
                               genx86_tab[opcode].rm8_i8(nat, 
-                                rtasm_ind32(inst->op[0]->regdisp.base, 
+                                rtasm_ind32(inst->op[0]->data.regdisp.base, 
                                 inst->op[0]->data.regdisp.disp),
                                 inst->op[1]->data.imm);
                             }
@@ -1395,10 +1422,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
                             {
                               genx86_tab[opcode].rm8_i8(nat, rtasm_scind8(
-                                inst->op[0]->data.regscale.base,
-                                inst->op[0]->data.regscale.index,
-                                inst->op[0]->data.regscale.scale,
-                                inst->op[0]->data.regscale.offset),
+                                inst->op[0]->data.regscaledisp.base,
+                                inst->op[0]->data.regscaledisp.index,
+                                inst->op[0]->data.regscaledisp.scale,
+                                inst->op[0]->data.regscaledisp.offset),
                                 inst->op[1]->data.imm);
                             }
                             break;
@@ -1406,12 +1433,16 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                             {
                               genx86_tab[opcode].rm8_i8(nat, rtasm_scind32(
-                                inst->op[0]->data.regscale.base,
-                                inst->op[0]->data.regscale.index,
-                                inst->op[0]->data.regscale.scale,
-                                inst->op[0]->data.regscale.offset),
+                                inst->op[0]->data.regscaledisp.base,
+                                inst->op[0]->data.regscaledisp.index,
+                                inst->op[0]->data.regscaledisp.scale,
+                                inst->op[0]->data.regscaledisp.offset),
                                 inst->op[1]->data.imm);
                             }
+                            break;
+                            
+                            default:
+                            ERR;
                             break;
                           }
                         }
@@ -1435,7 +1466,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSDISP8:
                             {
                               genx86_tab[opcode].rm32_i8(nat, 
-                                rtasm_ind8(inst->op[0]->regdisp.base, 
+                                rtasm_ind8(inst->op[0]->data.regdisp.base, 
                                 inst->op[0]->data.regdisp.disp),
                                 inst->op[1]->data.imm);
                             }
@@ -1444,7 +1475,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSDISP32:
                             {
                               genx86_tab[opcode].rm32_i8(nat, 
-                                rtasm_ind32(inst->op[0]->regdisp.base, 
+                                rtasm_ind32(inst->op[0]->data.regdisp.base, 
                                 inst->op[0]->data.regdisp.disp),
                                 inst->op[1]->data.imm);
                             }
@@ -1463,10 +1494,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
                             {
                               genx86_tab[opcode].rm32_i8(nat, rtasm_scind8(
-                                inst->op[0]->data.regscale.base,
-                                inst->op[0]->data.regscale.index,
-                                inst->op[0]->data.regscale.scale,
-                                inst->op[0]->data.regscale.offset),
+                                inst->op[0]->data.regscaledisp.base,
+                                inst->op[0]->data.regscaledisp.index,
+                                inst->op[0]->data.regscaledisp.scale,
+                                inst->op[0]->data.regscaledisp.offset),
                                 inst->op[1]->data.imm);
                             }
                             break;
@@ -1474,17 +1505,25 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                             {
                               genx86_tab[opcode].rm32_i8(nat, rtasm_scind32(
-                                inst->op[0]->data.regscale.base,
-                                inst->op[0]->data.regscale.index,
-                                inst->op[0]->data.regscale.scale,
-                                inst->op[0]->data.regscale.offset),
+                                inst->op[0]->data.regscaledisp.base,
+                                inst->op[0]->data.regscaledisp.index,
+                                inst->op[0]->data.regscaledisp.scale,
+                                inst->op[0]->data.regscaledisp.offset),
                                 inst->op[1]->data.imm);
                             }
+                            break;
+                            
+                            default:
+                            ERR;
                             break;
                           }
                         }
                         else ERR;
                       }
+                      break;
+                      
+                      default:
+                      ERR;
                       break;
                     }
                   }
@@ -1505,7 +1544,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                       case gotype_INDREGPLUSDISP8:
                       {
                         genx86_tab[opcode].rm32_i32(nat, 
-                          rtasm_ind8(inst->op[0]->regdisp.base, 
+                          rtasm_ind8(inst->op[0]->data.regdisp.base, 
                           inst->op[0]->data.regdisp.disp),
                           inst->op[1]->data.imm);
                       }
@@ -1514,7 +1553,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                       case gotype_INDREGPLUSDISP32:
                       {
                         genx86_tab[opcode].rm32_i32(nat, 
-                          rtasm_ind32(inst->op[0]->regdisp.base, 
+                          rtasm_ind32(inst->op[0]->data.regdisp.base, 
                           inst->op[0]->data.regdisp.disp),
                           inst->op[1]->data.imm);
                       }
@@ -1533,10 +1572,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                       case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
                       {
                         genx86_tab[opcode].rm32_i32(nat, rtasm_scind8(
-                          inst->op[0]->data.regscale.base,
-                          inst->op[0]->data.regscale.index,
-                          inst->op[0]->data.regscale.scale,
-                          inst->op[0]->data.regscale.offset),
+                          inst->op[0]->data.regscaledisp.base,
+                          inst->op[0]->data.regscaledisp.index,
+                          inst->op[0]->data.regscaledisp.scale,
+                          inst->op[0]->data.regscaledisp.offset),
                           inst->op[1]->data.imm);
                       }
                       break;
@@ -1544,15 +1583,23 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                       case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                       {
                         genx86_tab[opcode].rm32_i32(nat, rtasm_scind32(
-                          inst->op[0]->data.regscale.base,
-                          inst->op[0]->data.regscale.index,
-                          inst->op[0]->data.regscale.scale,
-                          inst->op[0]->data.regscale.offset),
+                          inst->op[0]->data.regscaledisp.base,
+                          inst->op[0]->data.regscaledisp.index,
+                          inst->op[0]->data.regscaledisp.scale,
+                          inst->op[0]->data.regscaledisp.offset),
                           inst->op[1]->data.imm);
                       }
                       break;
+                      
+                      default:
+                      ERR;
+                      break;
                     }
                   }
+                  break;
+                  
+                  default:
+                  ERR;
                   break;
                 }
               }
@@ -1575,7 +1622,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSDISP8:
                     {
                       genx86_tab[opcode].rm32_r32(nat, 
-                        rtasm_ind8(inst->op[0]->regdisp.base, 
+                        rtasm_ind8(inst->op[0]->data.regdisp.base, 
                         inst->op[0]->data.regdisp.disp),
                         inst->op[1]->data.reg);
                     }
@@ -1584,7 +1631,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSDISP32:
                     {
                       genx86_tab[opcode].rm32_r32(nat, 
-                        rtasm_ind32(inst->op[0]->regdisp.base, 
+                        rtasm_ind32(inst->op[0]->data.regdisp.base, 
                         inst->op[0]->data.regdisp.disp),
                         inst->op[1]->data.reg);
                     }
@@ -1603,10 +1650,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
                     {
                       genx86_tab[opcode].rm32_r32(nat, rtasm_scind8(
-                        inst->op[0]->data.regscale.base,
-                        inst->op[0]->data.regscale.index,
-                        inst->op[0]->data.regscale.scale,
-                        inst->op[0]->data.regscale.offset),
+                        inst->op[0]->data.regscaledisp.base,
+                        inst->op[0]->data.regscaledisp.index,
+                        inst->op[0]->data.regscaledisp.scale,
+                        inst->op[0]->data.regscaledisp.offset),
                         inst->op[1]->data.reg);
                     }
                     break;
@@ -1614,12 +1661,16 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                     {
                       genx86_tab[opcode].rm32_r32(nat, rtasm_scind32(
-                        inst->op[0]->data.regscale.base,
-                        inst->op[0]->data.regscale.index,
-                        inst->op[0]->data.regscale.scale,
-                        inst->op[0]->data.regscale.offset),
+                        inst->op[0]->data.regscaledisp.base,
+                        inst->op[0]->data.regscaledisp.index,
+                        inst->op[0]->data.regscaledisp.scale,
+                        inst->op[0]->data.regscaledisp.offset),
                         inst->op[1]->data.reg);
                     }
+                    break;
+                    
+                    default:
+                    ERR;
                     break;
                   }
                 }
@@ -1638,7 +1689,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSDISP8:
                     {
                       genx86_tab[opcode].rm32_c(nat, 
-                        rtasm_ind8(inst->op[0]->regdisp.base, 
+                        rtasm_ind8(inst->op[0]->data.regdisp.base, 
                         inst->op[0]->data.regdisp.disp));
                     }
                     break;
@@ -1646,7 +1697,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSDISP32:
                     {
                       genx86_tab[opcode].rm32_c(nat, 
-                        rtasm_ind32(inst->op[0]->regdisp.base, 
+                        rtasm_ind32(inst->op[0]->data.regdisp.base, 
                         inst->op[0]->data.regdisp.disp));
                     }
                     break;
@@ -1663,42 +1714,113 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                     case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
                     {
                       genx86_tab[opcode].rm32_c(nat, rtasm_scind8(
-                        inst->op[0]->data.regscale.base,
-                        inst->op[0]->data.regscale.index,
-                        inst->op[0]->data.regscale.scale,
-                        inst->op[0]->data.regscale.offset));
+                        inst->op[0]->data.regscaledisp.base,
+                        inst->op[0]->data.regscaledisp.index,
+                        inst->op[0]->data.regscaledisp.scale,
+                        inst->op[0]->data.regscaledisp.offset));
                     }
                     break;
 
                     case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
                     {
                       genx86_tab[opcode].rm32_c(nat, rtasm_scind32(
-                        inst->op[0]->data.regscale.base,
-                        inst->op[0]->data.regscale.index,
-                        inst->op[0]->data.regscale.scale,
-                        inst->op[0]->data.regscale.offset));
+                        inst->op[0]->data.regscaledisp.base,
+                        inst->op[0]->data.regscaledisp.index,
+                        inst->op[0]->data.regscaledisp.scale,
+                        inst->op[0]->data.regscaledisp.offset));
                     }
+                    break;
+                    
+                    default:
+                    ERR;
                     break;
                   }
                 }
               }
               break;
+              
+              default:
+              ERR;
+              break;
             }  // switch (op1 type)
           }
+          break;
+          
+          default:
+          ERR;
           break;
         }
       }
       break;
+      
+      default:
+      ERR;
+      break;
     }
   }
-  break;
 }
 
 #undef COMPOUND2
 #undef COMPOUND3
+#undef ERR
 
 #define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
                            ((S1)*pal_NUMTYPES) + (S2))
+
+#define ERR { fprintf(stderr, "Specialisation error at %d. " \
+  "Opcode=%s, pattern=%s:%s:%s.\n", \
+  __LINE__, abname[opcode], allocname[dest->type], allocname[src1->type], \
+  allocname[src2->type]); abort(); }
+
+void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
+{
+  switch (src->type)
+  {
+    case pal_UNSET:
+    {
+      dest->type = gotype_EMPTY;
+    }
+    break;
+    
+    case pal_IREG:
+    {
+      dest->type = gotype_REGISTER;
+      dest->width = gowidth_DWORD;
+      dest->data.reg = src->info.ireg.num;
+    }
+    break;
+    
+    case pal_RFILE:
+    {
+      dest->type = gotype_INDREGPLUSDISP8;
+      dest->width = gowidth_DWORD;
+      dest->data.regdisp.base = EBP;
+      dest->data.regdisp.disp = src->info.value*4;
+    }
+    break;
+    
+    case pal_CONST:
+    {
+      dest->type = gotype_IMMEDIATE;
+      dest->width = gowidth_DWORD;
+      dest->data.imm = src->info.value;
+    }
+    break;
+    
+    case pal_CONSTB:
+    {
+      dest->type = gotype_IMMEDIATE;
+      dest->width = gowidth_BYTE;
+      dest->data.imm = src->info.value;
+    }
+    break;
+    
+    default:
+    fprintf(stderr, "Don't know how to handle that\n");
+    exit(1);
+    break;
+  }
+}
 
 void genx86_produce(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
   palloc_info* src1, palloc_info* src2)
@@ -1706,12 +1828,16 @@ void genx86_produce(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
   genx86_operand a, b, c;
   genx86_op x;
   
-  
+  genx86_translatealloc(&a, dest);
+  genx86_translatealloc(&b, src1);
+  genx86_translatealloc(&c, src2);
   
   x.op[0] = &a;
   x.op[1] = &b;
   x.op[2] = &c;
+  x.operator = opcode;
   
+  genx86_asm(nat, &x);
 }
 
 void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,

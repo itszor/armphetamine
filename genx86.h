@@ -86,6 +86,7 @@ typedef enum {
 } genx86_operand_width;
 
 typedef enum {
+  gotype_EMPTY,
   gotype_IMMEDIATE,
   gotype_REGISTER,
   gotype_INDREG,
