@@ -52,7 +52,8 @@ void palloc_constant(pheta_chunk* chunk)
         {
           uint5 dest = blk->base[i+1];
           uint5 byte = blk->base[i+2];
-          chunk->alloc[dest].type = pal_CONSTB;
+          // using CONSTB here makes things way more complicated
+          chunk->alloc[dest].type = pal_CONST;
           chunk->alloc[dest].info.value = byte;
         }
         break;
@@ -126,7 +127,7 @@ void palloc_fetchmem(pheta_chunk* chunk)
       uint5 opcode = blk->base[i];
       switch (opcode)
       {
-        case ph_FETCH:
+/*        case ph_FETCH:
         {
           uint5 dest = blk->base[i+1];
           uint5 armreg = blk->base[i+2];
@@ -136,7 +137,7 @@ void palloc_fetchmem(pheta_chunk* chunk)
             chunk->alloc[dest].info.value = armreg;
           }
         }
-        break;
+        break;*/
         
         case ph_COMMIT:
         {
