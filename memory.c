@@ -181,6 +181,9 @@ meminfo* memory_initialise(uint5 bytes)
 
   // start off with MMU disabled
   mem->mmuactive = 0;
+
+  // a larger physical memory map will need more hashes than this
+  mem->transmap = cnewarray(hashtable*, 0x20000000/4096);
 	
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");
 

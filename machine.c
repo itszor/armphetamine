@@ -5,6 +5,7 @@
 #include "hash.h"
 #include "block.h"
 #include "execute.h"
+#include "profile.h"
 
 machineinfo* machine_create(uint5 memory)
 {
@@ -18,6 +19,7 @@ machineinfo* machine_create(uint5 memory)
 	machine->translaterules = 0;
   machine->breakpoints = hash_new(16);
   machine->trace = 0;
+  machine->pstate = profile_initialise();
 	
 	return machine;
 }

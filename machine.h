@@ -8,6 +8,7 @@
 #include "hash.h"
 
 struct insttab;
+struct profile_state;
 
 struct machineinfo {
   meminfo* mem;
@@ -17,6 +18,7 @@ struct machineinfo {
   hashentry* live;
   hashtable* translaterules;
   hashtable* breakpoints;
+  struct profile_state* pstate;
   int trace;
   struct insttab* exectab;
   sint5 cycle;

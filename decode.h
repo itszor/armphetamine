@@ -180,7 +180,7 @@ typedef int (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
 // instruction command-function table
 struct insttab {
 	inst_fn dp, dp_imm, mul, sdt, bdt, bra, swi, cdt, cdo, crt, sds, und;
-        inst_fn thumbl;
+  inst_fn thumbl;
 };
 
 typedef struct insttab insttab;

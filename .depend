@@ -76,7 +76,7 @@ iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h machine.h \
 debug.o: debug.c defs.h machine.h processor.h registers.h memory.h \
  keyboard.h mouse.h hash.h list.h debug.h execute.h decode.h pheta.h \
  bset.h pqueue.h clist.h phetadism.h vidc20.h iomd.h palloc.h genx86.h \
- x86asm.h rtasm.h rtasm_fns.h
+ x86asm.h rtasm.h rtasm_fns.h recompile.h
 bset.o: bset.c defs.h bset.h cnew.h
 asmalutab.o: asmalutab.c defs.h asmalu.h
 fifo.o: fifo.c fifo.h defs.h cnew.h
@@ -98,4 +98,8 @@ executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
 clist.o: clist.c cnew.h defs.h clist.h list.h
 relocate.o: relocate.c relocate.h defs.h list.h cnew.h
 structsupport.o: structsupport.c defs.h memory.h keyboard.h mouse.h
-transmap.o: transmap.c
+transmap.o: transmap.c transmap.h defs.h hash.h list.h pheta.h \
+ decode.h machine.h processor.h registers.h memory.h keyboard.h \
+ mouse.h bset.h pqueue.h clist.h
+profile.o: profile.c profile.h defs.h
+recompile.o: recompile.c recompile.h defs.h

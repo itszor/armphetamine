@@ -2,27 +2,34 @@
 
 #include "transmap.h"
 
-void transmap_begin(transmap_profilestate* pstate, uint5 start)
+void transmap_addentry(meminfo* mem, uint5 physaddr, transmap_entry* entry)
 {
-  pstate->context = 0;
-  pstate->ctxtmask = 0;
-  pstate->start = start;
-  pstate->length = 0;
+  uint5 page = physaddr >> 12;
+  hashentry* e;
+  
+  if (!mem->transmap[page])
+  {
+    mem->transmap[page] = hash_new(32);
+  }
+  
+  e = hash_insert(mem->transmap[page], physaddr);
+  e->data = entry;
 }
 
-void transmap_feedaddr(transmap_profilestate* pstate, uint5 addr)
+transmap_entry* transmap_getentry(meminfo* mem, uint5 physaddr)
 {
-  // have we crossed a 4kbyte boundary?
-  if (pstate->start & 0xfffff000 != (pstate->start+addr & 0xfffff000))
-  {
-    fprintf(stderr, "Crossed 4k boundary\n");
-    assert(addr > pstate->start);
-    pstate->length = 4096 - (pstate->start & 0xfff);
-  }
-  else
-  {
-    pstate->length = addr - pstate->start;
-  }
+  uint5 page = physaddr >> 12;
+  hashentry* e = hash_lookup(mem->transmap[page], physaddr);
   
+  if (!e) return 0;
   
+  return (transmap_entry*) e->data;
+}
+
+void transmap_invalidatepage(meminfo* mem, uint5 page)
+{
+}
+
+void transmap_invalidateall(meminfo* mem)
+{
 }
