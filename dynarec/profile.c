@@ -71,7 +71,8 @@ uint5 profile_feednseqaddr(machineinfo* machine, profile_state* pstate,
     }
     else  // no code, gathering further data
     {
-      if (++pstate->currenttrans->usecount > RECOMPILE_THRESHOLD)
+      if (++pstate->currenttrans->usecount > RECOMPILE_THRESHOLD &&
+          machine->curblocks < machine->maxblocks)
       {
         nativeblockinfo* nat;
         /* re-enable this as current block */
@@ -83,6 +84,8 @@ uint5 profile_feednseqaddr(machineinfo* machine, profile_state* pstate,
         
         nat = recompile_chunk(machine, pstate->start, pstate->start+
           pstate->currenttrans->length);
+        
+        machine->curblocks++;
         
         entryataddr->code = nat->base;
         jt_list_destroy(nat->reloc);

@@ -30,6 +30,8 @@ struct machineinfo {
   traceback* lastfew;
   uint5 posn;
   sint5 cycle;
+  int maxblocks;
+  int curblocks;
 };
 
 typedef struct machineinfo machineinfo;

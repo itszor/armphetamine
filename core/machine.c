@@ -32,6 +32,8 @@ machineinfo* machine_create(uint5 memory)
   #ifdef EMULART
   sa1100_serial_initialise(machine->mem);
   #endif
+  machine->maxblocks = 2;
+  machine->curblocks = 0;
 
 	return machine;
 }
