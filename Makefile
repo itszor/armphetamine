@@ -13,7 +13,7 @@ OBJ =	allocate.o analyse.o block.o cnew.o codegen.o decode.o disassemble.o \
 	pseudo.o pseudodism.o registers.o riscos.o x86asm.o x86dism.o \
 	rtasm.o rtasm_fns.o flush.o pheta.o phetadism.o processor.o vidc20.o \
 	iomd.o asmalu.o debug.o bset.o asmalutab.o fifo.o mouse.o keyboard.o \
-	genx86.o palloc.o decodet.o executethm.o clist.o
+	genx86.o palloc.o decodet.o executethm.o clist.o relocate.o
 
 SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	disassemble.c execute26.c execute32.c fakesys.c flush.c generators.c \
@@ -22,7 +22,7 @@ SRC =	allocate.c analyse.c asmalutab.c block.c cnew.c codegen.c decode.c \
 	pseudodism.c registers.c riscos.c rtasm.c vidc20.c x86asm.c x86dism.c \
 	rtasm.c flush.c pheta.c phetadism.c vidc20.c iomd.c debug.c bset.c \
 	asmalutab.c fifo.c mouse.c keyboard.c genx86.c palloc.c decodet.c \
-	executethm.c clist.c
+	executethm.c clist.c relocate.c
 
 LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
 

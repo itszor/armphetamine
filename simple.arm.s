@@ -7,7 +7,7 @@ simple:
 	stmfd r13!,{r0-r2,lr}
 	mov r0,#100
 loop:
-	adds r1,r1,r0
+	adds r1,r1,r0,lsl r3
 	adceq r2,r2,r1
 	subs r0,r0,#1
 	bge loop-.

@@ -10,6 +10,7 @@
 #include "palloc.h"
 #include "pseudo.h"
 #include "phetadism.h"
+#include "relocate.h"
 
 static const genx86_variant genx86_tab[] =
 {
@@ -1224,6 +1225,8 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk)
   
   genx86_translate_inner(nat, chunk, chunk->root, &startline);
   
+  relocate_fix(&nat->reloc, nat->base);
+  
   return nat;
 }
 
@@ -1235,7 +1238,15 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
   palloc_info nul, one, off;
   list* map = 0;
   clist* walk;
-    
+  uint5 patchfalseblk = -1;
+  const static uint5 predset[] =
+  {
+    ab_SETE, ab_SETNE, ab_SETB, ab_SETAE,
+    ab_SETS, ab_SETNS, ab_SETO, ab_SETNO,
+    ab_SETA, ab_SETBE, ab_SETGE, ab_SETL,
+    ab_SETG, ab_SETLE
+  };
+
   nul.type = pal_UNSET;
   
   for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
@@ -1562,13 +1573,6 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
         if (pred)
         {
           uint5 j;
-          const static uint5 predset[] =
-          {
-            ab_SETE, ab_SETNE, ab_SETB, ab_SETAE,
-            ab_SETS, ab_SETNS, ab_SETO, ab_SETNO,
-            ab_SETA, ab_SETBE, ab_SETGE, ab_SETL,
-            ab_SETG, ab_SETLE
-          };
           for (j=0; j<14; j++)
           {
             if (pred & (1<<j))
@@ -1579,6 +1583,24 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
           }
         }
         nat->expecting = 0;
+      }
+      break;
+      
+      case ph_NFCOMMIT:
+      {
+        uint5 pred = instr->data.flag.pred;
+        if (pred)
+        {
+          uint5 j;
+          for (j=0; j<14; j++)
+          {
+            if (pred & (1<<j))
+            {
+              off.info.value = offsetof(registerinfo, npredbuf[j]);
+              genx86_out(nat, predset[j], &off, &nul, &nul, map);
+            }
+          }
+        }
       }
       break;
       
@@ -1718,28 +1740,77 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
   x86dism_partblock(nat, startpos, nat->length);
 
   blk->marker = 1;
+  blk->natoffset = startpos;
 
   (*startline) += blk->length;
 
-  /* join parent block to true/false blocks... */
-
-  if (blk->trueblk && !blk->trueblk->marker)
+  // true & false blocks, neither generated yet
+  if (blk->trueblk && !blk->trueblk->marker &&
+      blk->falseblk && !blk->falseblk->marker)
   {
-    blk->trueblk->marker = 1;
-    truebranch = genx86_translate_inner(nat, chunk, blk->trueblk, startline);
-
-/*    one.type = pal_CONSTB;
+    one.type = pal_CONSTB;
     one.info.value = 1;
     off.type = pal_RFILE;
     off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
     genx86_out(nat, ab_TEST, &off, &one, &nul, map);
     off.type = pal_CONST;
-    off.info.value = truebranch;
-    genx86_out(nat, ab_JNE, &off, &nul, &nul, map);*/
+    off.info.value = -(nat->length+6);
+    genx86_out(nat, ab_JE, &off, &nul, &nul, map);
+    patchfalseblk = nat->length-4;
   }
+  
+  // generated true block, non-generated false block
+  if (blk->trueblk && blk->trueblk->marker &&
+      blk->falseblk && !blk->falseblk->marker)
+  {
+    one.type = pal_CONSTB;
+    one.info.value = 1;
+    off.type = pal_RFILE;
+    off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
+    genx86_out(nat, ab_TEST, &off, &one, &nul, map);
+    off.type = pal_CONST;
+    off.info.value = blk->trueblk->natoffset-nat->length-6;
+    genx86_out(nat, ab_JNE, &off, &nul, &nul, map);
+  }
+  
+  // generated true & false blocks
+  if (blk->trueblk && blk->trueblk->marker &&
+      blk->falseblk && blk->falseblk->marker)
+  {
+    one.type = pal_CONSTB;
+    one.info.value = 1;
+    off.type = pal_RFILE;
+    off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
+    genx86_out(nat, ab_TEST, &off, &one, &nul, map);
+    off.type = pal_CONST;
+    off.info.value = blk->trueblk->natoffset-nat->length-6;
+    genx86_out(nat, ab_JNE, &off, &nul, &nul, map);
+    off.info.value = blk->falseblk->natoffset-nat->length-6;
+    genx86_out(nat, ab_JMP, &off, &nul, &nul, map);
+  }
+  
+  if (blk->trueblk && blk->trueblk->marker &&
+      !blk->falseblk)
+  {
+    off.type = pal_CONST;
+    off.info.value = blk->trueblk->natoffset-nat->length-6;
+    genx86_out(nat, ab_JMP, &off, &nul, &nul, map);
+  }
+
+  if (blk->trueblk && !blk->trueblk->marker)
+    truebranch = genx86_translate_inner(nat, chunk, blk->trueblk, startline);
 
   if (blk->falseblk && !blk->falseblk->marker)
     falsebranch = genx86_translate_inner(nat, chunk, blk->falseblk, startline);
+
+  if (patchfalseblk != -1)
+  {
+    if (falsebranch==-1) falsebranch = blk->falseblk->natoffset;
+    fprintf(stderr, "Adding relocation offset %p value %x\n", patchfalseblk,
+      falsebranch);
+    relocate_add(&nat->reloc, falsebranch, patchfalseblk, relsize_WORD, 
+      reloc_RELATIVE);
+  }
 
   return startpos;
 }

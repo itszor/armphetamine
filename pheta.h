@@ -96,7 +96,7 @@ typedef struct {
     } op;
     uint5 imm;
     struct {
-      uint4 pred;
+      uint5 pred;
       uint3 need;
       uint3 have;
     } flag;
@@ -131,6 +131,8 @@ typedef struct pheta_basicblock_t {
   uint3 dirtybuf[ph_NUMREG];
   pqueue* live;
   uint3 predicate;
+  list* reloc;
+  uint5 natoffset;
 } pheta_basicblock;
 
 typedef struct {
@@ -186,6 +188,8 @@ typedef enum {
   ph_AL,
   ph_NV
 } pheta_condition_code;
+
+#define ph_NAT 0x10
 
 #define bitcc_EQ 0x0001
 #define bitcc_NE 0x0002

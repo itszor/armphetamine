@@ -116,3 +116,4 @@ executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
  registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
  decode.h fakesys.h
 clist.o: clist.c cnew.h defs.h clist.h list.h
+relocate.o: relocate.c relocate.h defs.h list.h cnew.h

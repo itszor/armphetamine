@@ -263,7 +263,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
 void pheta_link(pheta_basicblock* from, uint5 pred,
                 pheta_basicblock* condtrue, pheta_basicblock* condfalse)
 {
-  assert((pred&15)==pred);
+  assert((pred&31)==pred);
   from->predicate = pred;
   from->trueblk = condtrue;
   from->falseblk = condfalse;
@@ -667,17 +667,13 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
       break;*/
       
       case ph_FCOMMIT:
-/*      case ph_NFCOMMIT:  -- handle seperately */
       {
         uint5 have = instr->data.flag.have;
         uint5 need = instr->data.flag.need;
         uint5 pred = instr->data.flag.pred;
         // flag stuff only for ARM state affecting variant
-        if (opcode==ph_FCOMMIT)
-        {
-          need |= (needflag & have);
-          needflag &= ~need;
-        }
+        need |= (needflag & have);
+        needflag &= ~need;
         if (needpred != -1)
         {
           if ((ccflags[needpred] & have) == ccflags[needpred])
@@ -697,6 +693,8 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
         instr->data.flag.pred = pred;
       }
       break;
+
+/*      case ph_NFCOMMIT:  -- handle seperately */
 
       case ph_FENSURE:
       {
@@ -829,7 +827,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
 
         pheta_emit(chunk, ph_NFEXPECT, ph_C | ph_V | ph_N | ph_Z);
         pheta_emit(chunk, ph_CMP, shiftreg, pheta_emit(chunk, ph_CONSTB, 31));
-        pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 0);
+        pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, bitcc_GT);
 //        gtpred = pheta_emit(chunk, ph_NSETPRED, ph_GT);
 //        pheta_emit(chunk, ph_NFENSURE, ph_C | ph_V | ph_N | ph_Z);
 
@@ -846,7 +844,8 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           
           pheta_emit(chunk, ph_NFEXPECT, ph_C | ph_V | ph_N | ph_Z);
           pheta_emit(chunk, ph_CMP, shiftreg, pheta_emit(chunk, ph_CONSTB, 32));
-          pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 0);
+          pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 
+            bitcc_EQ);
 //          shlimpred = pheta_emit(chunk, ph_NSETPRED, ph_EQ);
           
           atshiftlimit = pheta_newbasicblock(chunk, -1);
@@ -887,7 +886,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           rest = pheta_newbasicblock(chunk, 
             ((pheta_chunk*)chunk)->virtualaddress+4);
           
-          pheta_link(original, ph_GT, overshiftlimit, undershiftlimit);
+          pheta_link(original, ph_NAT|ph_GT, overshiftlimit, undershiftlimit);
           pheta_link(undershiftlimit, ph_AL, rest, 0);
           pheta_link(overshiftlimit, ph_AL, rest, 0);
         }
@@ -904,7 +903,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
 
         pheta_emit(chunk, ph_NFEXPECT, ph_C | ph_V | ph_N | ph_Z);
         pheta_emit(chunk, ph_CMP, shiftreg, pheta_emit(chunk, ph_CONSTB, 31));
-        pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 0);
+        pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, bitcc_GT);
 //        pheta_emit(chunk, ph_NFENSURE, ph_C | ph_V | ph_N | ph_Z);
 
         if (islogic && inst.dp.s)
@@ -920,7 +919,8 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           
           pheta_emit(chunk, ph_NFEXPECT, ph_C | ph_V | ph_N | ph_Z);
           pheta_emit(chunk, ph_CMP, shiftreg, pheta_emit(chunk, ph_CONSTB, 32));
-          pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 0);
+          pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 
+            bitcc_EQ);
           
           atshiftlimit = pheta_newbasicblock(chunk, -1);
           
@@ -939,9 +939,10 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           
           rest = pheta_newbasicblock(chunk, -1);
           
-          pheta_link(original, ph_GT, testatshiftlimit, undershiftlimit);
+          pheta_link(original, ph_NAT|ph_GT, testatshiftlimit, undershiftlimit);
           pheta_link(undershiftlimit, ph_AL, rest, 0);
-          pheta_link(testatshiftlimit, ph_EQ, atshiftlimit, overshiftlimit);
+          pheta_link(testatshiftlimit, ph_NAT|ph_EQ, atshiftlimit, 
+                     overshiftlimit);
           pheta_link(atshiftlimit, ph_AL, rest, 0);
           pheta_link(overshiftlimit, ph_AL, rest, 0);
         }
@@ -960,7 +961,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           rest = pheta_newbasicblock(chunk, 
             ((pheta_chunk*)chunk)->virtualaddress+4);
           
-          pheta_link(original, ph_GT, overshiftlimit, undershiftlimit);
+          pheta_link(original, ph_NAT|ph_GT, overshiftlimit, undershiftlimit);
           pheta_link(undershiftlimit, ph_AL, rest, 0);
           pheta_link(overshiftlimit, ph_AL, rest, 0);
         }
@@ -976,7 +977,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
 
         pheta_emit(chunk, ph_NFEXPECT, ph_C | ph_V | ph_N | ph_Z);
         pheta_emit(chunk, ph_CMP, shiftreg, shiftlimit);
-        pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, 0);
+        pheta_emit(chunk, ph_NFCOMMIT, ph_C | ph_V | ph_N | ph_Z, 0, bitcc_GT);
 //        pheta_emit(chunk, ph_NFENSURE, ph_C | ph_V | ph_N | ph_Z);
 
         if (islogic && inst.dp.s)
@@ -998,7 +999,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           
           rest = pheta_newbasicblock(chunk, -1);
           
-          pheta_link(original, ph_GT, overshiftlimit, undershiftlimit);
+          pheta_link(original, ph_NAT|ph_GT, overshiftlimit, undershiftlimit);
           pheta_link(undershiftlimit, ph_AL, rest, 0);
           pheta_link(overshiftlimit, ph_AL, rest, 0);
         }
@@ -1017,7 +1018,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           rest = pheta_newbasicblock(chunk, -1);
         }
 
-        pheta_link(original, ph_GT, overshiftlimit, undershiftlimit);
+        pheta_link(original, ph_NAT|ph_GT, overshiftlimit, undershiftlimit);
         pheta_link(undershiftlimit, ph_AL, rest, 0);
         pheta_link(overshiftlimit, ph_AL, rest, 0);
       }
@@ -1035,7 +1036,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
           
           pheta_emit(chunk, ph_NFEXPECT, ph_Z | ph_N);
           shiftreg = pheta_emit(chunk, ph_AND, shiftreg, shiftmask);
-          pheta_emit(chunk, ph_NFCOMMIT, ph_Z | ph_N, 0, 0);
+          pheta_emit(chunk, ph_NFCOMMIT, ph_Z | ph_N, 0, bitcc_EQ);
 //          pheta_emit(chunk, ph_NFENSURE, ph_Z | ph_N);
 
           if (islogic && inst.dp.s)
@@ -1054,7 +1055,7 @@ void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
             
             rest = pheta_newbasicblock(chunk, -1);
             
-            pheta_link(original, ph_EQ, zero, notzero);
+            pheta_link(original, ph_NAT|ph_EQ, zero, notzero);
             pheta_link(notzero, ph_AL, rest, 0);
             pheta_link(zero, ph_AL, rest, 0);
           }

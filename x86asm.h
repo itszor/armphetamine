@@ -396,6 +396,7 @@ typedef struct {
   uint5 size;
   uint3 expecting;
   uint3 beenset;
+  list* reloc;
 } nativeblockinfo;
 
 extern nativeblockinfo* x86asm_newnative(void);

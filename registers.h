@@ -18,6 +18,7 @@ typedef struct {
   // expanded out in dynarec code...
   uint3 cflag, vflag, zflag, nflag;
   uint3 predbuf[16];  // probably only need to be 14 really
+  uint3 npredbuf[16];
   uint5 base, scratch;
   uint5 mode, intmask;
   psrinfo cpsr;
