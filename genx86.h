@@ -193,9 +193,10 @@ typedef struct {
 } genx86_variant;
 
 extern void genx86_test(void);
-extern void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
-  palloc_info* src1, palloc_info* src2);
-extern void genx86_move(clist* buffer, palloc_info* dest, palloc_info* src);
+extern void genx86_append(pheta_chunk* chunk, genx86_buffer*, uint5 opcode, 
+  palloc_info* dest, palloc_info* src1, palloc_info* src2);
+extern void genx86_move(pheta_chunk* chunk, genx86_buffer*, palloc_info* dest, 
+  palloc_info* src);
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                        palloc_info* src1, palloc_info* src2, list* x);
 extern nativeblockinfo* genx86_translate(pheta_chunk* chunk);

@@ -1765,7 +1765,8 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
 #undef COMPOUND3
 #undef ERR
 
-void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
+void genx86_translatealloc(pheta_chunk* chunk, genx86_operand* dest,
+                           palloc_info* src)
 {
   if (!dest) return;
 
@@ -1812,9 +1813,7 @@ void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
     
     case pal_ALIAS:
     {
-      // *** ignore for now ***
-//      abort();
-//      genx86_translatealloc(chunk, dest, &chunk->alloc[src->info.value]);
+      genx86_translatealloc(chunk, dest, &chunk->alloc[src->info.value]);
     }
     break;
     
@@ -1825,8 +1824,8 @@ void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
   }
 }
 
-void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
-  palloc_info* src1, palloc_info* src2)
+void genx86_append(pheta_chunk* chunk, genx86_buffer* buf, uint5 opcode, 
+  palloc_info* dest, palloc_info* src1, palloc_info* src2)
 {
   genx86_operand *a=0, *b=0, *c=0;
   genx86_op* x = cnew(genx86_op);
@@ -1837,7 +1836,7 @@ void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
     if (!dest->slot)
     {
       dest->slot = cnew(genx86_operand);
-      genx86_translatealloc(dest->slot, dest);
+      genx86_translatealloc(chunk, dest->slot, dest);
     }
     a = dest->slot;
     fprintf(stderr, "dest->slot=%p ", dest->slot);
@@ -1848,7 +1847,7 @@ void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
     if (!src1->slot)
     {
       src1->slot = cnew(genx86_operand);
-      genx86_translatealloc(src1->slot, src1);
+      genx86_translatealloc(chunk, src1->slot, src1);
     }
     b = src1->slot;
     fprintf(stderr, "src1->slot=%p ", src1->slot);
@@ -1859,7 +1858,7 @@ void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
     if (!src2->slot)
     {
       src2->slot = cnew(genx86_operand);
-      genx86_translatealloc(src2->slot, src2);
+      genx86_translatealloc(chunk, src2->slot, src2);
     }
     c = src2->slot;
     fprintf(stderr, "src2->slot=%p", src2->slot);
@@ -1871,8 +1870,13 @@ void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
   x->op[2] = c;
   x->operator = opcode;
   
-  newinst = clist_append(buffer);
+  newinst = clist_append(buf->buffer);
   newinst->data = x;
+  
+  if (buf->expecting)
+  {
+    buf->beenset |= genx86_tab[opcode].flagset;
+  }
 }
 
 #define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
@@ -2251,7 +2255,8 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
 #undef ERR
 
 // Won't move something into itself, simplifies zero-loads
-void genx86_move(clist* buffer, palloc_info* dest, palloc_info* src)
+void genx86_move(pheta_chunk* chunk, genx86_buffer* buf, palloc_info* dest, 
+  palloc_info* src)
 {
   palloc_info nul;
   nul.type = pal_UNSET;
@@ -2276,11 +2281,11 @@ void genx86_move(clist* buffer, palloc_info* dest, palloc_info* src)
   {
     if (src->info.value==0)
     {
-      genx86_append(buffer, ab_XOR, dest, dest, &nul);
+      genx86_append(chunk, buf, ab_XOR, dest, dest, &nul);
       return;
     }
   }
-  genx86_append(buffer, ab_MOV, dest, src, &nul);
+  genx86_append(chunk, buf, ab_MOV, dest, src, &nul);
 }
 
 /*
@@ -2393,7 +2398,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           palloc_info psrc;
           psrc.type = pal_RFILE;
           psrc.info.value = armsrc*4;
-          genx86_append(buffer, ab_MOV, dest, &psrc, &nul);
+          genx86_append(chunk, buf, ab_MOV, dest, &psrc, &nul);
         }
         break;
 
@@ -2430,7 +2435,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           palloc_info pdest;
           pdest.type = pal_RFILE;
           pdest.info.value = armdest*4;
-          genx86_append(buffer, ab_MOV, &pdest, src, &nul);
+          genx86_append(chunk, buf, ab_MOV, &pdest, src, &nul);
         }
         break;
 
@@ -2452,8 +2457,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_SHL, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_SHL, dest, src2, &nul);
     }
     break;
 
@@ -2462,8 +2467,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_SHR, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_SHR, dest, src2, &nul);
     }
     break;
 
@@ -2472,8 +2477,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_SAR, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_SAR, dest, src2, &nul);
     }
     break;
 
@@ -2482,8 +2487,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_ROR, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_ROR, dest, src2, &nul);
     }
     break;
 
@@ -2492,8 +2497,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_ROL, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_ROL, dest, src2, &nul);
     }
     break;
 
@@ -2502,8 +2507,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_AND, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_AND, dest, src2, &nul);
     }
     break;
 
@@ -2512,8 +2517,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_OR, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_OR, dest, src2, &nul);
     }
     break;
 
@@ -2522,8 +2527,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_XOR, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_XOR, dest, src2, &nul);
     }
     break;
 
@@ -2535,12 +2540,12 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       if (dest->type==pal_IREG && src1->type==pal_IREG && 
           src2->type==pal_IREG && buf->expecting==0)
       {
-        genx86_append(buffer, ab_LEA, dest, src1, src2);
+        genx86_append(chunk, buf, ab_LEA, dest, src1, src2);
       }
       else
       {
-        genx86_move(buffer, dest, src1);
-        genx86_append(buffer, ab_ADD, dest, src2, &nul);
+        genx86_move(chunk, buf, dest, src1);
+        genx86_append(chunk, buf, ab_ADD, dest, src2, &nul);
       }
     }
     break;
@@ -2550,8 +2555,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_ADC, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_ADC, dest, src2, &nul);
     }
     break;
 
@@ -2560,8 +2565,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_SUB, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_SUB, dest, src2, &nul);
     }
     break;
 
@@ -2570,8 +2575,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_move(buffer, dest, src1);
-      genx86_append(buffer, ab_SBB, dest, src2, &nul);
+      genx86_move(chunk, buf, dest, src1);
+      genx86_append(chunk, buf, ab_SBB, dest, src2, &nul);
     }
     break;
 
@@ -2584,12 +2589,12 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       if ((src2->type==pal_CONST || src2->type==pal_CONSTB) && 
           dest->type==pal_IREG)
       {
-        genx86_append(buffer, ab_IMUL, dest, src1, src2);
+        genx86_append(chunk, buf, ab_IMUL, dest, src1, src2);
       }
       else
       {
-        genx86_move(buffer, dest, src1);
-        genx86_append(buffer, ab_IMUL, dest, src2, &nul);
+        genx86_move(chunk, buf, dest, src1);
+        genx86_append(chunk, buf, ab_IMUL, dest, src2, &nul);
       }
     }
     break;
@@ -2601,8 +2606,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info one;
       one.type = pal_CONSTB;
       one.info.value = 1;
-      genx86_move(buffer, dest, src);
-      genx86_append(buffer, ab_RCR, dest, &one, &nul);
+      genx86_move(chunk, buf, dest, src);
+      genx86_append(chunk, buf, ab_RCR, dest, &one, &nul);
     }
     break;
 
@@ -2613,8 +2618,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info one;
       one.type = pal_CONSTB;
       one.info.value = 1;
-      genx86_move(buffer, dest, src);
-      genx86_append(buffer, ab_RCL, dest, &one, &nul);
+      genx86_move(chunk, buf, dest, src);
+      genx86_append(chunk, buf, ab_RCL, dest, &one, &nul);
     }
     break;
 
@@ -2622,7 +2627,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
-      genx86_move(buffer, dest, src);
+      genx86_move(chunk, buf, dest, src);
     }
     break;
 
@@ -2630,8 +2635,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
-      genx86_move(buffer, dest, src);
-      genx86_append(buffer, ab_NOT, dest, &nul, &nul);
+      genx86_move(chunk, buf, dest, src);
+      genx86_append(chunk, buf, ab_NOT, dest, &nul, &nul);
     }
     break;
 
@@ -2639,9 +2644,9 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_append(buffer, ab_PUSH, src1, &nul, &nul);
-      genx86_append(buffer, ab_XOR, src1, src2, &nul);
-      genx86_append(buffer, ab_POP, src1, &nul, &nul);
+      genx86_append(chunk, buf, ab_PUSH, src1, &nul, &nul);
+      genx86_append(chunk, buf, ab_XOR, src1, src2, &nul);
+      genx86_append(chunk, buf, ab_POP, src1, &nul, &nul);
     }
     break;
 
@@ -2649,7 +2654,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_append(buffer, ab_TEST, src1, src2, &nul);
+      genx86_append(chunk, buf, ab_TEST, src1, src2, &nul);
     }
     break;
 
@@ -2657,7 +2662,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_append(buffer, ab_CMP, src1, src2, &nul);
+      genx86_append(chunk, buf, ab_CMP, src1, src2, &nul);
     }
     break;
 
@@ -2665,9 +2670,9 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-      genx86_append(buffer, ab_PUSH, src1, &nul, &nul);
-      genx86_append(buffer, ab_ADD, src1, src2, &nul);
-      genx86_append(buffer, ab_POP, src1, &nul, &nul);
+      genx86_append(chunk, buf, ab_PUSH, src1, &nul, &nul);
+      genx86_append(chunk, buf, ab_ADD, src1, src2, &nul);
+      genx86_append(chunk, buf, ab_POP, src1, &nul, &nul);
     }
     break;
 
@@ -2690,26 +2695,26 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       {
         off.info.value = offsetof(registerinfo, cflag);
         if (buf->beenset & ph_IC)
-          genx86_append(buffer, ab_SETAE, &off, &nul, &nul);
+          genx86_append(chunk, buf, ab_SETAE, &off, &nul, &nul);
         else if (buf->beenset & ph_C)
-          genx86_append(buffer, ab_SETB, &off, &nul, &nul);
+          genx86_append(chunk, buf, ab_SETB, &off, &nul, &nul);
         else
           assert(!"Carry flag has not been set");
       }
       if (needmask & ph_V)
       {
         off.info.value = offsetof(registerinfo, vflag);
-        genx86_append(buffer, ab_SETO, &off, &nul, &nul);
+        genx86_append(chunk, buf, ab_SETO, &off, &nul, &nul);
       }
       if (needmask & ph_N)
       {
         off.info.value = offsetof(registerinfo, nflag);
-        genx86_append(buffer, ab_SETS, &off, &nul, &nul);
+        genx86_append(chunk, buf, ab_SETS, &off, &nul, &nul);
       }
       if (needmask & ph_Z)
       {
         off.info.value = offsetof(registerinfo, zflag);
-        genx86_append(buffer, ab_SETE, &off, &nul, &nul);
+        genx86_append(chunk, buf, ab_SETE, &off, &nul, &nul);
       }
       if (pred)
       {
@@ -2719,7 +2724,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           if (pred & (1<<j))
           {
             off.info.value = offsetof(registerinfo, predbuf[j]);
-            genx86_append(buffer, predset[j], &off, &nul, &nul);
+            genx86_append(chunk, buf, predset[j], &off, &nul, &nul);
           }
         }
       }
@@ -2740,7 +2745,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           if (pred & (1<<j))
           {
             off.info.value = offsetof(registerinfo, npredbuf[j]);
-            genx86_append(buffer, predset[j], &off, &nul, &nul);
+            genx86_append(chunk, buf, predset[j], &off, &nul, &nul);
           }
         }
       }
@@ -2760,7 +2765,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           off.info.value = offsetof(registerinfo, cflag);
           zero.type = pal_CONSTB;
           zero.info.value = 0;
-          genx86_append(buffer, ab_BT, &off, &zero, &nul);
+          genx86_append(chunk, buf, ab_BT, &off, &zero, &nul);
           if (mask==ph_IC)
           {
             assert(!"I wasn't expecting you to ensure inverse C!");
@@ -2789,15 +2794,15 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       /*  memory structure base
        *  address
        */
-      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_CALL, &rel, &nul, &nul);
       rel.type = pal_CONSTB;
       rel.info.value = 6;
-      genx86_append(buffer, ab_JECXZ, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_JECXZ, &rel, &nul, &nul);
       genx86_recover(buf, chunk);
       rel.type = pal_CONST;
       rel.info.value = 0;
-      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
-      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+      genx86_append(chunk, buf, ab_CALL, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_RET, &nul, &nul, &nul);
     }
     break;
 
@@ -2809,15 +2814,15 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       /*  memory structure base
        *  address
        */
-      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_CALL, &rel, &nul, &nul);
       rel.type = pal_CONSTB;
       rel.info.value = 6;
-      genx86_append(buffer, ab_JECXZ, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_JECXZ, &rel, &nul, &nul);
       genx86_recover(buf, chunk);
       rel.type = pal_CONST;
       rel.info.value = 0;
-      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
-      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+      genx86_append(chunk, buf, ab_CALL, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_RET, &nul, &nul, &nul);
     }
     break;
 
@@ -2830,15 +2835,15 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       /*  memory structure base
        *  address
        */
-      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_CALL, &rel, &nul, &nul);
       rel.type = pal_CONSTB;
       rel.info.value = 6;
-      genx86_append(buffer, ab_JECXZ, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_JECXZ, &rel, &nul, &nul);
       genx86_recover(buf, chunk);
       rel.type = pal_CONST;
       rel.info.value = 0;
-      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
-      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+      genx86_append(chunk, buf, ab_CALL, &rel, &nul, &nul);
+      genx86_append(chunk, buf, ab_RET, &nul, &nul, &nul);
     }
     break;
 
@@ -2874,14 +2879,37 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       dest.info.value = 15*4;
       c8.type = pal_CONSTB;
       c8.info.value = 8;
-      genx86_append(buffer, ab_ADD, &dest, &c8, &nul);
-      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+      genx86_append(chunk, buf, ab_ADD, &dest, &c8, &nul);
+      genx86_append(chunk, buf, ab_RET, &nul, &nul, &nul);
     }
     break;
     // !!! things missing
   }
   
   return 0;
+}
+
+void genx86_insert_spill_code(genx86_buffer* buf, pheta_chunk* chunk)
+{
+  list* scan;
+  
+  for (scan=buf->fetch; scan; scan=scan->prev)
+  {
+    genx86_delayedfetchcommit* dfc = scan->data;
+    if (chunk->alloc[dfc->var].type == pal_IREG)
+    {
+/*    genx86_insertraw(dfc->loc, ab_MOV, register, memory, 0);  */
+    }
+  }
+  
+  for (scan=buf->commit; scan; scan=scan->prev)
+  {
+    genx86_delayedfetchcommit* dfc = scan->data;
+    if (chunk->alloc[dfc->var].type == pal_IREG)
+    {
+/*    genx86_insertraw(dfc->loc, ab_MOV, memory, register, 0);  */
+    }
+  }
 }
 
 
