@@ -1,3 +1,45 @@
 This is a recompiling ARM emulator core. It is still in development.
 
 Julian Brown <brown@cs.bris.ac.uk>
+
+Very preliminary instructions!
+==============================
+
+You can build ARMphetamine into several different machine configurations:
+
+  - lart
+  - riscose
+  - (others not even compilable at the moment)
+
+You need to point APBASEDIR to the directory containing this README.
+
+Then just go into the mach/* directory and type "make clean; make". Object
+files are not seperate for the different compilation things, so make
+sure you "make clean" between switching configuration!
+
+LART - http://www.lart.tudelft.nl
+=================================
+
+This is a board produced by Technical University Delft, containing a
+StrongARM SA1100, memory and support logic. This emulator is independent
+of them, and does not work properly. Don't hassle them about it though. I
+don't even have a LART board to compare my emulator with! Oh well.
+
+Riscose - http://riscose.sourceforge.net
+========================================
+
+This is a project to emulate Acorn's RISC OS at a high level, in a manner
+kind of similar to WINE. You need to check Riscose out from CVS, then do:
+
+  ln -s $(ARMPHETAMINE)/mach/riscose $(RISCOSE)/src/armphetamine
+
+Where $(..) are replaced by the right directories. Then you need to hack
+"configure.in" to add the new emulator, and do:
+
+  aclocal && autoheader && automake && autoconf
+  ./configure --enable-arm=armphetamine
+  make
+
+Unfortunately at the time of writing Riscose doesn't work very well,
+so you won't get much further than this. Plus, some code is missing from
+the ARMphetamine side of things.
