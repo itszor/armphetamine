@@ -180,6 +180,7 @@ typedef void (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
 // instruction command-function table
 typedef struct {
 	inst_fn dp, dp_imm, mul, sdt, bdt, bra, swi, cdt, cdo, crt, sds, und;
+        inst_fn thumbl;
 } insttab;
 
 typedef enum {

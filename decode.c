@@ -18,7 +18,8 @@ insttab diss = {
 	diss_cdo,
 	diss_crt,
 	diss_sds,
-	diss_und
+	diss_und,
+        NULL
 };
 
 // execution function table, 26-bit
@@ -34,7 +35,8 @@ insttab exec26 = {
 	exec_cdo_26,
 	exec_crt_26,
 	exec_sds_26,
-	exec_und_26
+	exec_und_26,
+        NULL
 };
 
 // execution function table, 32-bit
@@ -50,7 +52,8 @@ insttab exec32 = {
 	exec_cdo_32,
 	exec_crt_32,
 	exec_sds_32,
-	exec_und_32
+	exec_und_32,
+        NULL
 };
 
 // intermediate code translator function table
@@ -66,7 +69,8 @@ insttab pseudo = {
 	pseudo_cdo,
 	pseudo_crt,
 	pseudo_sds,
-	pseudo_und
+	pseudo_und,
+        NULL
 };
 
 insttab phet4 = {
@@ -81,7 +85,8 @@ insttab phet4 = {
   pheta_cdo,
   pheta_crt,
   pheta_sds,
-  pheta_und
+  pheta_und,
+  NULL
 };
 
 // Tree-shaped instruction dispatch
