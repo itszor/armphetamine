@@ -36,6 +36,7 @@ dynsupport_readbank%1
         mov edx,[eax+meminfo_bank%1]
         mov eax,[edx+ecx]
         xor ecx,ecx
+        leave
         ret
 %endmacro
 
@@ -53,6 +54,7 @@ dynsupport_writebank%1
         mov edx,[eax+meminfo_bank%1]
         mov [edx+ecx],eax
         xor ecx,ecx
+        leave
         ret
 %endmacro
 
@@ -87,12 +89,8 @@ dynsupport_readdataword:
 
         push ecx  ; phys addr
         push eax  ; meminfo
+        push ebp
         jmp [edx+tlbentry.rdword]
-        add esi,8
-        pop ebx
-        pop edi
-        pop esi
-        rts
         
 tlbmiss:
         mov esi,eax  ; memoryinfo
@@ -104,12 +102,7 @@ tlbmiss:
         add esp,12
         push esi
         push edi
+        push ebp
         jmp [edx+tlbentry.rdword]
-        add esp,8
-
-        pop ebx
-        pop edi
-        pop esi
-        ret
 .end:
 
