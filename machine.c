@@ -54,7 +54,11 @@ void machine_start(machineinfo* machine)
     }
     else
     {
-      dispatch(machine, inst, machine->exectab, 0);
+      uint5 retcode = dispatch(machine, inst, machine->exectab, 0);
+      if (retcode==1)
+      {
+        /* do something */
+      }
 #ifdef IOMDSUPPORT
       if (--machine->cycle<0)
       {

@@ -27,7 +27,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   registerinfo* reg = machine->reg;
   uint5 omode = reg->cpsr.flag.mode, i;
   uint5 reducemode = omode>=16 && newmode<16;
-//  uint5 increasemode = omode<16 && newmode>=16;
+  uint5 increasemode = omode<16 && newmode>=16;
 
   fprintf(stderr, "Switching mode from %s to %s\n",
     modename_st[reg->cpsr.flag.mode], modename_st[newmode]);
@@ -140,6 +140,18 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     // absolutely no idea if this is right
     reg->r[15] = (reg->r[15] & ~0xfc000003) | (reg->cpsr.value & 0xf0000003) |
                  ((reg->cpsr.value & 0xc0)<<20);
+  }
+
+  if (increasemode)
+  {
+    /* address */
+    reg->r[15] = (reg->r[15] & ~0xfc000003);
+    /* flags */
+    reg->cpsr.value = (reg->cpsr.value & ~0xf0000000)
+                    | (reg->r[15]      &  0xf0000000);
+    /* interrupt */
+    reg->cpsr.value = (reg->cpsr.value & ~0x000000c0)
+                    | ((reg->r[15]>>20) & 0xc0);
   }
   
 /*  if (increasemode)
