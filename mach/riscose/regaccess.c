@@ -4,6 +4,7 @@
 #include "execute.h"
 
 static machineinfo* machine;
+extern int native_execution;
 
 void arm_init(void)
 {
@@ -34,8 +35,6 @@ void arm_set_pc(uint5 value)
   registerinfo* reg = machine->reg;
   RPUT(15, value);
 }
-
-extern int native_execution;
 
 void arm_set_c(void)
 {

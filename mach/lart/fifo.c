@@ -5,8 +5,8 @@
 
 fifo_info* fifo_create(uint5 size)
 {
-  fifo_info* fifo = cnew(fifo_info);
-  fifo->data = cnewarray(uint3, size);
+  fifo_info* fifo = jt_new(fifo_info);
+  fifo->data = jt_newarray(uint3, size);
   fifo->length = size;
   fifo_reset(fifo);
   return fifo;
@@ -20,8 +20,8 @@ void fifo_reset(fifo_info* fifo)
 
 void fifo_delete(fifo_info* fifo)
 {
-  free(fifo->data);
-  free(fifo);
+  jt_delete(fifo->data);
+  jt_delete(fifo);
 }
 
 void fifo_write(fifo_info* fifo, uint3 byte)

@@ -22,7 +22,7 @@ struct machineinfo {
  /* hashtable* blocks;
   hashentry* live;
   hashtable* translaterules;*/
-  hashtable* breakpoints;
+  jt_hash* breakpoints;
   struct profile_state* pstate;
   int trace;
   int detracecounter;

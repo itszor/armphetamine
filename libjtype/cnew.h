@@ -5,15 +5,16 @@
 **
 */
 
-#ifndef C3D_ALLOCV_H
-#define C3D_ALLOCV_H 1
+#ifndef JT_CNEW_H
+#define JT_CNEW_H 1
 
 #include <stdlib.h>
 
-#define cnew(n) safemalloc(sizeof(n))
-#define cnewarray(n, s) safecalloc(sizeof(n), s)
+#define jt_new(n) jt_safemalloc(sizeof(n))
+#define jt_newarray(n, s) jt_safecalloc(sizeof(n), s)
+#define jt_delete(n) free(n)
 
-extern void* safemalloc(size_t bytes);
-extern void* safecalloc(size_t bytes, size_t num);
+extern void* jt_safemalloc(size_t bytes);
+extern void* jt_safecalloc(size_t bytes, size_t num);
 
 #endif

@@ -4,14 +4,14 @@
 #include "cnew.h"
 #include "hash.h"
 
-hashtable* hash_new(uint5 size)
+jt_hash* jt_hash_new(uint5 size)
 {
-  hashtable* htab = cnew(hashtable);
+  jt_hash* htab = jt_new(jt_hash);
 	uint5 i;
 	
 	htab->entries = 0;
 	size = htab->size = 1<<(int)(log((float)size)/log(2)+1.0);
-	htab->table = cnewarray(list*, size);
+	htab->table = jt_newarray(jt_list*, size);
 	
 	for (i=0; i<size; i++)
 	{
@@ -24,15 +24,15 @@ hashtable* hash_new(uint5 size)
 // erm; any old nonsense really
 #define HASHFN(K,S) (((K)*17011)&((S)-1))
 
-hashentry* hash_insert(hashtable* hash, uint5 key)
+jt_hashentry* jt_hash_insert(jt_hash* hash, uint5 key)
 {
-  hashentry* entry = 0;
+  jt_hashentry* entry = 0;
 	uint5 loc = HASHFN(key, hash->size);
-	list* item, *theitem=0;
+	jt_list* item, *theitem=0;
 	
 	for (item=hash->table[loc]; item; item=item->prev)
 	{
-	  hashentry* h = (hashentry*) item->data;
+	  jt_hashentry* h = (jt_hashentry*) item->data;
 
 		if (h->key==key)
 		{
@@ -44,8 +44,8 @@ hashentry* hash_insert(hashtable* hash, uint5 key)
 	
 	if (!theitem)
 	{
-	  theitem = list_add(&hash->table[loc]);
-  	theitem->data = entry = cnew(hashentry);
+	  theitem = jt_list_add(&hash->table[loc]);
+  	theitem->data = entry = jt_new(jt_hashentry);
   	entry->key = key;
   	entry->data = 0;
 		hash->entries++;
@@ -55,22 +55,22 @@ hashentry* hash_insert(hashtable* hash, uint5 key)
 }
 
 // this gives you back your data pointer, cos you have to free that yourself
-void* hash_remove(hashtable* hash, uint5 key)
+void* jt_hash_remove(jt_hash* hash, uint5 key)
 {
   uint5 loc = HASHFN(key, hash->size);
-  list* item;
+  jt_list* item;
 	void* hashentrydata=0;
 	
 	for (item=hash->table[loc]; item;)
 	{
-	  list* prev = item->prev;
-		hashentry* h = (hashentry*) item->data;
+	  jt_list* prev = item->prev;
+		jt_hashentry* h = (jt_hashentry*) item->data;
 
 		if (h->key==key)
 		{
 		  hashentrydata = h->data;
-		  free(h);
-		  list_delinkitem(&hash->table[loc], item);
+		  jt_delete(h);
+		  jt_list_delinkitem(&hash->table[loc], item);
 			hash->entries--;
 		}
 		
@@ -81,14 +81,14 @@ void* hash_remove(hashtable* hash, uint5 key)
 }
 
 // delete an entry, calling a destructor function
-void hash_delete(hashtable* hash, uint5 key, hashdestructor_fn destructor)
+void jt_hash_delete(jt_hash* hash, uint5 key, jt_hashdestructor_fn destructor)
 {
-  void* data = hash_remove(hash, key);
+  void* data = jt_hash_remove(hash, key);
 	destructor(data);
 }
 
 // destroy an entire hash table, plus all its contents
-void hash_nuke(hashtable* hash, hashdestructor_fn destructor)
+void jt_hash_nuke(jt_hash* hash, jt_hashdestructor_fn destructor)
 {
 	uint5 i;
 	
@@ -97,7 +97,7 @@ void hash_nuke(hashtable* hash, hashdestructor_fn destructor)
 	  while (hash->table[i])
 		{
 		  if (destructor) destructor(hash->table[i]->data);
-			list_removehead(&hash->table[i]);
+			jt_list_removehead(&hash->table[i]);
 		}
 	}
 
@@ -105,16 +105,26 @@ void hash_nuke(hashtable* hash, hashdestructor_fn destructor)
 	free(hash);
 }
 
-hashentry* hash_lookup(hashtable* hash, uint5 key)
+jt_hashentry* jt_hash_lookup(jt_hash* hash, uint5 key)
 {
 	uint5 loc = HASHFN(key, hash->size);
-	list* item;
+	jt_list* item;
 	
 	for (item=hash->table[loc]; item; item=item->prev)
 	{
-	  hashentry* h = (hashentry*) item->data;
+	  jt_hashentry* h = (jt_hashentry*) item->data;
 		if (h->key==key) return h;
 	}
 
 	return 0;
+}
+
+/* get data from key */
+void* jt_hash_find(jt_hash* hash, uint5 key)
+{
+  jt_hashentry* hentry = jt_hash_lookup(hash, key);
+
+  if (!hentry) return 0;
+  
+  return hentry->data;
 }

@@ -138,14 +138,14 @@ const mem_writebank mem_mexreg_write =
 void memory_subinitialise(meminfo* mem)
 {
   fprintf(stderr, "Initialising LART memory subsystem\n");
-  mem->bank0 = cnewarray(uint5, BANK0RAM/4);
-  mem->bank1 = cnewarray(uint5, BANK1RAM/4);
-  mem->bank2 = cnewarray(uint5, BANK2RAM/4);
-  mem->bank3 = cnewarray(uint5, BANK3RAM/4);
-  mem->rom0 = cnewarray(uint5, 16*1024*1024/4);
-  mem->rom1 = cnewarray(uint5, 16*1024*1024/4); // hello, I'm flash
-  mem->sapcm.dma = cnewarray(sapcm_dma_channel, 6);
-  mem->sapcm.serial_fifo = cnew(sapcm_serial_fifo);
+  mem->bank0 = jt_newarray(uint5, BANK0RAM/4);
+  mem->bank1 = jt_newarray(uint5, BANK1RAM/4);
+  mem->bank2 = jt_newarray(uint5, BANK2RAM/4);
+  mem->bank3 = jt_newarray(uint5, BANK3RAM/4);
+  mem->rom0 = jt_newarray(uint5, 16*1024*1024/4);
+  mem->rom1 = jt_newarray(uint5, 16*1024*1024/4); // hello, I'm flash
+  mem->sapcm.dma = jt_newarray(sapcm_dma_channel, 6);
+  mem->sapcm.serial_fifo = jt_new(sapcm_serial_fifo);
   mem->sapcm.serial_fifo->in = fifo_create(12);
   mem->sapcm.serial_fifo->out = fifo_create(8);
   mem->ostimer = ostimer_new();

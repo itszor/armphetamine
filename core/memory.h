@@ -56,7 +56,7 @@ struct meminfo {
   uint5* bank1;
   uint5* bank2;
   uint5* bank3;
-  hashtable** transmap;
+  jt_hash** transmap;
   tlbentry insttlb, datatlb;
   uint5 mmucontrol;          // register 1 (write)
   uint5 translationbase;     // register 2 (write)

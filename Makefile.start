@@ -1,0 +1,51 @@
+# A little makefile, copied from someone else
+
+# APBASEDIR =		`echo $APBASEDIR`
+
+CC	= gcc
+AR	= ar
+#CFLAGS	= -g -DVERSION=\"0.4\" -DEMULART
+ARFLAGS	= cru
+NASM	= nasm
+AS	= as
+
+LDFLAGS= -g 
+
+VERSION =       0.5
+
+LJT =           $(APBASEDIR)/libjtype
+
+LJTOBJS =       $(LJT)/bset.o $(LJT)/buffer.o $(LJT)/clist.o $(LJT)/list.o \
+                $(LJT)/hash.o $(LJT)/cnew.o $(LJT)/pqueue.o
+
+CORE =          $(APBASEDIR)/core
+
+COREOBJS =      $(CORE)/decode.o $(CORE)/decodet.o $(CORE)/disassemble.o \
+                $(CORE)/execute26.o $(CORE)/execute32.o $(CORE)/executethm.o \
+                $(CORE)/machine.o $(CORE)/memory.o $(CORE)/processor.o \
+                $(CORE)/registers.o
+
+
+DYNAREC =       $(APBASEDIR)/dynarec
+
+DROBJS =        $(DYNAREC)/block.o $(DYNAREC)/flush.o $(DYNAREC)/palloc.o \
+                $(DYNAREC)/pheta.o $(DYNAREC)/phetadism.o $(DYNAREC)/profile.o \
+                $(DYNAREC)/recompile.o $(DYNAREC)/relocate.o \
+                $(DYNAREC)/transmap.o
+
+DRX86 =         $(DYNAREC)/arch/x86
+
+DRX86OBJS =     $(DRX86)/genx86.o $(DRX86)/genx86_tab.o \
+                $(DRX86)/nativesupport.o $(DRX86)/rtasm.o \
+                $(DRX86)/x86dism.o $(DRX86)/rtasm_fns.o
+
+DEBUG =         $(APBASEDIR)/shell/debug
+
+DEBUGOBJS =     $(DEBUG)/debug.o $(DEBUG)/main.o
+
+LIBS = -lm -lreadline -lhistory -lncurses -lutil
+
+STRUCTOBJ =	$(DRX86)/structsupport.o
+
+
+

@@ -36,7 +36,7 @@ void riscos_escapehandler(int x)
 osstateinfo* riscos_initialise(void)
 {
   uint5 i, j;
-  osstateinfo* newstate = cnew(osstateinfo);
+  osstateinfo* newstate = jt_new(osstateinfo);
 
   for (i=0; i<18; i++)
     for (j=0; j<3; j++)
@@ -205,7 +205,7 @@ void riscos_readline(osstateinfo* os, meminfo* mem, registerinfo* reg)
 //  strcpy(buffer, rdbuf);
   i = 0;
   while (rdbuf[i++]) memory_writebyte(mem, buf+i, rdbuf[i]);
-  free(rdbuf);
+  jt_delete(rdbuf);
   
 //  fprintf(stderr, "Read a line: %s\n", buffer);
   FLAG_(c) = 0;

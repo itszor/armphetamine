@@ -6,7 +6,7 @@
 
 registerinfo* registers_new(void)
 {
-	registerinfo* reg = cnew(registerinfo);
+	registerinfo* reg = jt_new(registerinfo);
 	int i;
 	
 	for (i=0; i<16; i++) reg->r[i] = 0;

@@ -361,7 +361,7 @@ void debug_breakset(machineinfo* machine, char* cmd)
     return;
   }
   
-  hash_insert(machine->breakpoints, addr);
+  jt_hash_insert(machine->breakpoints, addr);
   fprintf(stderr, "Breakpoint set at %.8x\n", addr);
 }
 
@@ -378,9 +378,9 @@ void debug_breakclear(machineinfo* machine, char* cmd)
     return;
   }
   
-  if (hash_lookup(machine->breakpoints, addr))
+  if (jt_hash_lookup(machine->breakpoints, addr))
   {
-    hash_remove(machine->breakpoints, addr);
+    jt_hash_remove(machine->breakpoints, addr);
     fprintf(stderr, "Removed breakpoint at %.8x\n", addr);
   }
   else
@@ -391,8 +391,8 @@ void debug_breakclear(machineinfo* machine, char* cmd)
 
 void debug_breaklist(machineinfo* machine, char* cmd)
 {
-  hashtable* hash = machine->breakpoints;
-  list* w;
+  jt_hash* hash = machine->breakpoints;
+  jt_list* w;
   uint5 i, num=0;
  
   IGNORE(cmd);
@@ -403,7 +403,7 @@ void debug_breaklist(machineinfo* machine, char* cmd)
   {
     for (w = hash->table[i]; w; w = w->prev)
     {
-      hashentry* e = w->data;
+      jt_hashentry* e = w->data;
       fprintf(stderr, "  %.8x\n", e->key);
       num++;
     }

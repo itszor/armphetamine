@@ -43,13 +43,13 @@ const mem_readbank mem_rnull =
 
 meminfo* memory_initialise(uint5 bytes)
 {
-  meminfo* mem = cnew(meminfo);
+  meminfo* mem = jt_new(meminfo);
   uint5 i;
 
   IGNORE(bytes);
 
 /*  mem->memory = cnewarray(uint5, bytes/4);*/
-  mem->vram = VRAM ? cnewarray(uint5, VRAM/4) : 0;
+  mem->vram = VRAM ? jt_newarray(uint5, VRAM/4) : 0;
   mem->currentmode = 0;
   mem->memoryfault = 0;
   memory_invalidatetlb(&mem->insttlb);
@@ -60,15 +60,13 @@ meminfo* memory_initialise(uint5 bytes)
 
   // full 4Gb address-space worth of hashes
   fprintf(stderr, "Creating empty transmap\n");
-  mem->transmap = cnewarray(hashtable*, 1<<20);
+  mem->transmap = jt_newarray(jt_hash*, 1<<20);
   for (i=0; i<1<<20; i++)
   {
     mem->transmap[i] = 0;
   }
 	
-#ifdef EMULART
   memory_subinitialise(mem);
-#endif
   
 //	fprintf(stderr, "Initialised memory, MMU inactive\n");
 

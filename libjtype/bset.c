@@ -24,18 +24,18 @@ static const uint3 nbit[] =
 
 // returns number of set bits in a word
 // not actually used at the moment, but I feel it should be here ;-)
-uint5 bset_setbits(uint5 x)
+uint5 jt_bset_setbits32(uint5 x)
 {
   return nbit[x&0xff] + nbit[(x>>8)&0xff]
 	     + nbit[(x>>16)&0xff] + nbit[(x>>24)&0xff];
 }
 
-bset_info* bset_new(uint5 length)
+jt_bset* jt_bset_new(uint5 length)
 {
-  bset_info* bset = cnew(bset_info);
+  jt_bset* bset = jt_new(jt_bset);
   uint5 i, words = (length+31) >> 5;
   
-  bset->bits = cnewarray(uint5, words);
+  bset->bits = jt_newarray(uint5, words);
   bset->length = length;
   
   for (i=0; i<words; i++) bset->bits[i] = 0;
@@ -43,13 +43,13 @@ bset_info* bset_new(uint5 length)
   return bset;
 }
 
-void bset_delete(bset_info* bset)
+void jt_bset_delete(jt_bset* bset)
 {
-  free(bset->bits);
-  free(bset);
+  jt_delete(bset->bits);
+  jt_delete(bset);
 }
 
-void bset_union(bset_info* dest, bset_info* src1, bset_info* src2)
+void jt_bset_union(jt_bset* dest, jt_bset* src1, jt_bset* src2)
 {
   uint5 i, words = (src1->length+31) >> 5;
   
@@ -57,7 +57,8 @@ void bset_union(bset_info* dest, bset_info* src1, bset_info* src2)
     dest->bits[i] = src1->bits[i] | src2->bits[i];
 }
 
-void bset_intersection(bset_info* dest, bset_info* src1, bset_info* src2)
+void jt_bset_intersection(jt_bset* dest, jt_bset* src1,
+                       jt_bset* src2)
 {
   uint5 i, words = (src1->length+31) >> 5;
   
@@ -65,7 +66,7 @@ void bset_intersection(bset_info* dest, bset_info* src1, bset_info* src2)
     dest->bits[i] = src1->bits[i] & src2->bits[i];
 }
 
-void bset_not(bset_info* dest, bset_info* src)
+void jt_bset_not(jt_bset* dest, jt_bset* src)
 {
   uint5 i, words = (src->length+31) >> 5;
   
@@ -73,8 +74,17 @@ void bset_not(bset_info* dest, bset_info* src)
     dest->bits[i] = ~src->bits[i];
 }
 
-void bset_difference(bset_info* dest, bset_info* src1, bset_info* src2)
+void jt_bset_difference(jt_bset* dest, jt_bset* src1,
+                        jt_bset* src2)
 {
-  bset_not(dest, src2);
-  bset_intersection(dest, src1, dest);
+  jt_bset_not(dest, src2);
+  jt_bset_intersection(dest, src1, dest);
+}
+
+void jt_bset_clear(jt_bset* myset)
+{
+  uint5 i, words = (myset->length+31) >> 5;
+
+  for (i=0; i<words; i++)
+    myset->bits[i] = 0;
 }

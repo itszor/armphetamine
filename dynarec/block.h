@@ -10,8 +10,8 @@ typedef struct {
   uint5 length;  // extent of this block
 	uint5 usecount;
 /*	psblock* psb;*/
-	hashtable* lastset;     // this and...
-	hashtable* nextused;    // ...this form an instruction dependency graph
+	jt_hash* lastset;     // this and...
+	jt_hash* nextused;    // ...this form an instruction dependency graph
   nativeblockinfo* native;
 } blockinfo;
 

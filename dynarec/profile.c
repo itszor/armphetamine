@@ -9,7 +9,7 @@
 
 profile_state* profile_initialise(void)
 {
-  profile_state* pstate = cnew(profile_state);
+  profile_state* pstate = jt_new(profile_state);
   
   pstate->start = -1;
   pstate->currenttrans = 0;
@@ -85,7 +85,7 @@ uint5 profile_feednseqaddr(machineinfo* machine, profile_state* pstate,
           pstate->currenttrans->length);
         
         entryataddr->code = nat->base;
-        list_destroy(nat->reloc);
+        jt_list_destroy(nat->reloc);
         free(nat);
         fprintf(stderr, "Running code for first time %.8x\n", pstate->start);
         nativesupport_invoke2(machine, entryataddr->code);

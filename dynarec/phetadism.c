@@ -25,7 +25,7 @@ const char* armreg[] = { "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
 
 void phetadism_chunk(pheta_chunk* chunk)
 {
-  list* walk = chunk->blocks;
+  jt_list* walk = chunk->blocks;
 
   for (; walk; walk = walk->prev)
     phetadism_block((pheta_basicblock*) walk->data, 0);
@@ -237,12 +237,12 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
 
     case ph_STATE:
     {
-      list* scan;
+      jt_list* scan;
       uint5 first = 1;
 
       fprintf(f, "%-10s(", opname[opcode]);
 
-      for (scan=(list*)instr->data.ptr; scan; scan=scan->prev)
+      for (scan=(jt_list*)instr->data.ptr; scan; scan=scan->prev)
       {
         pheta_rpair* rpair = scan->data;
         printf(first ? "%%%d" : " %%%d", rpair->ph);
@@ -278,7 +278,7 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
 
 void phetadism_block(pheta_basicblock* blk, uint5 startline)
 {
-  clist* walk;
+  jt_clist* walk;
   uint5 i;
     
   printf("Block base: %p  (source start %x)\n", blk, blk->srcstart);

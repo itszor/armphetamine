@@ -115,7 +115,7 @@ typedef struct {
 struct genx86_buffer;
 
 typedef struct pheta_basicblock_t {
-  clist* base;
+  jt_clist* base;
   struct genx86_buffer* gxbuffer;
   uint5 length;
   uint5 size;
@@ -129,15 +129,15 @@ typedef struct pheta_basicblock_t {
   struct pheta_basicblock_t* trueblk;
   struct pheta_basicblock_t* falseblk;
   struct pheta_basicblock_t* parent;
-  clist* predecessor;  // flag resolution needs all predecessors for a block
+  jt_clist* predecessor;  // flag resolution needs all predecessors for a block
   struct pheta_basicblock_t* scsubgraph;
   char* comment;
-  bset_info* active;
+  jt_bset* active;
   sint5 lbuf[ph_NUMREG];
   uint3 dirtybuf[ph_NUMREG];
-  pqueue* live;
+  jt_pqueue* live;
   uint3 predicate;
-  list* reloc;
+  jt_list* reloc;
   uint5 natoffset;
 } pheta_basicblock;
 
@@ -149,25 +149,25 @@ struct palloc_info;
 struct palloc_liverange;
 
 typedef struct {
-  list* blocks;
+  jt_list* blocks;
   uint5 tempno;
   uint5 predno;
   uint5 virtualaddress;  // this is a horrible place for this
   uint5 start;
   uint5 length;
-  hashtable* leaders;
+  jt_hash* leaders;
   pheta_basicblock* root;
   pheta_basicblock* currentblock;
   struct palloc_info* alloc;
   struct palloc_liverange** reversetable;
   uint3 reguse[ph_IREG];
   uint5 regno;
-  pqueue* active;
-  list* assoc;
-  hashtable* constantpool;
-  hashtable* registerpool;
-  hashtable* baseoffsetpool;
-  list* miscoperand;
+  jt_pqueue* active;
+  jt_list* assoc;
+  jt_hash* constantpool;
+  jt_hash* registerpool;
+  jt_hash* baseoffsetpool;
+  jt_list* miscoperand;
   machineinfo* parentmachine;
 } pheta_chunk;
 

@@ -5,26 +5,26 @@
 
 // Priority queue handling: algorithmi from The White Book (naturally)
 
-pqueue* pqueue_new(void)
+jt_pqueue* jt_pqueue_new(void)
 {
-  pqueue* pq = cnew(pqueue);
-  pq->item = cnewarray(pqueueitem*, 4);
+  jt_pqueue* pq = jt_new(jt_pqueue);
+  pq->item = jt_newarray(jt_pqueueitem*, 4);
   pq->length = 0;
   pq->size = 4;
   
   return pq;
 }
 
-void pqueue_delete(pqueue* pq)
+void jt_pqueue_delete(jt_pqueue* pq)
 {
   // free things pointed to by pq->data[n]->item...
-  free(pq->item);
-  free(pq);
+  jt_delete(pq->item);
+  jt_delete(pq);
 }
 
-pqueueitem* pqueue_newitem(uint5 priority)
+jt_pqueueitem* jt_pqueue_newitem(uint5 priority)
 {
-  pqueueitem* pqi = cnew(pqueueitem);
+  jt_pqueueitem* pqi = jt_new(jt_pqueueitem);
   
   pqi->priority = priority;
   pqi->data = 0;
@@ -32,49 +32,49 @@ pqueueitem* pqueue_newitem(uint5 priority)
   return pqi;
 }
 
-void pqueue_deleteitem(pqueueitem* pqi)
+void jt_pqueue_deleteitem(jt_pqueueitem* pqi)
 {
-  free(pqi);
+  jt_delete(pqi);
 }
 
-pqueueitem* pqueue_insert(pqueue* pq, uint5 priority)
+jt_pqueueitem* jt_pqueue_insert(jt_pqueue* pq, uint5 priority)
 {
   sint5 i;
   
   if (++pq->length==pq->size)
-    pq->item = realloc(pq->item, sizeof(pqueueitem*) * (pq->size*=2));
+    pq->item = realloc(pq->item, sizeof(jt_pqueueitem*) * (pq->size*=2));
   
   i = pq->length-1;
 
-  while (i>0 && pq->item[pq_PARENT(i)]->priority>priority)
+  while (i>0 && pq->item[pq_PARENT(i)]->priority > priority)
   {
     pq->item[i] = pq->item[pq_PARENT(i)];
     i = pq_PARENT(i);
   }
   
-  return pq->item[i] = pqueue_newitem(priority);
+  return pq->item[i] = jt_pqueue_newitem(priority);
 }
 
-pqueueitem* pqueue_head(pqueue* pq)
+jt_pqueueitem* jt_pqueue_head(jt_pqueue* pq)
 {
   return pq->length ? pq->item[0] : 0;
 }
 
 // you're expected to deallocate the item yourself after calling this
-pqueueitem* pqueue_extract(pqueue* pq)
+jt_pqueueitem* jt_pqueue_extract(jt_pqueue* pq)
 {
-  pqueueitem* max;
+  jt_pqueueitem* max;
 
   if (!pq->length) return 0;
   
   max = pq->item[0];
   pq->item[0] = pq->item[--pq->length];
-  pqueue_heapify(pq, 0);
+  jt_pqueue_heapify(pq, 0);
   
   return max;
 }
 
-void pqueue_heapify(pqueue* pq, uint5 i)
+void jt_pqueue_heapify(jt_pqueue* pq, uint5 i)
 {
   uint5 l = pq_LEFT(i), r = pq_RIGHT(i), largest;
 
@@ -86,10 +86,10 @@ void pqueue_heapify(pqueue* pq, uint5 i)
 
   if (largest != i)
   {
-    pqueueitem* temp = pq->item[i];
+    jt_pqueueitem* temp = pq->item[i];
     pq->item[i] = pq->item[largest];
     pq->item[largest] = temp;
-    pqueue_heapify(pq, largest);
+    jt_pqueue_heapify(pq, largest);
   }
 }
 

@@ -168,16 +168,16 @@ typedef struct {
 typedef struct {
   uint5 src;
   palloc_info* var;
-  clist* loc;
+  jt_clist* loc;
 } genx86_delayedfetchcommit;
 
 struct genx86_buffer {
-  clist* buffer;
-  list* fetch;
-  list* commit;
+  jt_clist* buffer;
+  jt_list* fetch;
+  jt_list* commit;
   uint3 expecting;
   uint3 beenset;
-  hashtable* reloc;
+  jt_hash* reloc;
 };
 
 typedef struct genx86_buffer genx86_buffer;
@@ -232,7 +232,7 @@ extern void genx86_move(pheta_chunk* chunk, genx86_buffer*, palloc_info* dest,
   palloc_info* src);
   
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
-  palloc_info* src1, palloc_info* src2, list* x);
+  palloc_info* src1, palloc_info* src2, jt_list* x);
 
 extern genx86_buffer* genx86_newbuffer(void);
 

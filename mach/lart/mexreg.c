@@ -5,7 +5,7 @@
 
 mex_registers* mexreg_new()
 {
-  return cnew(mex_registers);
+  return jt_new(mex_registers);
 }
 
 void sa1100_mexreg_write(meminfo* mem, uint5 physaddress, uint5 data)

@@ -38,7 +38,7 @@ static const uint5 ccflags[] =
 
 pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
 {
-  pheta_chunk* p = cnew(pheta_chunk);
+  pheta_chunk* p = jt_new(pheta_chunk);
   p->blocks = 0;
   p->start = start;
   p->length = length;
@@ -46,16 +46,16 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->predno = 1;
   p->currentblock = 0;
   p->assoc = 0;
-  p->constantpool = hash_new(32);
-  p->registerpool = hash_new(8);
-  p->baseoffsetpool = hash_new(32);
+  p->constantpool = jt_hash_new(32);
+  p->registerpool = jt_hash_new(8);
+  p->baseoffsetpool = jt_hash_new(32);
     
   return p;
 }
 
 void pheta_deletechunk(pheta_chunk* chunk)
 {
-  free(chunk);  // and lots more!
+  jt_delete(chunk);  // and lots more!
 }
 
 // Generate a new basic block, also make it current
@@ -66,20 +66,20 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
 
   if (c->currentblock) pheta_lsync(c);
 
-  list_add(&c->blocks);
-  c->blocks->data = b = cnew(pheta_basicblock);
-  b->base = clist_new();
+  jt_list_add(&c->blocks);
+  c->blocks->data = b = jt_new(pheta_basicblock);
+  b->base = jt_clist_new();
   b->gxbuffer = genx86_newbuffer();
   b->length = 0;
   b->predicate = 255;
   b->trueblk = 0;
   b->falseblk = 0;
   b->parent = 0;
-  b->predecessor = clist_new();
+  b->predecessor = jt_clist_new();
   b->scsubgraph = 0;
   b->srcstart = startaddr;
   b->cycles = 0;
-  b->live = pqueue_new();
+  b->live = jt_pqueue_new();
   b->required = 0;
   b->set = 0;
   b->reloc = 0;
@@ -97,10 +97,10 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
 
 void pheta_destroybasicblock(pheta_basicblock* blk)
 {
-  free(blk->base);
-  free(blk->predecessor);
-  pqueue_delete(blk->live);
-  free(blk);
+  jt_delete(blk->base);
+  jt_delete(blk->predecessor);
+  jt_pqueue_delete(blk->live);
+  jt_delete(blk);
 }
 
 void pheta_cyclecount(pheta_chunk* chunk)
@@ -123,9 +123,9 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
                                   uint5 length)
 {
   uint5 i;
-  hashtable* leaders = hash_new(8);
+  jt_hash* leaders = jt_hash_new(8);
   pheta_chunk* chunk = pheta_newchunk(base, length);
-  hashentry* p;
+  jt_hashentry* p;
   uint5 tail;
   uint5 synced = 0;
   
@@ -147,23 +147,23 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       sint5 offset = (sint5)(inst.bra.offset<<8)>>8;
       sint5 dest = i+offset+2;  // pipeline offset
 
-      if (!hash_lookup(leaders, i+1))
+      if (!jt_hash_lookup(leaders, i+1))
       {
-        p = hash_insert(leaders, i+1);
+        p = jt_hash_insert(leaders, i+1);
 /*        p->data = pheta_newbasicblock(chunk, base+i*4+4);*/
       }
 
 //      fprintf(stderr, "prescan: dest=%d\n", dest);
 
-      if (dest>=0 && dest<(sint5)length && !hash_lookup(leaders, i))
+      if (dest>=0 && dest<(sint5)length && !jt_hash_lookup(leaders, i))
       {
-        p = hash_insert(leaders, dest);
+        p = jt_hash_insert(leaders, dest);
 /*        p->data = pheta_newbasicblock(chunk, base+dest*4);*/
       }
     }
   }
 
-  p = hash_insert(leaders, 0);
+  p = jt_hash_insert(leaders, 0);
 /*  chunk->root = p->data = pheta_newbasicblock(chunk, base);*/
   chunk->root = 0;
   chunk->currentblock = 0;
@@ -172,12 +172,12 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
   for (i=0; i<length; i++)
   {
     instructionformat inst;
-    hashentry* blockstart;
+    jt_hashentry* blockstart;
 
     chunk->virtualaddress = base+i*sizeof(uint5);
     inst.instruction = memory_readinstword(machine->mem, chunk->virtualaddress);
 
-    if ((blockstart = hash_lookup(leaders, i)))
+    if ((blockstart = jt_hash_lookup(leaders, i)))
     {
       // chain adjacent blocks together
       pheta_basicblock* prev = chunk->currentblock;
@@ -235,7 +235,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
   if (chunk->currentblock) pheta_lsync(chunk);
 
   // this is a memory leak waiting to happen
-  hash_nuke(leaders, NULL);
+  jt_hash_nuke(leaders, NULL);
 
   return chunk;
 }
@@ -282,11 +282,11 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
   va_list ap;
   uint5 dest=0;
   pheta_instr* instr;
-  clist* item;
+  jt_clist* item;
   pheta_basicblock* block = chunk->currentblock;
   
-  item = clist_append(block->base);
-  instr = item->data = cnew(pheta_instr);
+  item = jt_clist_append(block->base);
+  instr = item->data = jt_new(pheta_instr);
   
   instr->opcode = opcode;
   
@@ -519,13 +519,14 @@ void pheta_getused(pheta_instr* instr, uint5* numdest, uint5 dest[],
     break;
     
     default:  // !!! things might not be fully handled...
+    assert(!"Unhandled getused() case");
     break;
   }
 }
 
 void pheta_dfs(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   uint5 time = 0;
 
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
@@ -561,7 +562,7 @@ void pheta_dfs_visit(pheta_basicblock* blk, uint5* time)
 
 void pheta_scc(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -578,14 +579,14 @@ void pheta_scc(pheta_chunk* chunk)
 
 void pheta_scc_visit(pheta_basicblock* blk)
 {
-  clist* walk;
-  clist* decreasing = clist_new(), *scan, *at;
+  jt_clist* walk;
+  jt_clist* decreasing = jt_clist_new(), *scan, *at;
   blk->marker = col_GREY;
 
   for (walk=blk->predecessor->next; walk->data; walk=walk->next)
   {
     pheta_basicblock* parent = walk->data;
-    clist* posn = decreasing;
+    jt_clist* posn = decreasing;
     for (scan=decreasing->next; scan->data; scan=scan->next)
     {
       pheta_basicblock* here = scan->data;
@@ -595,7 +596,7 @@ void pheta_scc_visit(pheta_basicblock* blk)
         break;
       }
     }
-    at = clist_append(posn);
+    at = jt_clist_append(posn);
     at->data = parent;
   }
 
@@ -620,14 +621,14 @@ void pheta_scc_visit(pheta_basicblock* blk)
 
 void pheta_predecessor(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
 
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
     if (blk->trueblk)
     {
-      clist* seek, *insertat = blk->trueblk->predecessor;
+      jt_clist* seek, *insertat = blk->trueblk->predecessor;
       sint5 stime = -1;
       for (seek=blk->trueblk->predecessor->next; seek->data; seek=seek->next)
       {
@@ -641,13 +642,13 @@ void pheta_predecessor(pheta_chunk* chunk)
       }
       if (insertat)
       {
-        clist* item = clist_prepend(insertat);
+        jt_clist* item = jt_clist_prepend(insertat);
         item->data = blk;
       }
     }
     if (blk->falseblk)
     {
-      clist* seek, *insertat = blk->falseblk->predecessor;
+      jt_clist* seek, *insertat = blk->falseblk->predecessor;
       sint5 stime = -1;
       for (seek=blk->falseblk->predecessor->next; seek->data; seek=seek->next)
       {
@@ -661,7 +662,7 @@ void pheta_predecessor(pheta_chunk* chunk)
       }
       if (insertat)
       {
-        clist* item = clist_prepend(insertat);
+        jt_clist* item = jt_clist_prepend(insertat);
         item->data = blk;
       }
     }
@@ -671,7 +672,7 @@ void pheta_predecessor(pheta_chunk* chunk)
 void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
 {
   FILE* f = fopen(outfile, "w");
-  list* scan;
+  jt_list* scan;
   
   fprintf(f, "graph: {\n");
   fprintf(f, "  splines: yes\n");
@@ -697,7 +698,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
   for (scan=chunk->blocks; scan; scan=scan->prev)
   {
     pheta_basicblock* blk = scan->data;
-    clist* inst;
+    jt_clist* inst;
     uint5 i;
     extern const char* txtcc[];
     pheta_instr* prev = 0;
@@ -812,7 +813,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
 void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
 {
   FILE* f = fopen(outfile, "w");
-  list* scan;
+  jt_list* scan;
   
   fprintf(f, "[");
 
@@ -827,7 +828,7 @@ void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
   for (scan=chunk->blocks; scan; scan=scan->prev)
   {
     pheta_basicblock* blk = scan->data;
-    clist* inst;
+    jt_clist* inst;
     uint5 i;
     extern const char* txtcc[];
     
@@ -911,7 +912,7 @@ void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
 uint5 pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag)
 {
-  clist* walk;
+  jt_clist* walk;
   uint5 succ = 0;
   
   if (needpred==ph_AL || needpred==ph_NV || needpred==255) needpred = -1;
@@ -984,7 +985,7 @@ uint5 pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
 
   if (needflag != 0 || needpred != (uint5)-1)
   {
-    clist* l;
+    jt_clist* l;
     
     fprintf(stderr, "Trying next level up\n");
     
@@ -1006,7 +1007,7 @@ uint5 pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
 
 void pheta_fixup_flags(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   uint5 tag=0;
   
   palloc_clearmarkers(chunk);
@@ -1028,7 +1029,7 @@ void pheta_fixup_flags(pheta_chunk* chunk)
 
 void pheta_optimise_transitive_branch(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   uint5 change;
   
   do {
@@ -1082,7 +1083,7 @@ void pheta_optimise_transitive_branch(pheta_chunk* chunk)
 
 void pheta_cull_unused_nodes(pheta_chunk* chunk)
 {
-  list* scanblock, *prev;
+  jt_list* scanblock, *prev;
   palloc_clearmarkers(chunk);
 
   chunk->root->marker = col_BLACK;
@@ -1101,7 +1102,7 @@ void pheta_cull_unused_nodes(pheta_chunk* chunk)
     if (blk->marker==col_WHITE)
     {
       pheta_destroybasicblock(blk);
-      list_delinkitem(&chunk->blocks, scanblock);
+      jt_list_delinkitem(&chunk->blocks, scanblock);
     }
     scanblock = prev;
   }
@@ -1149,7 +1150,7 @@ void pheta_lsync(pheta_chunk* chunk)
 void pheta_state(pheta_chunk* chunk)
 {
 /*  uint5 i;*/
-  list* alive = 0;
+  jt_list* alive = 0;
   
 /*  for (i=0; i<ph_NUMREG; i++)
   {
@@ -1172,8 +1173,8 @@ void pheta_cycles(pheta_chunk* chunk, uint5 n)
 
 pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
 {
-  hashentry* e;
-  if ((e = hash_lookup(chunk->leaders, line)))
+  jt_hashentry* e;
+  if ((e = jt_hash_lookup(chunk->leaders, line)))
   {
     if (!e->data)
       e->data = pheta_newbasicblock(chunk, line==-1u ? -1u : 
@@ -1932,8 +1933,8 @@ int pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   if (dest>=0 && dest<(sint5)chunk->length)
   {
     pheta_basicblock* prevblk = chunk->currentblock;
-    hashentry* taken = hash_lookup(chunk->leaders, dest);
-    hashentry* nottaken = hash_lookup(chunk->leaders, next);
+    jt_hashentry* taken = jt_hash_lookup(chunk->leaders, dest);
+    jt_hashentry* nottaken = jt_hash_lookup(chunk->leaders, next);
 
     fprintf(stderr, "Branch: taken=%p, nottaken=%p\n", taken, nottaken);
     fprintf(stderr, "taken->data=%p, nottaken->data=%p\n", taken->data,
@@ -2228,12 +2229,12 @@ int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 
     if (inst.bdt.u)  // upwards
       offsetby = pheta_emit(chunk, ph_ADD, basereg,
-        pheta_emit(chunk, ph_CONSTB, 4*bset_setbits(inst.bdt.reglist)));
+        pheta_emit(chunk, ph_CONSTB, 4*jt_bset_setbits32(inst.bdt.reglist)));
     else
       offsetby = pheta_emit(chunk, ph_SUB, basereg,
-        pheta_emit(chunk, ph_CONSTB, 4*bset_setbits(inst.bdt.reglist)));
+        pheta_emit(chunk, ph_CONSTB, 4*jt_bset_setbits32(inst.bdt.reglist)));
 
-    pheta_cycles(chunk, bset_setbits(inst.bdt.reglist));
+    pheta_cycles(chunk, jt_bset_setbits32(inst.bdt.reglist));
 
     pheta_lcommit(chunk, inst.bdt.rn, offsetby);
   }

@@ -10,9 +10,9 @@
 #include "cnew.h"
 #include "list.h"
 
-list* list_add(list** oldhead)
+jt_list* jt_list_add(jt_list** oldhead)
 {
-  list* item = cnew(list);
+  jt_list* item = jt_new(jt_list);
   item->data = 0;
   item->prev = *oldhead;
   item->next = 0;
@@ -21,16 +21,16 @@ list* list_add(list** oldhead)
   return *oldhead = item;
 }
 
-void list_removehead(list** head)
+void jt_list_removehead(jt_list** head)
 {
-  list* prev = (*head)->prev;
-  if (*head) free(*head);
+  jt_list* prev = (*head)->prev;
+  if (*head) jt_delete(*head);
   *head = prev;
 }
 
-list* list_insertitem(list** head, list* before)
+jt_list* jt_list_insertitem(jt_list** head, jt_list* before)
 {
-  list* item = cnew(list);
+  jt_list* item = jt_new(jt_list);
   if (!before)
   {
     item->next = item->prev = 0;
@@ -45,28 +45,28 @@ list* list_insertitem(list** head, list* before)
 }
 
 // Delinks an item without freeing its data pointer */
-void list_delinkitem(list** head, list* item)
+void jt_list_delinkitem(jt_list** head, jt_list* item)
 {
   if (!item) return;
   if (item->prev) item->prev->next = item->next;
   if (item->next) item->next->prev = item->prev;
   if (*head == item) *head = item->prev;
-  free(item);
+  jt_delete(item);
 }
 
-list* list_itemfromdata(list* li, void* data)
+jt_list* jt_list_itemfromdata(jt_list* li, void* data)
 {
   for (; li; li = li->prev) if (li->data == data) return li;
 
   return 0;
 }
 
-void list_destroy(list* li)
+void jt_list_destroy(jt_list* li)
 {
-  while (li) list_removehead(&li);
+  while (li) jt_list_removehead(&li);
 }
 
-list* list_nthitem(list* li, int item)
+jt_list* jt_list_nthitem(jt_list* li, int item)
 {
   while (item>0)
   {
@@ -77,7 +77,7 @@ list* list_nthitem(list* li, int item)
   return li;
 }
 
-int list_length(list* head)
+uint5 jt_list_length(jt_list* head)
 {
   int count = 0;
 
@@ -89,13 +89,13 @@ int list_length(list* head)
   return count;
 }
 
-list* list_end(list* head)
+jt_list* jt_list_end(jt_list* head)
 {
   for (; head && head->prev; head=head->prev);
   return head;
 }
 
-list* list_search(list* head, listsearchfn srch, void* data)
+jt_list* jt_list_search(jt_list* head, jt_listsearch_fn srch, void* data)
 {
   for (; head; head=head->prev)
   {

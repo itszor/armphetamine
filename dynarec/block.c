@@ -12,7 +12,7 @@
 
 blockinfo* block_new(void)
 {
-  blockinfo* block = cnew(blockinfo);
+  blockinfo* block = jt_new(blockinfo);
 	
 	block->length = block->usecount = 1;
 //	block->psb = 0;
@@ -28,9 +28,9 @@ blockinfo* block_new(void)
 void block_clean(blockinfo* block)
 {
 //  pseudo_deleteblock(block->psb);
-//  free(block->info);
-  hash_nuke(block->lastset, 0);
-  hash_nuke(block->nextused, 0);
+//  jt_delete(block->info);
+  jt_hash_nuke(block->lastset, 0);
+  jt_hash_nuke(block->nextused, 0);
 //  block->psb = 0;
 //  block->info = 0;
   block->lastset = block->nextused = 0;
@@ -42,8 +42,8 @@ void block_clean(blockinfo* block)
 void block_delete(blockinfo* block)
 {
 //  if (block->psb) pseudo_deleteblock(block->psb);
-	if (block->native) free(block->native);
-	free(block);
+	if (block->native) jt_delete(block->native);
+	jt_delete(block);
 }
 
 

@@ -1,18 +1,18 @@
-#ifndef CLIST_H
-#define CLIST_H 1
+#ifndef JT_CLIST_H
+#define JT_CLIST_H 1
 
 #include "list.h"
 
-typedef struct clist_t {
+typedef struct jt_clist_t {
   void* data;
-  struct clist_t* prev;
-  struct clist_t* next;
-} clist;
+  struct jt_clist_t* prev;
+  struct jt_clist_t* next;
+} jt_clist;
 
-extern clist* clist_new(void);
-extern clist* clist_append(clist*);
-extern clist* clist_prepend(clist*);
-extern void clist_delinkitem(clist*);
-extern void clist_moveitem(clist* to, clist* from);
+extern jt_clist* jt_clist_new(void);
+extern jt_clist* jt_clist_append(jt_clist*);
+extern jt_clist* jt_clist_prepend(jt_clist*);
+extern void jt_clist_delinkitem(jt_clist*);
+extern void jt_clist_moveitem(jt_clist* to, jt_clist* from);
 
 #endif

@@ -42,7 +42,7 @@ static const uint5 sourcemod[] =
 
 intctrl_registers* intctrl_new(void)
 {
-  intctrl_registers* ir = cnew(intctrl_registers);
+  intctrl_registers* ir = jt_new(intctrl_registers);
   ir->icip = ir->icmr = ir->iclr = ir->icfp = ir->icpr = ir->iccr = 0;
   return ir;
 }

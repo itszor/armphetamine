@@ -1,0 +1,93 @@
+TEMPFILES =     $(DRX86)/genx86_tab.c $(DRX86)/rtasm_fns.c \
+                $(DRX86)/rtasm_fns.h
+
+TESTS =	divide simple armtest
+
+.PHONY: clean cleaner package webpkg romdump lartrun
+
+# virtualart rohle riscpcemu
+all:	$(TARGET)
+
+clean:
+	rm -f $(OBJ) $(TARGET) $(TESTS)
+
+cleaner:
+	rm -f $(OBJ) $(OBJ:.o=.d) $(TARGET) $(TESTS) $(TEMPFILES)
+
+lartrun:	virtualart
+	./virtualart "script lartup.txt"
+
+simple.o:	simple.arm.s
+	arm-linux-as $< -o $@
+
+divide.o:	divide.arm.s
+	arm-linux-as $< -o $@
+
+simple:	simple.o
+	arm-linux-ld simple.o -o simple
+
+divide:	divide.o
+	arm-linux-ld divide.o -o divide
+
+armtest:	armtest.c testtmpl.txt Makefile
+	arm-linux-gcc -static -O2 armtest.c -o armtest
+	./subst.sh
+
+package:	cleaner
+	tar -c -v -z -C .. -f ../armphetamine-0.2.tar.gz armphetamine
+
+webpkg:
+	tar -c -v -z -C docs -f ../webphetamine.tar.gz html
+
+romdump:
+	arm-linux-objdump --disassemble-all --target=binary \
+	--architecture=arm Rom | less
+
+#test:
+#	cp test.c /net/jtb20.quns.cam.ac.uk/home/jules/test.c
+#	rsh jtb20.quns.cam.ac.uk "gcc -O2 test.c -o object"
+#	cp /net/jtb20.quns.cam.ac.uk/home/jules/object .
+
+$(DRX86)/rtasm.h:       $(DRX86)/rtasm_fns.h
+
+$(DRX86)/rtasm_fns.c:	$(DRX86)/mkintel.pl $(DRX86)/intel.dat
+	 $(DRX86)/mkintel.pl > $(DRX86)/rtasm_fns.c
+
+$(DRX86)/rtasm_fns.h:	$(DRX86)/rtasm_fns.c $(DRX86)/rtasm_mkheader.pl
+	$(DRX86)/rtasm_mkheader.pl > $(DRX86)/rtasm_fns.h
+
+$(DRX86)/genx86_tab.c:	$(DRX86)/genx86tabsrc.dat $(DRX86)/mkx86tab.py
+	$(DRX86)/mkx86tab.py
+
+$(DRX86)/structsupport:	$(STRUCTOBJ)
+	gcc -O2 $< -o $@
+
+$(DRX86)/structsupport.inc:	$(DRX86)/structsupport
+	$(DRX86)/structsupport > structsupport.inc
+
+$(DRX86)/dynsupport.asm:	$(DRX86)/structsupport.inc
+
+$(CORE)/asmalu.s:	$(CORE)/gen_dp.pl
+	$(CORE)/gen_dp.pl > $@
+
+$(CORE)/asmalu.o:	$(CORE)/asmalu.s
+	$(AS) $< -o $@
+
+%.o:	%.c
+	$(CC) -c $(INCLUDE) $(CFLAGS) -c $< -o $@
+
+%.o:	%.asm
+	$(NASM) -f elf $< -o $@
+
+%.d:	%.c $(TEMPFILES)
+	$(CC) $(INCLUDE) -MM $< > $@
+
+%.d:	%.asm
+	$(NASM) -M $< > $@
+
+$(CORE)/asmalu.d:
+	touch $@
+
+include $(OBJ:.o=.d)
+include $(STRUCTOBJ:.o=.d)
+

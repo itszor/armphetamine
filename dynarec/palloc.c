@@ -13,7 +13,7 @@ const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
 void palloc_init(pheta_chunk* chunk)
 {
   uint5 i;
-  chunk->alloc = cnewarray(palloc_info, chunk->tempno);
+  chunk->alloc = jt_newarray(palloc_info, chunk->tempno);
   
   for (i=0; i<chunk->tempno; i++)
   {
@@ -26,14 +26,14 @@ void palloc_init(pheta_chunk* chunk)
 
 void palloc_free(pheta_chunk* chunk)
 {
-  free(chunk->alloc);
+  jt_delete(chunk->alloc);
 }
 
 // allocate constant registers
 void palloc_constant(pheta_chunk* chunk)
 {
-  list* scanblock;
-  clist* walk;
+  jt_list* scanblock;
+  jt_clist* walk;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -74,12 +74,12 @@ void palloc_constant(pheta_chunk* chunk)
 // (needs to be rewritten to take account of live ranges properly)
 void palloc_nonorthog(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
-    clist* walk;
+    jt_clist* walk;
 
     for (walk=blk->base->next; walk->data; walk=walk->next)
     {
@@ -128,7 +128,7 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
                                 uint5 startline)
 {
   int i;
-  clist* walk;
+  jt_clist* walk;
     
   for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
   {
@@ -213,10 +213,10 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 void palloc_srcdestalias(pheta_chunk* chunk)
 {
   uint5 i;
-  list* scanblock;
+  jt_list* scanblock;
   pheta_basicblock* blk;
   
-  chunk->reversetable = cnewarray(palloc_liverange*, chunk->tempno);
+  chunk->reversetable = jt_newarray(palloc_liverange*, chunk->tempno);
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -255,12 +255,12 @@ void palloc_closealias(pheta_chunk* chunk)
 // (which might be a silly thing to do)
 void palloc_fetchmem(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*) scanblock->data;
-    clist* walk;
+    jt_clist* walk;
     for (walk=blk->base->next; walk->data; walk=walk->next)
     {
       pheta_instr* instr = walk->data;
@@ -298,7 +298,7 @@ void palloc_fetchmem(pheta_chunk* chunk)
 
 void palloc_clearmarkers(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -319,7 +319,7 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                        uint5 startline)
 {
   int i;
-  clist* walk;
+  jt_clist* walk;
     
  /* fprintf(stderr, "Block %x\n", blk);*/
     
@@ -327,16 +327,16 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
   {
     uint5 j, destr[ph_MAXDEST], srcr[ph_MAXSRC], ndest, nsrc;
     pheta_instr* instr = walk->data;
-    list* scanblock;
+    jt_list* scanblock;
 
     pheta_getused(instr, &ndest, destr, &nsrc, srcr);
 
     for (j=0; j<ndest; j++)
     {
-      pqueueitem* newspan;
+      jt_pqueueitem* newspan;
       palloc_liverange* range;
-      newspan = pqueue_insert(blk->live, startline+i);
-      newspan->data = range = cnew(palloc_liverange);
+      newspan = jt_pqueue_insert(blk->live, startline+i);
+      newspan->data = range = jt_new(palloc_liverange);
       range->startline = startline+i;
       range->length = 0;
       range->reg = palloc_close(chunk, destr[j]);
@@ -349,7 +349,7 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
       uint5 k;
       for (k=0; k<ablk->live->length; k++)
       {
-        pqueueitem* prevspan = ablk->live->item[k];
+        jt_pqueueitem* prevspan = ablk->live->item[k];
         palloc_liverange* range = (palloc_liverange*) prevspan->data;
         for (j=0; j<nsrc; j++)
         {
@@ -385,7 +385,7 @@ uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
 // this doesn't delete the actual container
 void palloc_deletespans(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -394,9 +394,9 @@ void palloc_deletespans(pheta_chunk* chunk)
     
     for (i=0; i<blk->live->length; i++)
     {
-      pqueueitem* del = blk->live->item[i];
-      free(del->data);
-      free(del);
+      jt_pqueueitem* del = blk->live->item[i];
+      jt_delete(del->data);
+      jt_delete(del);
     }
     blk->live->length = 0;
   }
@@ -406,18 +406,18 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
                               uint5 startline, meminfo* mem)
 {
   const uint5 maxreg = 6;
-  clist* scan = blk->base->next;
+  jt_clist* scan = blk->base->next;
   uint5 line = startline;
-  pqueueitem* rangeitem;
+  jt_pqueueitem* rangeitem;
     
-  while ((rangeitem = pqueue_extract(blk->live)))
+  while ((rangeitem = jt_pqueue_extract(blk->live)))
   {
-    pqueueitem *activateitem, *delitem;
+    jt_pqueueitem *activateitem, *delitem;
     palloc_liverange* range = rangeitem->data;
     uint5 rangestart = range->startline;
 
     // careful here...
-    free(rangeitem);
+    jt_delete(rangeitem);
 
     // generate code to the start of this range
     for (; line<rangestart && scan->data; scan=scan->next, line++)
@@ -433,11 +433,11 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
       fprintf(stderr, "Inserting range for reg %d spanning [%d...%d]\n", 
         range->reg, rangestart, rangestart+range->length);
 
-      activateitem = pqueue_insert(chunk->active, rangestart+range->length);
+      activateitem = jt_pqueue_insert(chunk->active, rangestart+range->length);
       activateitem->data = range;
 
       // expire old intervals before allocating new ones
-      while ((delitem = pqueue_head(chunk->active)))
+      while ((delitem = jt_pqueue_head(chunk->active)))
       {
         palloc_liverange* delrange = (palloc_liverange*) delitem->data;
         if (delrange->startline+delrange->length < rangestart)
@@ -452,9 +452,9 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
             fprintf(stderr, "\n");
             chunk->regno--;
           }
-          delitem = pqueue_extract(chunk->active);
-          free(delitem->data);
-          free(delitem);
+          delitem = jt_pqueue_extract(chunk->active);
+          jt_delete(delitem->data);
+          jt_delete(delitem);
         }
         else break;
       }
@@ -556,7 +556,7 @@ void palloc_linearscan(pheta_chunk* chunk, meminfo* mem)
   chunk->reguse[3] = chunk->reguse[6] = chunk->reguse[7] = 0;
   chunk->reguse[4] = chunk->reguse[5] = 2;
   chunk->regno = 0;
-  chunk->active = pqueue_new();
+  chunk->active = jt_pqueue_new();
 
   palloc_clearmarkers(chunk);
 
@@ -597,7 +597,7 @@ uint5 palloc_evict_ireg(pheta_chunk* chunk, uint5 reg, uint5 except)
   
   for (i=0; i<chunk->active->length; i++)
   {
-    pqueueitem* item = chunk->active->item[i];
+    jt_pqueueitem* item = chunk->active->item[i];
     palloc_liverange* activerange = item->data;
     uint5 creg = palloc_close(chunk, activerange->reg);
 
@@ -645,7 +645,7 @@ void palloc_relinquish_ireg(pheta_chunk* chunk, uint5 reg)
 
 void palloc_printspans(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -654,7 +654,7 @@ void palloc_printspans(pheta_chunk* chunk)
     fprintf(stderr, "Block %p:\n", blk);
     for (i=0; i<blk->live->length; i++)
     {
-      pqueueitem* span = blk->live->item[i];
+      jt_pqueueitem* span = blk->live->item[i];
       palloc_liverange* range = (palloc_liverange*) span->data;
       fprintf(stderr, "Start line: %d, length: %d, reg: %d\n",
         range->startline, range->length, range->reg);
@@ -664,16 +664,16 @@ void palloc_printspans(pheta_chunk* chunk)
 
 void palloc_shufflecommit(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   sint5 lookfor[ph_NUMREG];
   uint5 i;
-  clist* commitplace[ph_NUMREG];
-  clist* sourceplace[ph_NUMREG];
+  jt_clist* commitplace[ph_NUMREG];
+  jt_clist* sourceplace[ph_NUMREG];
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
-    clist* walk;
+    jt_clist* walk;
 
     for (i=0; i<ph_NUMREG; i++)
     {
@@ -716,7 +716,7 @@ void palloc_shufflecommit(pheta_chunk* chunk)
     for (i=0; i<ph_NUMREG; i++)
     {
       if (commitplace[i] && sourceplace[i])
-        clist_moveitem(commitplace[i], sourceplace[i]);
+        jt_clist_moveitem(commitplace[i], sourceplace[i]);
     }
   }
 }

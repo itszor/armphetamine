@@ -12,7 +12,7 @@
 
 ostimer_registers* ostimer_new(void)
 {
-  ostimer_registers* reg = cnew(ostimer_registers);
+  ostimer_registers* reg = jt_new(ostimer_registers);
   reg->osmr[0] = reg->osmr[1] = reg->osmr[2] = reg->osmr[3] = 0;
   reg->ower = 0;
   reg->ossr = 0;

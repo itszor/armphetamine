@@ -8,18 +8,18 @@
 #include "defs.h"
 #include "clist.h"
 
-clist* clist_new(void)
+jt_clist* jt_clist_new(void)
 {
-  clist* x = cnew(clist);
+  jt_clist* x = jt_new(jt_clist);
   x->data = 0;
   x->prev = x;
   x->next = x;
   return x;
 }
 
-clist* clist_append(clist* sentry)
+jt_clist* jt_clist_append(jt_clist* sentry)
 {
-  clist* n = cnew(clist), *after;
+  jt_clist* n = jt_new(jt_clist), *after;
   n->data = 0;
   
   after = sentry->prev;
@@ -31,9 +31,9 @@ clist* clist_append(clist* sentry)
   return n;
 }
 
-clist* clist_prepend(clist* sentry)
+jt_clist* jt_clist_prepend(jt_clist* sentry)
 {
-  clist* n = cnew(clist), *before;
+  jt_clist* n = jt_new(jt_clist), *before;
   n->data = 0;
   
   before = sentry->next;
@@ -45,16 +45,16 @@ clist* clist_prepend(clist* sentry)
   return n;
 }
 
-void clist_delinkitem(clist* entry)
+void jt_clist_delinkitem(jt_clist* entry)
 {
   assert(entry->data != 0);
   entry->prev->next = entry->next;
   entry->next->prev = entry->prev;
-  free(entry);
+  jt_delete(entry);
 }
 
 /* moves item 'from' after item 'to' */
-void clist_moveitem(clist* to, clist* from)
+void jt_clist_moveitem(jt_clist* to, jt_clist* from)
 {
   /* delink 'from' from previous location */
   from->prev->next = from->next;
@@ -66,6 +66,5 @@ void clist_moveitem(clist* to, clist* from)
   to->next->prev = from;
   to->next = from;
 }
-
 
 

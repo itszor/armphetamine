@@ -24,8 +24,8 @@ typedef struct {
   reloc_type type;
 } reloc_record;
 
-extern void relocate_add(list** to, uint5 value, uint5 offset, reloc_size size,
-  reloc_type type);
-extern void relocate_fix(list** to, void* base);
+extern void relocate_add(jt_list** to, uint5 value, uint5 offset,
+                         reloc_size size, reloc_type type);
+extern void relocate_fix(jt_list** to, void* base);
 
 #endif

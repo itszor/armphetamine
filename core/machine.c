@@ -15,7 +15,7 @@
 
 machineinfo* machine_create(uint5 memory)
 {
-	machineinfo* machine = cnew(machineinfo);
+	machineinfo* machine = jt_new(machineinfo);
 	
 	machine->mem = memory_initialise(memory);
 	machine->reg = registers_new();
@@ -23,11 +23,11 @@ machineinfo* machine_create(uint5 memory)
 /*	machine->blocks = hash_new(32768);  // pick a number...
 	machine->live = 0;
 	machine->translaterules = 0;*/
-  machine->breakpoints = hash_new(16);
+  machine->breakpoints = jt_hash_new(16);
   machine->trace = 0;
   machine->detracecounter = 0;
   machine->pstate = profile_initialise();
-  machine->lastfew = cnewarray(traceback, 1024);
+  machine->lastfew = jt_newarray(traceback, 1024);
   machine->posn = 0;
   #ifdef EMULART
   sa1100_serial_initialise(machine->mem);
@@ -97,7 +97,7 @@ void machine_start(machineinfo* machine, uint5 cont)
       }
     }
         
-    if (hash_lookup(machine->breakpoints, instaddr) && cont==0)
+    if (jt_hash_lookup(machine->breakpoints, instaddr) && cont==0)
     {
       fprintf(stderr, "Breakpoint at %.8x\n", instaddr);
       return;

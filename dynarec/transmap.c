@@ -5,7 +5,7 @@
 
 transmap_entry* transmap_new(void)
 {
-  transmap_entry* entry = cnew(transmap_entry);
+  transmap_entry* entry = jt_new(transmap_entry);
   
   entry->code = 0;
   entry->length = 0;
@@ -18,22 +18,22 @@ transmap_entry* transmap_new(void)
 void transmap_addentry(meminfo* mem, uint5 physaddr, transmap_entry* entry)
 {
   uint5 page = physaddr >> 12;
-  hashentry* e;
+  jt_hashentry* e;
   
   if (!mem->transmap[page])
   {
-    mem->transmap[page] = hash_new(32);
+    mem->transmap[page] = jt_hash_new(32);
   }
   
-  e = hash_insert(mem->transmap[page], physaddr);
+  e = jt_hash_insert(mem->transmap[page], physaddr);
   e->data = entry;
 }
 
 transmap_entry* transmap_getentry(meminfo* mem, uint5 physaddr)
 {
   uint5 page = physaddr >> 12;
-  hashentry* e = mem->transmap[page]
-                   ? hash_lookup(mem->transmap[page], physaddr)
+  jt_hashentry* e = mem->transmap[page]
+                   ? jt_hash_lookup(mem->transmap[page], physaddr)
                    : 0;
   
   if (!e) return 0;

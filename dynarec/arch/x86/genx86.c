@@ -659,7 +659,7 @@ genx86_operand* genx86_findoperand(pheta_chunk* chunk, palloc_info* src)
   {
     if (!src->slot)
     {
-      src->slot = cnew(genx86_operand);
+      src->slot = jt_new(genx86_operand);
 /*      genx86_translatealloc(chunk, src->slot, src);*/
       src->slot->type = gotype_PARTIAL;
       src->slot->data.src = src;
@@ -673,8 +673,8 @@ genx86_operand* genx86_findoperand(pheta_chunk* chunk, palloc_info* src)
 void genx86_append(pheta_chunk* chunk, genx86_buffer* buf, uint5 opcode, 
   genx86_operand* dest, genx86_operand* src1, genx86_operand* src2)
 {
-  genx86_op* inst = cnew(genx86_op);
-  clist* newinst;
+  genx86_op* inst = jt_new(genx86_op);
+  jt_clist* newinst;
 
   IGNORE(chunk);
 
@@ -683,7 +683,7 @@ void genx86_append(pheta_chunk* chunk, genx86_buffer* buf, uint5 opcode,
   inst->op[2] = src2;
   inst->operator = opcode;
   
-  newinst = clist_append(buf->buffer);
+  newinst = jt_clist_append(buf->buffer);
   newinst->data = inst;
   
   if (buf->expecting)
@@ -692,12 +692,12 @@ void genx86_append(pheta_chunk* chunk, genx86_buffer* buf, uint5 opcode,
   }
 }
 
-void genx86_insert(pheta_chunk* chunk, genx86_buffer* buf, clist* posn,
+void genx86_insert(pheta_chunk* chunk, genx86_buffer* buf, jt_clist* posn,
   uint5 opcode, genx86_operand* dest, genx86_operand* src1,
   genx86_operand* src2)
 {
-  clist* newinst = clist_append(posn);
-  genx86_op* newop = cnew(genx86_op);
+  jt_clist* newinst = jt_clist_append(posn);
+  genx86_op* newop = jt_new(genx86_op);
  
   IGNORE(chunk);
   IGNORE(buf);
@@ -809,12 +809,12 @@ void genx86_preserve(nativeblockinfo* nat, pheta_chunk* chunk, list* map)
 
 genx86_buffer* genx86_newbuffer()
 {
-  genx86_buffer* buf = cnew(genx86_buffer);
+  genx86_buffer* buf = jt_new(genx86_buffer);
   
-  buf->buffer = clist_new();
+  buf->buffer = jt_clist_new();
   buf->fetch = buf->commit = 0;
   buf->expecting = buf->beenset = 0;
-  buf->reloc = hash_new(16);
+  buf->reloc = jt_hash_new(16);
   
   return buf;
 }
@@ -844,12 +844,12 @@ void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
     if (chunk->alloc[range->reg].arm_affiliation != -1)
     {
       uint5 creg = palloc_close(chunk, range->reg);
-      list_add(&buf->commit);
+      jt_list_add(&buf->commit);
       /* This is tricky, because a register alias can have a different
        * guest-machine register affiliation than the register it's aliased
        * to. The alias doesn't have a physical host register itself though.
        */
-      buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
+      buf->commit->data = dfc = jt_new(genx86_delayedfetchcommit);
       dfc->var = &chunk->alloc[creg];
       dfc->src = chunk->alloc[range->reg].arm_affiliation;
       dfc->loc = buf->buffer->prev;
@@ -861,16 +861,16 @@ void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
 
 genx86_operand* genx86_makeconstant(pheta_chunk* chunk, uint5 value)
 {
-  hashentry* e;
+  jt_hashentry* e;
   genx86_operand* op;
   
-  if ((e = hash_lookup(chunk->constantpool, value)))
+  if ((e = jt_hash_lookup(chunk->constantpool, value)))
   {
     return e->data;
   }
   
-  e = hash_insert(chunk->constantpool, value);
-  op = e->data = cnew(genx86_operand);
+  e = jt_hash_insert(chunk->constantpool, value);
+  op = e->data = jt_new(genx86_operand);
   
   op->type = gotype_IMMEDIATE;
   op->width = value < 128 ? gowidth_BYTE : gowidth_DWORD;
@@ -881,16 +881,16 @@ genx86_operand* genx86_makeconstant(pheta_chunk* chunk, uint5 value)
 
 genx86_operand* genx86_makeregister(pheta_chunk* chunk, uint5 reg)
 {
-  hashentry* e;
+  jt_hashentry* e;
   genx86_operand* op;
   
-  if ((e = hash_lookup(chunk->registerpool, reg)))
+  if ((e = jt_hash_lookup(chunk->registerpool, reg)))
   {
     return e->data;
   }
   
-  e = hash_insert(chunk->registerpool, reg);
-  op = e->data = cnew(genx86_operand);
+  e = jt_hash_insert(chunk->registerpool, reg);
+  op = e->data = jt_new(genx86_operand);
   
   op->type = gotype_REGISTER;
   op->width = gowidth_DWORD;
@@ -901,17 +901,17 @@ genx86_operand* genx86_makeregister(pheta_chunk* chunk, uint5 reg)
 
 genx86_operand* genx86_makeregister8(pheta_chunk* chunk, uint5 reg)
 {
-  hashentry* e;
+  jt_hashentry* e;
   genx86_operand* op;
   uint5 key = reg+32;
   
-  if ((e = hash_lookup(chunk->registerpool, key)))
+  if ((e = jt_hash_lookup(chunk->registerpool, key)))
   {
     return e->data;
   }
   
-  e = hash_insert(chunk->registerpool, key);
-  op = e->data = cnew(genx86_operand);
+  e = jt_hash_insert(chunk->registerpool, key);
+  op = e->data = jt_new(genx86_operand);
   
   op->type = gotype_REGISTER;
   op->width = gowidth_BYTE;
@@ -923,17 +923,17 @@ genx86_operand* genx86_makeregister8(pheta_chunk* chunk, uint5 reg)
 genx86_operand* genx86_makebaseoffset(pheta_chunk* chunk, uint5 offset,
   uint5 width)
 {
-  hashentry* e;
+  jt_hashentry* e;
   genx86_operand* op;
   uint5 key = offset | (width<<16);
   
-  if ((e = hash_lookup(chunk->baseoffsetpool, key)))
+  if ((e = jt_hash_lookup(chunk->baseoffsetpool, key)))
   {
     return e->data;
   }
   
-  e = hash_insert(chunk->baseoffsetpool, key);
-  op = e->data = cnew(genx86_operand);
+  e = jt_hash_insert(chunk->baseoffsetpool, key);
+  op = e->data = jt_new(genx86_operand);
   
   op->type = offset>128 ? gotype_INDREGPLUSDISP32 : gotype_INDREGPLUSDISP8;
   op->width = width;
@@ -946,14 +946,14 @@ genx86_operand* genx86_makebaseoffset(pheta_chunk* chunk, uint5 offset,
 void genx86_call_function(genx86_buffer* buf, pheta_chunk* chunk, void* func)
 {
   genx86_operand* blank;
-  hashentry* entry;
+  jt_hashentry* entry;
   reloc_record* reloc;
   
   blank = genx86_makeconstant(chunk, 0);
   genx86_append(chunk, buf, ab_CALL, blank, 0, 0);
   
-  entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-  reloc = entry->data = cnew(reloc_record);
+  entry = jt_hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+  reloc = entry->data = jt_new(reloc_record);
   reloc->value = (uint5)func;
   reloc->offset = 0;
   reloc->size = relsize_WORD;
@@ -981,8 +981,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_delayedfetchcommit* dfc;
       if (instr->data.op.src1 < 15)
       {
-        list_add(&buf->fetch);
-        buf->fetch->data = dfc = cnew(genx86_delayedfetchcommit);
+        jt_list_add(&buf->fetch);
+        buf->fetch->data = dfc = jt_new(genx86_delayedfetchcommit);
         dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.dest)];
         dfc->src = instr->data.op.src1;
         dfc->loc = buf->buffer->prev;
@@ -1122,8 +1122,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       genx86_delayedfetchcommit* dfc;
 
-      list_add(&buf->commit);
-      buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
+      jt_list_add(&buf->commit);
+      buf->commit->data = dfc = jt_new(genx86_delayedfetchcommit);
       dfc->src = instr->data.op.dest;
       dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
       dfc->loc = buf->buffer->prev;
@@ -1609,7 +1609,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_operand* regeax, *regesp;
       genx86_operand* memop;
       genx86_operand* rel, *misc;
-      hashentry* entry;
+      jt_hashentry* entry;
       reloc_record* reloc;
       uint5 preserve_eax = chunk->reguse[EAX] && dest->type==pal_IREG
                            && dest->info.ireg.num!=EAX;
@@ -1645,7 +1645,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       misc = genx86_makeconstant(chunk, 8);      
       genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
       
-      misc = cnew(genx86_operand);
+      misc = jt_new(genx86_operand);
       misc->type = gotype_ADDRESS;
       misc->width = gowidth_BYTE;
       misc->data.addr = (uint5)mem + offsetof(meminfo, memoryfault);
@@ -1656,8 +1656,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       rel = genx86_makeconstant(chunk, 0);
       genx86_append(chunk, buf, ab_JE, rel, 0, 0);
 
-      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-      reloc = entry->data = cnew(reloc_record);
+      entry = jt_hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = jt_new(reloc_record);
       reloc->value = 0;
       reloc->offset = 0;
       reloc->size = relsize_BYTE;
@@ -1675,8 +1675,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
 
-      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-      reloc = entry->data = cnew(reloc_record);
+      entry = jt_hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = jt_new(reloc_record);
       reloc->value = (uint5)jecxzloc;
       reloc->offset = 0;
       reloc->size = relsize_BYTE;
@@ -1702,7 +1702,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_operand* memop;
       genx86_operand* rel;
       genx86_operand* misc;
-      hashentry* entry;
+      jt_hashentry* entry;
       reloc_record* reloc;
       uint5 preserve_eax = chunk->reguse[EAX];
       void* jecxzloc;
@@ -1735,7 +1735,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       misc = genx86_makeconstant(chunk, 12);
       genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
             
-      misc = cnew(genx86_operand);
+      misc = jt_new(genx86_operand);
       misc->type = gotype_ADDRESS;
       misc->width = gowidth_BYTE;
       misc->data.addr = (uint5)mem + offsetof(meminfo, memoryfault);
@@ -1746,8 +1746,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       rel = genx86_makeconstant(chunk, 0);
       genx86_append(chunk, buf, ab_JE, rel, 0, 0);
 
-      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-      reloc = entry->data = cnew(reloc_record);
+      entry = jt_hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = jt_new(reloc_record);
       reloc->value = 0;
       reloc->offset = 0;
       reloc->size = relsize_BYTE;
@@ -1765,8 +1765,8 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
 
-      entry = hash_insert(buf->reloc, (uint5)buf->buffer->prev);
-      reloc = entry->data = cnew(reloc_record);
+      entry = jt_hash_insert(buf->reloc, (uint5)buf->buffer->prev);
+      reloc = entry->data = jt_new(reloc_record);
       reloc->value = (uint5)jecxzloc;
       reloc->offset = 0;
       reloc->size = relsize_BYTE;
@@ -1885,7 +1885,7 @@ void genx86_complete_alloc(pheta_chunk* chunk)
 
 void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
 {
-  list* scan;
+  jt_list* scan;
   const uint5 offset[] = {
     0,  4,  8,  12,
     16, 20, 24, 28,
@@ -1944,7 +1944,7 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
 
 void genx86_insert_spill_code(pheta_chunk* chunk)
 {
-  list* scanblock;
+  jt_list* scanblock;
   
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
@@ -1956,15 +1956,15 @@ void genx86_insert_spill_code(pheta_chunk* chunk)
 // possibly wrong somehow
 static void killrelocentry(void* data)
 {
-  free(data);
+  jt_delete(data);
 }
 
 void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
   pheta_basicblock* blk, pheta_basicblock* last)
 {
-  clist* scancode;
+  jt_clist* scancode;
   uint5 unconditional;
-  list* scanreloc;
+  jt_list* scanreloc;
 
   IGNORE(last);  // maybe remove completely?
 
@@ -1983,12 +1983,12 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
   for (scancode=blk->gxbuffer->buffer->next; scancode->data; 
        scancode=scancode->next)
   {
-    hashentry* e;
+    jt_hashentry* e;
     genx86_op* op = scancode->data;
     
     genx86_asm(nat, op);
     
-    if ((e = hash_lookup(blk->gxbuffer->reloc, (uint5)scancode)))
+    if ((e = jt_hash_lookup(blk->gxbuffer->reloc, (uint5)scancode)))
     {
       reloc_record* rel = e->data;
       uint5 offset = 0;
@@ -2010,7 +2010,7 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
         
         case reloc_FORWARD:
         {
-          hashentry* f = hash_lookup(blk->gxbuffer->reloc, rel->value);
+          jt_hashentry* f = jt_hash_lookup(blk->gxbuffer->reloc, rel->value);
           reloc_record* placeholder = f->data;
           relocate_add(&nat->reloc, offset-placeholder->value, 
             placeholder->value, placeholder->size, reloc_ABSOLUTE);
@@ -2037,7 +2037,7 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
   // if we have a true or a false block, and not a single true always block
   if ((blk->trueblk || blk->falseblk) && !unconditional)
   {
-    genx86_op* op = cnew(genx86_op);
+    genx86_op* op = jt_new(genx86_op);
     genx86_operand* off;
     op->operator = ab_TEST;
     off = genx86_makebaseoffset(chunk, (blk->predicate & ph_NAT) ?
@@ -2047,7 +2047,7 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
     op->op[1] = genx86_makeconstant(chunk, 1);
     op->op[2] = 0;
     genx86_asm(nat, op);
-    free(op);
+    jt_delete(op);
   }
   
   blk->marker = 1;
@@ -2058,35 +2058,35 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
     {
       if (blk->falseblk->marker)
       {
-        genx86_op* op = cnew(genx86_op);
+        genx86_op* op = jt_new(genx86_op);
 
         op->operator = ab_JE;
         op->op[0] = genx86_makeconstant(chunk, blk->falseblk->natoffset -
           nat->length - 6);
         op->op[1] = op->op[2] = 0;
         genx86_asm(nat, op);
-        free(op);
+        jt_delete(op);
       }
       else
       {
         // put in patchback request, unless false blk will follow immediately
         if (!blk->trueblk->marker)
         {
-          genx86_op* op = cnew(genx86_op);
+          genx86_op* op = jt_new(genx86_op);
           reloc_record* reloc;
 
           op->operator = ab_JE;
           op->op[0] = genx86_makeconstant(chunk, 0x100);
           op->op[1] = op->op[2] = 0;
           genx86_asm(nat, op);
-          reloc = cnew(reloc_record);
+          reloc = jt_new(reloc_record);
           reloc->type = reloc_ABSOLUTE;
           reloc->value = 0;
           reloc->offset = nat->length-4;
           reloc->size = relsize_WORD;
-          list_add(&blk->falseblk->reloc);
+          jt_list_add(&blk->falseblk->reloc);
           blk->falseblk->reloc->data = reloc;
-          free(op);
+          jt_delete(op);
         }
       }
     }  // if (blk->falseblk)
@@ -2095,13 +2095,13 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
     {
       genx86_op* op;
       // jump to already-generated code
-      op = cnew(genx86_op);
+      op = jt_new(genx86_op);
       op->operator = unconditional ? ab_JMP : ab_JNE;
       op->op[0] = genx86_makeconstant(chunk, blk->trueblk->natoffset -
         nat->length - (unconditional ? 5 : 6));
       op->op[1] = op->op[2] = 0;
       genx86_asm(nat, op);
-      free(op);
+      jt_delete(op);
     }
     else
     {

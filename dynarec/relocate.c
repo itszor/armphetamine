@@ -4,19 +4,19 @@
 #include "list.h"
 #include "cnew.h"
 
-void relocate_add(list** to, uint5 value, uint5 offset, reloc_size size,
+void relocate_add(jt_list** to, uint5 value, uint5 offset, reloc_size size,
   reloc_type type)
 {
   reloc_record* rec;
-  list_add(to);
-  rec = (*to)->data = cnew(reloc_record);
+  jt_list_add(to);
+  rec = (*to)->data = jt_new(reloc_record);
   rec->value = value;
   rec->offset = offset;
   rec->size = size;
   rec->type = type;
 }
 
-void relocate_fix(list** to, void* base)
+void relocate_fix(jt_list** to, void* base)
 {
   while (*to)
   {
@@ -84,8 +84,8 @@ void relocate_fix(list** to, void* base)
       break;
     }
     
-    free(rec);
+    jt_delete(rec);
     
-    list_removehead(to);
+    jt_list_removehead(to);
   }
 }

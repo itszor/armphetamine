@@ -34,7 +34,7 @@ struct palloc_info {
       uint5 num;
     } ireg;
     uint5 value;
-    pqueue* extra;
+    jt_pqueue* extra;
   } info;
   struct genx86_operand* slot;
   sint5 arm_affiliation;

@@ -6,8 +6,8 @@
 
 nativeblockinfo* rtasm_new(void)
 {
-  nativeblockinfo* nat = cnew(nativeblockinfo);
-  nat->base = cnewarray(char, nat->size=2048);
+  nativeblockinfo* nat = jt_new(nativeblockinfo);
+  nat->base = jt_newarray(char, nat->size=2048);
   nat->length = 0;
   nat->reloc = 0;
   
@@ -16,8 +16,8 @@ nativeblockinfo* rtasm_new(void)
 
 void rtasm_delete(nativeblockinfo* nat)
 {
-  free(nat->base);
-  free(nat);
+  jt_delete(nat->base);
+  jt_delete(nat);
 }
 
 void rtasm_putbyte(nativeblockinfo* nat, uint3 byte)

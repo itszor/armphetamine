@@ -5,26 +5,38 @@
 **
 */
 
-#ifndef LIST_H
-#define LIST_H 1
+#ifndef JT_LIST_H
+#define JT_LIST_H 1
 
-typedef struct list_t {
+#include "defs.h"
+
+typedef struct jt_list_t {
   void* data;
-  struct list_t* prev;
-  struct list_t* next;
-} list;
+  struct jt_list_t* prev;
+  struct jt_list_t* next;
+} jt_list;
 
-typedef list* (*listsearchfn)(list*, void*);
+typedef jt_list* (*jt_listsearch_fn)(jt_list*, void*);
 
-extern list* list_add(list** oldhead);
-extern void list_removehead(list** head);
-extern list* list_insertitem(list** head, list* before);
-extern void list_delinkitem(list** head, list* item);
-extern list* list_itemfromdata(list* li, void* data);
-extern void list_destroy(list* li);
-extern list* list_nthitem(list* li, int item);
-extern int list_length(list* head);
-extern list* list_end(list* head);
-extern list* list_search(list* head, listsearchfn srch, void* data);
+extern jt_list* jt_list_add(jt_list** oldhead);
+
+extern void jt_list_removehead(jt_list** head);
+
+extern jt_list* jt_list_insertitem(jt_list** head, jt_list* before);
+
+extern void jt_list_delinkitem(jt_list** head, jt_list* item);
+
+extern jt_list* jt_list_itemfromdata(jt_list* li, void* data);
+
+extern void jt_list_destroy(jt_list* li);
+
+extern jt_list* jt_list_nthitem(jt_list* li, int item);
+
+extern uint5 jt_list_length(jt_list* head);
+
+extern jt_list* jt_list_end(jt_list* head);
+
+extern jt_list* jt_list_search(jt_list* head, jt_listsearch_fn srch,
+                               void* data);
 
 #endif

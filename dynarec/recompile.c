@@ -8,6 +8,7 @@
 #include "palloc.h"
 #include "genx86.h"
 #include "x86asm.h"
+#include "cnew.h"
 
 nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
 {
@@ -58,7 +59,7 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
 
   mychunk->parentmachine = machine;
   palloc_linearscan(mychunk, machine->mem);
-  pqueue_delete(mychunk->active);
+  jt_pqueue_delete(mychunk->active);
   fprintf(stderr, "Inserting register load/store code\n");
   genx86_insert_spill_code(mychunk);
   fprintf(stderr, "Completing allocation\n");
@@ -68,7 +69,7 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   fprintf(stderr, "Flattening code\n");
   nat = genx86_flatten_code(mychunk);
   
-  free(mychunk);
+  jt_delete(mychunk);
   
 /*  nativesupport_invoke2(machine, nat);*/
 

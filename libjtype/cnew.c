@@ -3,7 +3,7 @@
 
 #include "cnew.h"
 
-void* safemalloc(size_t bytes)
+void* jt_safemalloc(size_t bytes)
 {
   void* mem = malloc(bytes);
 
@@ -16,7 +16,7 @@ void* safemalloc(size_t bytes)
   return mem;
 }
 
-void* safecalloc(size_t bytes, size_t num)
+void* jt_safecalloc(size_t bytes, size_t num)
 {
   void* mem = calloc(bytes, num);
 
