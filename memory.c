@@ -225,6 +225,7 @@ const mem_writebank mem_ostimer_write =
 meminfo* memory_initialise(uint5 bytes)
 {
   meminfo* mem = cnew(meminfo);
+  uint5 i;
 
   mem->memory = cnewarray(uint5, bytes/4);
   mem->bank0 = cnewarray(uint5, BANK0RAM/4);
@@ -233,7 +234,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->bank3 = cnewarray(uint5, BANK3RAM/4);
   mem->rom0 = cnewarray(uint5, 4*1024*1024/4);
   mem->rom1 = cnewarray(uint5, 16*1024*1024/4); // hello, I'm flash
-  mem->vram = cnewarray(uint5, VRAM/4);
+  mem->vram = VRAM ? cnewarray(uint5, VRAM/4) : 0;
   mem->writetag = 0;
   mem->currentmode = 0;
   mem->memoryfault = 0;
@@ -243,8 +244,13 @@ meminfo* memory_initialise(uint5 bytes)
   // start off with MMU disabled
   mem->mmuactive = 0;
 
-  // a larger physical memory map will need more hashes than this
+  // full 4Gb address-space worth of hashes
+  fprintf(stderr, "Creating empty transmap\n");
   mem->transmap = cnewarray(hashtable*, 1<<20);
+  for (i=0; i<1<<20; i++)
+  {
+    mem->transmap[i] = 0;
+  }
 	
 #ifdef EMULART
   mem->sapcm.dma = cnewarray(sapcm_dma_channel, 6);

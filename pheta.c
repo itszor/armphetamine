@@ -53,6 +53,11 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   return p;
 }
 
+void pheta_deletechunk(pheta_chunk* chunk)
+{
+  free(chunk);  // and lots more!
+}
+
 // Generate a new basic block, also make it current
 pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
 {
@@ -130,6 +135,10 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
   {
     instructionformat inst;
     inst.instruction = memory_readinstword(machine->mem, base+i*sizeof(uint5));
+
+    fprintf(stderr, "%.8x : %.8x : ", base+i*4, inst.instruction);
+    dispatch(machine, inst, &diss, (void*)(base+i*4));
+    fprintf(stderr, "\n");
     
     if (inst.bra.ident == 5)  // should be sufficient to determine branches
     {

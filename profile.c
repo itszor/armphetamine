@@ -4,6 +4,7 @@
 #include "profile.h"
 #include "transmap.h"
 #include "cnew.h"
+#include "nativesupport.h"
 
 profile_state* profile_initialise(void)
 {
@@ -15,7 +16,7 @@ profile_state* profile_initialise(void)
   return pstate;
 }
 
-void profile_feedseqaddr(meminfo* mem, profile_state* pstate, uint5 addr)
+void profile_feedseqaddr(profile_state* pstate, uint5 addr)
 {
   if (pstate->start != -1u)
   {
@@ -39,34 +40,58 @@ void profile_feedseqaddr(meminfo* mem, profile_state* pstate, uint5 addr)
       assert(!"Non-sequential address?");
     }
   }
+  else
+  {
+    assert(!"Invalid block");
+  }
 }
 
-void profile_feednseqaddr(meminfo* mem, profile_state* pstate, uint5 addr)
+uint5 profile_feednseqaddr(machineinfo* machine, profile_state* pstate,
+  uint5 addr)
 {
+  meminfo* mem = machine->mem;
   /* We're starting at a new leader address. Either we need to
    * reinstate a previous block & increase its usage count, or
    * start a new block afresh.
    */
   transmap_entry* entryataddr = transmap_getentry(mem, addr);
+  pstate->start = addr;
 
   if (entryataddr)
   {
-    /* re-enable this as current block */
-    pstate->currenttrans = entryataddr;
-    pstate->start = addr;
-
     if (entryataddr->code)
     {
       /* run recompiled code */
-      fprintf(mem->trace, "Running code for %.8x\n", pstate->start);
+      fprintf(stderr, "Running code for %.8x\n", pstate->start);
+      nativesupport_invoke2(machine, entryataddr->code);
+      pstate->start = -1;
+      /* & after that, returning one reiterates */
+      return 1;
     }
-    else if (++pstate->currenttrans->usecount > RECOMPILE_THRESHOLD)
+    else  // no code, gathering further data
     {
-      /* do the funky shit */
-      fprintf(mem->trace, "BLING! Found block, start %.8x, length %.8x\n",
-        pstate->start, pstate->currenttrans->length);
-      fflush(mem->trace);
-      entryataddr->code = (char*)0x100;
+      if (++pstate->currenttrans->usecount > RECOMPILE_THRESHOLD)
+      {
+        nativeblockinfo* nat;
+        /* re-enable this as current block */
+        pstate->currenttrans = entryataddr;
+        pstate->start = addr;
+        /* do the funky shit */
+        fprintf(stderr, "BLING! Found block, start %.8x, end %.8x\n",
+          pstate->start, pstate->start+pstate->currenttrans->length);
+        
+        nat = recompile_chunk(machine, pstate->start, pstate->start+
+          pstate->currenttrans->length);
+        
+        entryataddr->code = nat->base;
+        list_destroy(nat->reloc);
+        free(nat);
+        fprintf(stderr, "Running code for first time %.8x\n", pstate->start);
+        nativesupport_invoke2(machine, entryataddr->code);
+        pstate->start = -1;
+        return 1;
+      }
+      assert(pstate->start != -1);
     }
   }
   else
@@ -77,4 +102,5 @@ void profile_feednseqaddr(meminfo* mem, profile_state* pstate, uint5 addr)
     /* patch us into the transmap */
     transmap_addentry(mem, addr, pstate->currenttrans);
   }
+  return 0;
 }

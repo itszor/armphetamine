@@ -9,7 +9,7 @@
 #include "hash.h"
 #include "block.h"
 
-void nativesupport_invoke2(machineinfo* machine, nativeblockinfo* code)
+void nativesupport_invoke2(machineinfo* machine, uint3* code)
 {
   int o1, o2;
   registerinfo* reg = machine->reg;
@@ -18,11 +18,11 @@ void nativesupport_invoke2(machineinfo* machine, nativeblockinfo* code)
   
   asm __volatile__(
     "pushl %%ebp\n\t"
-    "movl %2,%%ebp\n\t"
-    "call *%3\n\t"
+    "movl %0,%%ebp\n\t"
+    "call *%1\n\t"
     "popl %%ebp"
-    : "=r" (o1), "=r" (o2)
-    : "a" (reg), "b" (code->base)
+    :
+    : "a" (reg), "b" (code)
     : "cx", "dx", "si", "di", "memory");
   
   fprintf(stderr, "<-- leaving native code\n");

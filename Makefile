@@ -1,13 +1,13 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -pipe -W -Wall -O2 -DQUICKWRITE -DVERSION=\"0.4\" \
+CFLAGS	= -g -pipe -W -Wall -O0 -DQUICKWRITE -DVERSION=\"0.4\" \
 	 -DEMULART
 NASM	= nasm
 
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
 
-LDFLAGS= -g
+LDFLAGS= -g 
 
 OBJ =	cnew.o decode.o disassemble.o \
 	execute26.o execute32.o fakesys.o hash.o list.o \

@@ -103,12 +103,12 @@ clist.o: clist.c cnew.h defs.h clist.h list.h
 relocate.o: relocate.c relocate.h defs.h list.h cnew.h
 structsupport.o: structsupport.c defs.h memory.h keyboard.h mouse.h \
  hash.h list.h
-transmap.o: transmap.c transmap.h defs.h hash.h list.h pheta.h \
+transmap.o: transmap.c cnew.h transmap.h defs.h hash.h list.h pheta.h \
  decode.h machine.h processor.h registers.h memory.h keyboard.h \
  mouse.h bset.h pqueue.h clist.h
 profile.o: profile.c profile.h defs.h transmap.h hash.h list.h pheta.h \
  decode.h machine.h processor.h registers.h memory.h keyboard.h \
- mouse.h bset.h pqueue.h clist.h cnew.h
+ mouse.h bset.h pqueue.h clist.h cnew.h nativesupport.h x86asm.h
 recompile.o: recompile.c recompile.h defs.h pheta.h list.h decode.h \
  machine.h processor.h registers.h memory.h keyboard.h mouse.h hash.h \
  bset.h pqueue.h clist.h palloc.h genx86.h x86asm.h rtasm.h \

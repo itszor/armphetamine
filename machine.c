@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include "cnew.h"
 #include "machine.h"
@@ -30,7 +31,7 @@ void machine_start(machineinfo* machine)
   registerinfo* reg = machine->reg;
   meminfo* mem = machine->mem;
   const uint5 cycperio = 100;
-  uint5 feednewpc = 0;
+  uint5 feednewpc = 1;
 #ifdef EMULART
   sint5 serialclock = SERIALCLOCKPERIOD;
 #endif
@@ -39,16 +40,19 @@ void machine_start(machineinfo* machine)
   
   for (;;)
   {
-    uint5 instaddr = PCADDR-8;
+    uint5 instaddr;
     instructionformat inst;
+
+    do {
+      instaddr = PCADDR-8;
+      if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
+
+      if (feednewpc)
+        feednewpc = profile_feednseqaddr(machine, machine->pstate, instaddr);
+
+    } while (feednewpc);
     
-    if (reg->cpsr.flag.mode<16) instaddr = instaddr & ~0xfc000003;
-    
-    if (feednewpc)
-    {
-      profile_feednseqaddr(mem, machine->pstate, instaddr);
-      feednewpc = 0;
-    }
+    assert(machine->pstate->start != -1);
     
     inst.instruction = memory_readinstword(mem, instaddr);
     
@@ -70,7 +74,7 @@ void machine_start(machineinfo* machine)
       if (retcode==1)
       {
         /* Uses instruction ptr in state before execute has mangled it */
-        profile_feedseqaddr(mem, machine->pstate, instaddr);
+        profile_feedseqaddr(machine->pstate, instaddr);
         /* make sure next instruction loaded (re-)enables a profile block */
         feednewpc = 1;
       }

@@ -7,7 +7,7 @@
 #include "genx86.h"
 #include "x86asm.h"
 
-pheta_chunk* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
+nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
 {
   pheta_chunk* mychunk;
   nativeblockinfo* nat;
@@ -65,7 +65,9 @@ pheta_chunk* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   fprintf(stderr, "Flattening code\n");
   nat = genx86_flatten_code(mychunk);
   
-  nativesupport_invoke2(machine, nat);
+  free(mychunk);
+  
+/*  nativesupport_invoke2(machine, nat);*/
 
-  return mychunk;
+  return nat;
 }

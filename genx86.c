@@ -1113,7 +1113,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       dfc->src = instr->data.op.dest;
       dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
       dfc->loc = buf->buffer->prev;
-      fprintf(stderr, "Storing commit %d to %d\n", instr->data.op.src1,
+      fprintf(mem->trace, "Storing commit %d to %d\n", instr->data.op.src1,
         instr->data.op.dest);
 /*
       uint5 armdest = instr->data.op.dest;
@@ -1147,7 +1147,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     case ph_ADDRESS:
     {
       chunk->virtualaddress = instr->data.imm;
-      fprintf(stderr, "Found address: %x\n", chunk->virtualaddress);
+      fprintf(mem->trace, "Found address: %x\n", chunk->virtualaddress);
     }
     break;
 
@@ -1522,7 +1522,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
           if (mask==ph_IC)
           {
 /*            assert(!"I wasn't expecting you to ensure inverse C!");*/
-            fprintf(stderr, "WARNING: Ensured inverse C (might break)\n");
+            fprintf(mem->trace, "WARNING: Ensured inverse C (might break)\n");
             genx86_append(chunk, buf, ab_CMC, 0, 0, 0);
           }
         }
