@@ -1117,6 +1117,12 @@ void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno)
 void pheta_lsync(pheta_chunk* chunk)
 {
   int i;
+
+  if (chunk->currentblock)
+  { 
+    fprintf(stderr, "lsync: no current block?\n");
+    return;
+  }
   
   for (i=0; i<ph_NUMREG; i++)
   {
@@ -1157,8 +1163,11 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   hashentry* e;
   if ((e = hash_lookup(chunk->leaders, line)))
   {
-    if (!e->data) e->data = pheta_newbasicblock(chunk, line);
-    else pheta_lsync(chunk);
+    if (!e->data)
+      e->data = pheta_newbasicblock(chunk, line);
+    else
+      pheta_lsync(chunk);
+
     return e->data;
   }
   else

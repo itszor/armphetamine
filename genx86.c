@@ -1794,11 +1794,14 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-/*      genx86_operand* src = genx86_findoperand(chunk, src1);
+      genx86_operand* src = genx86_findoperand(chunk, src1);
       genx86_operand* c8 = genx86_makeconstant(chunk, 8);
+      genx86_operand* pcd = genx86_makebaseoffset(chunk, 15*4, gowidth_DWORD);
+      genx86_operand* addres;
       genx86_move(chunk, buf, dest, src1);
-      genx86_append(chunk, buf, ab_ADD, genx86_findoperand(chunk, dest), c8, 0);
-      */
+      genx86_append(chunk, buf, ab_ADD,
+        addres = genx86_findoperand(chunk, dest), c8, 0);
+      genx86_append(chunk, buf, ab_MOV, pcd, addres, 0);
       genx86_append(chunk, buf, ab_RET, 0, 0, 0);
     }
     break;
