@@ -2,4 +2,5 @@ romload lart-blob2  0x00000000
 romload lart-kernel 0x00010000
 romload lart-initrd 0x000d0000
 # breakset 0xc0008000
+trace on
 run 0x0

@@ -216,9 +216,9 @@ int diss_bdt(machineinfo* machine, instructionformat inst, void* null)
 int diss_bra(machineinfo* machine, instructionformat inst, void* null)
 {
 	sint5 offset = (sint5)((inst.bra.offset+2)<<8)>>6;
-	fprintf(stderr, "b%s%s pc%s%d\t(0x%.x)", inst.bra.l ? "l" : "", 
-    txtcc[inst.generic.cond], offset>=0 ? "+" : "", offset,
-    (uint5)null+offset);
+	fprintf(stderr, "b%s%s 0x%.x\t\t; pc%s%d", inst.bra.l ? "l" : "", 
+    txtcc[inst.generic.cond], (uint5)null+offset,
+    offset>=0 ? "+" : "", offset);
   return 0;
 }
 

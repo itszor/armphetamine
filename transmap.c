@@ -1,6 +1,19 @@
 #include <assert.h>
 
+#include "cnew.h"
 #include "transmap.h"
+
+transmap_entry* transmap_new(void)
+{
+  transmap_entry* entry = cnew(transmap_entry);
+  
+  entry->code = 0;
+  entry->length = 0;
+  entry->usecount = 0;
+  entry->context = 0;
+  
+  return entry;
+}
 
 void transmap_addentry(meminfo* mem, uint5 physaddr, transmap_entry* entry)
 {
