@@ -791,7 +791,9 @@ int EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
     sint5 offset = (sint5)(inst.bra.offset<<8)>>6;
     offset+=INSTSIZE*2;
 
+#ifdef EXIT_ON_ZERO_BRANCH
     if (offset==0) exit(0);
+#endif
 
     // PC now holds actual instruction+8 bytes, same as a real ARM
     if (inst.bra.l) RPUT(14, RGET(15)-INSTSIZE);  // prefetch adjustment

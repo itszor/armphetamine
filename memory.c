@@ -10,6 +10,7 @@
 
 #ifdef EMULART
 #  include "sapcm.h"
+#  include "ostimer.h"
 #endif
 
 const mem_writebank mem_wfault =
@@ -201,6 +202,22 @@ const mem_writebank mem_sapcm_lcd_write =
   sa1100_lcd_write,
   sa1100_lcd_write,
   sa1100_lcd_write
+};
+
+const mem_readbank mem_ostimer_read =
+{
+  ostimer_read,
+  ostimer_read,
+  ostimer_read,
+  ostimer_read,
+  ostimer_read
+};
+
+const mem_writebank mem_ostimer_write =
+{
+  ostimer_write,
+  ostimer_write,
+  ostimer_write
 };
 
 #endif  /* EMULART */
@@ -479,9 +496,14 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     tlb->write = writeperm ? mem_sapcm_serial_write : mem_wfault;
     break;
     
-    case 0x90: // IOMD registers, sorta, perhaps
+    case 0x90: // OS timer registers
     tlb->read = readperm ? mem_ostimer_read : mem_rfault;
     tlb->write = writeperm ? mem_ostimer_write : mem_wfault;
+    break;
+    
+    case 0xa0: // memory control registers
+    tlb->read = readperm ? mem_rnull : mem_rfault;
+    tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
 
     case 0xb0: // SA1100 LCD registers

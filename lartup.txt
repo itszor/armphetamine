@@ -6,4 +6,5 @@ load lart-initrd 0xc0000000
 # breakset 0x3815c70
 # breakset 0x382a8ac
 # breakset 0x382a8dc
+trace on
 run 0x0
