@@ -35,7 +35,8 @@ generators.o: generators.c defs.h codegen.h allocate.h x86asm.h hash.h \
  generators.h pseudo.h decode.h analyse.h block.h codegen_p.h \
  nativesupport.h
 hash.o: hash.c cnew.h hash.h defs.h list.h
-iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h
+iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h machine.h \
+ processor.h registers.h hash.h list.h
 list.o: list.c cnew.h list.h
 loadaout.o: loadaout.c loadaout.h
 machine.o: machine.c cnew.h machine.h defs.h processor.h registers.h \
@@ -87,7 +88,8 @@ phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
  processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
  phetadism.h
 vidc20.o: vidc20.c defs.h vidc20.h memory.h keyboard.h mouse.h
-iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h
+iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h machine.h \
+ processor.h registers.h hash.h list.h
 debug.o: debug.c defs.h machine.h processor.h registers.h memory.h \
  keyboard.h mouse.h hash.h list.h debug.h execute.h decode.h pheta.h \
  bset.h phetadism.h vidc20.h iomd.h

@@ -26,6 +26,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
 {
   registerinfo* reg = machine->reg;
   uint5 omode = reg->cpsr.flag.mode, i;
+  uint5 reducemode = omode>=16 && newmode<16;
 
   fprintf(stderr, "Switching mode from %s to %s\n",
     modename_st[reg->cpsr.flag.mode], modename_st[newmode]);
@@ -77,6 +78,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     reg->cpsr = reg->spsr[0];
     case pm_USR26:
     for (i=8; i<=14; i++) reg->r[i] = reg->usr[i-8];
+    // ignore bits 0,1,26,27 on LDM {...pc...}^
     reg->pcmask = 0x0c000003;
     reg->spsr_current = 0;
     break;
@@ -84,7 +86,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     case pm_FIQ32:
     reg->cpsr = reg->spsr[1];
     case pm_FIQ26:
-    for (i=8; i<=14; i++) reg->r[i] = reg->irq[i-8];
+    for (i=8; i<=14; i++) reg->r[i] = reg->fiq[i-8];
     reg->pcmask = 0x0;
     reg->spsr_current = 1;
     break;
@@ -131,6 +133,13 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   machine->exectab = newmode<16 ? &exec26 : &exec32;
 
   if (newmode==24) machine->trace = 1;
+
+  if (reducemode)
+  {
+    // absolutely no idea if this is right
+    reg->r[15] = (reg->r[15] & ~0xfc000003) | (reg->cpsr.value & 0xf0000003) |
+                 ((reg->cpsr.value & 0xa0)<<20);
+  }
 
 /*  const int rmodebase[] = {7, 7, 2, 2, 2, 2};
   uint5 omode = reg->cpsr.flag.mode&15;

@@ -255,8 +255,8 @@ uint5 memory_nullread(meminfo* mem, uint5 physaddress)
   return 0x0c0ffee0;
 }
 
-void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 writeperm,
-                        uint3 readperm)
+void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
+                        uint3 writeperm)
 {
   switch ((physaddress >> 24) & 0x1f)
   {

@@ -715,7 +715,7 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
   uint5 val)
 {
   registerinfo* reg = machine->reg;
-  meminfo* mem = machine->mem;
+/*  meminfo* mem = machine->mem;*/
   
   if (inst.mrs.ident==0 && inst.mrs.ident2==15 && inst.mrs.ident3==2)
   {
@@ -926,6 +926,88 @@ void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
   }
 }
 
+static void savecurrent(machineinfo* machine, uint5 mode)
+{
+  registerinfo* reg = machine->reg;
+  uint5 i;
+
+  switch (mode)
+  {
+    case pm_USR26:
+    case pm_USR32:
+    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
+    break;
+    
+    case pm_FIQ26:
+    case pm_FIQ32:
+    for (i=8; i<=14; i++) reg->fiq[i-8] = reg->r[i];
+    break;
+    
+    case pm_IRQ26:
+    case pm_IRQ32:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->irq[i-13] = reg->r[i];
+    break;
+    
+    case pm_SVC26:
+    case pm_SVC32:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->svc[i-13] = reg->r[i];
+    break;
+    
+    case pm_ABT32:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->abt[i-13] = reg->r[i];
+    break;
+    
+    case pm_UND32:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->und[i-13] = reg->r[i];
+    break;
+  }
+}
+
+static void restorenew(machineinfo* machine, uint5 mode)
+{
+  registerinfo* reg = machine->reg;
+  uint5 i;
+  
+  switch (mode)
+  {
+    case pm_USR26:
+    case pm_USR32:
+    for (i=8; i<=14; i++) reg->r[i] = reg->usr[i-8];
+    break;
+    
+    case pm_FIQ26:
+    case pm_FIQ32:
+    for (i=8; i<=14; i++) reg->r[i] = reg->irq[i-8];
+    break;
+    
+    case pm_IRQ26:
+    case pm_IRQ32:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->irq[i-13];
+    break;
+    
+    case pm_SVC26:
+    case pm_SVC32:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->svc[i-13];
+    break;
+    
+    case pm_ABT32:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->abt[i-13];
+    break;
+    
+    case pm_UND32:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->und[i-13];
+    break;
+  }
+}
+
 // macros relating to block data transfer
 // we're living in a flat address space for now - no overlap testing necessary
 #define TESTOVERLAP 
@@ -952,14 +1034,23 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     meminfo* mem = machine->mem;
     uint5 base = RGET(inst.bdt.rn);
     int i;
+    uint5 originalmode = reg->cpsr.flag.mode;
 
-#ifndef ARM26BIT
-    psrinfo currentcpsr;
-    if (inst.bdt.s)
+#ifdef ARM26BIT
+    if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
     {
-      fprintf(stderr, "Hatted LDM/STM in 32-bit mode!\n");
-      currentcpsr = reg->cpsr;
-      processor_mode(machine, pm_USR32);
+      fprintf(stderr, "Hatted LDM/STM in 26-bit mode, forcing user "
+                      "bank transfer\n");
+      savecurrent(machine, originalmode);
+      restorenew(machine, pm_USR26);
+    }
+#else
+    if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
+    {
+      fprintf(stderr, "Hatted LDM/STM in 32-bit mode, forcing user "
+                      "bank transfer\n");
+      savecurrent(machine, originalmode);
+      restorenew(machine, pm_USR32);
     }
 #endif
 
@@ -1083,12 +1174,15 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
       return;
     }
 
-#ifndef ARM26BIT
-    if (inst.bdt.s)
+//#ifndef ARM26BIT
+    if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
     {
-      processor_mode(machine, currentcpsr.flag.mode);
+      // maybe this can corrupt registers, it's too complicated for me to
+      // work out right now?
+      savecurrent(machine, pm_USR32);
+      restorenew(machine, originalmode);
     }
-#endif
+//#endif
 
     // pipeline correction, or just next instruction
     if (inst.bdt.l && (inst.bdt.reglist & (1<<15)))

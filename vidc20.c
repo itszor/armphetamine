@@ -160,8 +160,11 @@ void vidc20_writeword(meminfo* mem, uint5 address, uint5 data)
         mem->video.vstart, mem->video.vend);
       fprintf(stderr, "Setting video mode: %dx%d, %d bpp\n", mem->video.xsize,
         mem->video.ysize, mem->video.bpp);
-      mem->video.surf = SDL_SetVideoMode(mem->video.xsize, mem->video.ysize,
-        mem->video.bpp, SDL_HWSURFACE);
+      if (mem->video.xsize!=0 && mem->video.ysize!=0)
+      {
+        mem->video.surf = SDL_SetVideoMode(mem->video.xsize, mem->video.ysize,
+          mem->video.bpp, SDL_HWSURFACE);
+      }
     }
     break;
     
