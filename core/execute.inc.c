@@ -575,9 +575,13 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
     {
       rd += INSTSIZE*2;
       pcset = 1;
+      if (inst.dp.s && reg->spsr_current != 0)
+      {
+        processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+      }
     }
     
-    STOREREG(inst.dp.rd, rd);
+    RPUT(inst.dp.rd, rd);
     
     if (pcset) return 1;
   }
@@ -776,9 +780,13 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     {
       rd += INSTSIZE*2;
       pcset = 1;
+      if (inst.dp.s && reg->spsr_current != 0)
+      {
+        processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+      }
     }
     
-    STOREREG(inst.dp.rd, rd);
+    RPUT(inst.dp.rd, rd);
     
     if (pcset) return 1;
   }

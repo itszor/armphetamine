@@ -108,23 +108,6 @@
                           if (inst.dp.s) PCSETADFL(V) else PCSETADDR(V); \
                         else RPUT((C), V)
 //#  error "Guess who broke 26-bit mode?"
-#else
-#  define STOREREG(C,V) if ((C)==15) { \
-                          RPUT((C), V); \
-                          if (inst.dp.s && reg->spsr_current!=0) { \
-                            processor_mode(machine, \
-                              reg->spsr[reg->spsr_current].flag.mode); \
-                            if (reg->cpsr.flag.interrupt & 0x2) \
-                            { \
-                              fprintf(stderr, "-- IRQ Disabled (storereg)\n"); \
-                            } \
-                            else \
-                            { \
-                              fprintf(stderr, "-- IRQ Enabled (storereg)\n"); \
-                            } \
-                          } \
-                        } \
-                        else RPUT((C), V)
 #endif
 
 #define PRINTOPS 1
