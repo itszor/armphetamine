@@ -296,30 +296,30 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
                                tlbentry* tlb, uint5 alignment)
 {
   uint5 tableindex, firstleveldescriptor, domain;
-  uint3 isuser = (mem->currentmode==0);
+  uint3 isuser = (mem->currentmode&15==0);
   // bits go: aprsvd
   static const uint3 apfault[] = {
 //  user  super
 //  r  w  r  w
     0, 0, 0, 0,  // ap = 00, r = 0, s = 0
-    0, 0, 1, 1,  // ap = 00, r = 0, s = 1
+    0, 0, 1, 0,  // ap = 00, r = 0, s = 1
     1, 0, 1, 0,  // ap = 00, r = 1, s = 0
     0, 0, 0, 0,  // ap = 00, r = 1, s = 1
     
     0, 0, 1, 1,  // ap = 01, r = 0, s = 0
     0, 0, 1, 1,  // ap = 01, r = 0, s = 1
     0, 0, 1, 1,  // ap = 01, r = 1, s = 0
-    0, 0, 0, 0,  // ap = 01, r = 1, s = 1
+    0, 0, 1, 1,  // ap = 01, r = 1, s = 1
     
     1, 0, 1, 1,  // ap = 10, r = 0, s = 0
     1, 0, 1, 1,  // ap = 10, r = 0, s = 1
     1, 0, 1, 1,  // ap = 10, r = 1, s = 0
-    0, 0, 0, 0,  // ap = 10, r = 1, s = 1
+    1, 0, 1, 1,  // ap = 10, r = 1, s = 1
     
     1, 1, 1, 1,  // ap = 11, r = 0, s = 0
     1, 1, 1, 1,  // ap = 11, r = 0, s = 1
     1, 1, 1, 1,  // ap = 11, r = 1, s = 0
-    0, 0, 0, 0   // ap = 11, r = 1, s = 1
+    1, 1, 1, 1   // ap = 11, r = 1, s = 1
   };
 
   if (!(mem->mmucontrol & 1)) {
@@ -367,20 +367,21 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
       if (domainaccess==0 || domainaccess==2)
       {
         fprintf(stderr, "Page domain fault!\n");
+        memory_invalidatetlb(tlb);
         mem->memoryfault = 1;
+        return 0xdeadbeef;
       }
 
       switch (secondleveldescriptor & 3)  
       {  
         case 0:  // page translation fault
-        case 3:
         {
           fprintf(stderr, "Page translation fault!\n");
           mem->memoryfault = 1;
         }
         break;  
 
-        case 1:  // large page
+        case 1:  // large page (64kb)
         {
           uint5 pageindex = 0, physaddress;
           uint3 fullpage = 0;
@@ -390,6 +391,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
           if (domainaccess==1)  // client
           {
+            /* r bit (9) & s bit (8) */
             uint5 rsbits = (mem->mmucontrol >> 8) & 3;
             uint5 subpage = (pageindex >> 14) & 3;
             uint3 ap = (secondleveldescriptor >> (2*subpage+4)) & 3;
@@ -429,7 +431,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
         }
         break;
 
-        case 2:  // small page
+        case 2:  // small page (4kb)
         {  
           uint5 pageindex = 0, physaddress;
           uint3 fullpage = 0;
@@ -439,6 +441,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
           if (domainaccess==1)  // client
           {
+            /* r bit (9) & s bit (8) */
             uint5 rsbits = (mem->mmucontrol >> 8) & 3;
             uint5 subpage = (pageindex >> 10) & 3;
             uint5 ap = (secondleveldescriptor >> (2*subpage+4)) & 3;
@@ -482,6 +485,13 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
           return physaddress;
         }
         break;
+        
+        case 3:  // tiny page
+        {
+          fprintf(stderr, "Tiny page found in coarse page table!!\n");
+          abort();
+        }
+        break;
       }
     }
     break;
@@ -494,7 +504,9 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
       if (domainaccess==0 || domainaccess==2)
       {
         fprintf(stderr, "Section domain fault\n");
+        memory_invalidatetlb(tlb);
         mem->memoryfault = 1;
+        return 0xdeadbeef;
       }
       
       sectionindex = virtualaddress & 0x000fffff;
@@ -502,6 +514,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
       if (domainaccess==1)
       {
+        /* r bit (9) & s bit (8) */
         uint5 rsbits = (mem->mmucontrol >> 8) & 3;
         uint5 ap = (firstleveldescriptor >> 10) & 3;
         uint5 fltbase = (ap<<4) | (rsbits<<2);

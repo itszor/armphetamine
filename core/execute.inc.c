@@ -1558,8 +1558,17 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 1: PCFLAGPUT(inst.crt.rd, mem->mmucontrol);
                 fprintf(stderr, "> Copy mmucontrol to r%d\n", inst.crt.rd);
                 break;
-                case 5: PCFLAGPUT(inst.crt.rd, mem->faultstatus); break;
-                case 6: PCFLAGPUT(inst.crt.rd, mem->faultaddress); break;
+                
+                case 5:
+                PCFLAGPUT(inst.crt.rd, mem->faultstatus);
+                abort();
+                break;
+                
+                case 6:
+                PCFLAGPUT(inst.crt.rd, mem->faultaddress);
+                abort();
+                break;
+                
                 case 0x8: case 0x9: case 0xa: case 0xb:
                 case 0xc: case 0xf:
                 processor_und(machine);
@@ -1675,7 +1684,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 5: // fault status
                 {
-                
+                  abort();
                 }
                 break;
                 
@@ -1689,7 +1698,7 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 
                 case 6:  // fault address
                 {
-                
+                  abort();
                 }
                 break;
                 
