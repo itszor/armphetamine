@@ -38,16 +38,17 @@ things = {'m':   (0, '_rm8'),
           'M':   (6, "_rm32"),
           'I':   (7, "_imm32"),
           'O':   (7, "_rel32"),
-          'RM':  (8, "_r32_rm32"),
-          'RMs': (8, "_r32_m32"),
-          'MR':  (9, "_rm32_r32"),
-          'RI':  (10, "_r32_imm32"),
-          'Mi':  (11, "_rm32_imm8"),
-          'MI':  (12, "_rm32_imm32"),
-          'Mc':  (13, "_rm32_cl"),
-          'RMi': (14, "_r32_rm32_imm8"),
-          'RMI': (15, "_r32_rm32_imm32"),
-          'n':   (16, ""),
+          'R':   (8, "_r32"),
+          'RM':  (9, "_r32_rm32"),
+          'RMs': (9, "_r32_m32"),
+          'MR':  (10, "_rm32_r32"),
+          'RI':  (11, "_r32_imm32"),
+          'Mi':  (12, "_rm32_imm8"),
+          'MI':  (13, "_rm32_imm32"),
+          'Mc':  (14, "_rm32_cl"),
+          'RMi': (15, "_r32_rm32_imm8"),
+          'RMI': (16, "_r32_rm32_imm32"),
+          'n':   (17, ""),
          }
 
 outfile.write('#include "rtasm.h"\n')
@@ -59,7 +60,7 @@ array = []
 for line in lines:
   (op,variant,set,corrupt) = splitre.split(sub(r'\s*', '', line))
   wotsit = comma.split(variant)
-  output = ['NULL'] * 17
+  output = ['NULL'] * 18
 
   for bob in wotsit:
     (offset,postfix) = things[bob]

@@ -765,7 +765,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   if ((mem->mmucontrol & 2) && (virtualaddress & 3)) {
   /* !!! ok, this is disabled 'cos it triggers on bytes, which is stupid */
     fprintf(stderr, "Alignment fault!\n");
-//    mem->memoryfault = 1;
+    mem->memoryfault = 1;
   }
 
   tableindex = virtualaddress >> 20;

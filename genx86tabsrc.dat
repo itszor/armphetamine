@@ -16,8 +16,8 @@ imul |RM,RMi,RMI   ||cvnz
 lea  |RMs          ||
 mov  |RM,MR,MI,RI,rm,mr,ri,mi  ||
 not  |M,m          ||
-push |M,i,I        ||
-pop  |M            ||
+push |M,i,I,R      ||
+pop  |M,R          ||
 test |MR,MI,mi     |nz|cv
 cmp  |RM,MR,MI     |ivnz|
 ret  |n            ||

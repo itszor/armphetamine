@@ -444,7 +444,11 @@ static void genx86_asm_1(nativeblockinfo* nat, genx86_op* inst, uint5 opcode,
     {
       if (ops==1)
       {
-        if (genx86_tab[opcode].rm32)
+        if (genx86_tab[opcode].r32)
+        {
+          genx86_tab[opcode].r32(nat, inst->op[0]->data.reg);
+        }
+        else if (genx86_tab[opcode].rm32)
         {
           genx86_tab[opcode].rm32(nat, rtasm_reg(inst->op[0]->data.reg));
         }
