@@ -76,6 +76,7 @@ typedef void (*genx86_r32_rm32)(nativeblockinfo*, uint3, rtasm_mtype);
 typedef void (*genx86_rm32_r32)(nativeblockinfo*, rtasm_mtype, uint3);
 typedef void (*genx86_rm32_i8)(nativeblockinfo*, rtasm_mtype, uint3);
 typedef void (*genx86_rm32_i32)(nativeblockinfo*, rtasm_mtype, uint5);
+typedef void (*genx86_rm8_i8)(nativeblockinfo*, rtasm_mtype, uint3);
 typedef void (*genx86_rm32_c)(nativeblockinfo*, rtasm_mtype);
 typedef void (*genx86_r32_rm32_i8)(nativeblockinfo*, uint3, rtasm_mtype, uint3);
 typedef void (*genx86_r32_rm32_i32)(nativeblockinfo*, uint3, rtasm_mtype, 
@@ -90,6 +91,7 @@ typedef struct {
   genx86_rm32_r32 rm32_r32;
   genx86_rm32_i8 rm32_i8;
   genx86_rm32_i32 rm32_i32;
+  genx86_rm8_i8 rm8_i8;
   genx86_rm32_c rm32_c;
   genx86_r32_rm32_i8 r32_rm32_i8;
   genx86_r32_rm32_i32 r32_rm32_i32;

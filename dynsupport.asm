@@ -1,3 +1,5 @@
+; consider experimental & extremely broken.
+
 extern processor_prefetchabort
 extern processor_dataabort
 extern memory_virtualtophysical
@@ -25,31 +27,40 @@ extern memory_virtualtophysical
 ; arg1: address
 ; arg2: tlb entry
 
+; duplicating this functionality is stupid.
 global dynsupport_readdataword:function
 
 dynsupport_readdataword:
-        pop eax  ; eax contains memoryinfo*
-        pop ecx  ; ecx contains address
-        pop edx  ; edx contains tlb entry
+        push esi
+        push edi
+        push ebx
+        mov eax,[esp+16]  ; eax contains memoryinfo*
+        mov ecx,[esp+20]  ; ecx contains address
+        mov edx,[esp+24]  ; edx contains tlb entry
+
+        test byte [ebp+37],1
 
         mov ebx,[edx+tlbentry.modestamp]
         cmp ebx,[eax+meminfo_currentmode]
-        je tlbmiss
-
-        mov ebx,ecx
-        mov esi,[edx+tlbentry.mask]
-        and ebx,esi
-        cmp ebx,[edx+tlbentry.virtual]
         je tlbmiss
         
         not esi
         and ecx,esi
         or ecx,[edx+tlbentry.physical]
 
+        mov ebx,ecx
+        mov esi,[edx+tlbentry.mask]
+        and ebx,esi
+        cmp ebx,[edx+tlbentry.virtual]
+        je tlbmiss
+
         push ecx  ; phys addr
         push eax  ; meminfo
         call [edx+tlbentry.rdword]
         add esi,8
+        pop ebx
+        pop edi
+        pop esi
         rts
         
 tlbmiss:
@@ -64,6 +75,10 @@ tlbmiss:
         push edi
         call [edx+tlbentry.rdword]
         add esp,8
+
+        pop ebx
+        pop edi
+        pop esi
         ret
 .end:
 
