@@ -111,6 +111,68 @@ void palloc_nonorthog(pheta_chunk* chunk)
   }
 }
 
+// If a source register in a particular instruction isn't used after that
+// particular instruction, alias the instruction's destination register to
+// that source register to take advantage of x86's two-address format
+void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
+                               uint5 startline)
+{
+  int i;
+    
+  for (i=0; i<blk->length; i++)
+  {
+    uint5 opcode = blk->base[i];
+    uint5 nsrc, srcr[ph_MAXSRC], ndest, destr[ph_MAXDEST];
+    uint5 thisline = startline+i, j;
+    
+    pheta_getused(blk->base, i, &ndest, destr, &nsrc, srcr);
+    
+    if (ndest==1)
+    {
+      for (j=0; j<nsrc; j++)
+      {
+        palloc_liverange* srcspan = chunk->reversetable[srcr[j]];
+        if (srcspan->startline+srcspan->length <= thisline)
+        {
+          fprintf(stderr, "Could alias %d to %d\n", srcspan->reg, destr[0]);
+        }
+      }
+    }
+    
+    i += pheta_instlength[opcode];
+  }
+  
+  blk->marker = 1;
+
+  if (blk->trueblk && !blk->trueblk->marker)
+  {
+    palloc_findspans(chunk, blk->trueblk, startline+blk->length);
+  }
+  
+  if (blk->falseblk && !blk->falseblk->marker)
+  {
+    palloc_findspans(chunk, blk->falseblk, startline+blk->length);
+  }
+}
+
+void palloc_srcdestalias(pheta_chunk* chunk, pheta_basicblock* blk)
+{
+  int i;
+  chunk->reversetable = cnewarray(palloc_liverange*, chunk->tempno);
+  
+  for (i=0; i<chunk->active->length; i++)
+  {
+    palloc_liverange* span =(palloc_liverange*)(chunk->active->item[i])->data;
+    chunk->reversetable[span->reg] = span;
+  }
+  
+  palloc_clearmarkers(chunk);
+  
+  palloc_srcdestalias_inner(chunk, blk, 0);
+  
+  free(chunk->reversetable);
+}
+
 // allocate all 'fetched' & 'committed' registers to memory locations
 // (which might be a silly thing to do)
 void palloc_fetchmem(pheta_chunk* chunk)
@@ -234,7 +296,8 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
                        uint5 startline)
 {
   pqueueitem* rstart;
-  const char* regname[] = {"EAX","ECX","EDX","EBX","ESP","EBP","ESI","EDI"};
+  const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
+                           "ESP", "EBP", "ESI", "EDI"};
   const uint5 maxreg = 6;
   uint5 regc = 0, i;
   

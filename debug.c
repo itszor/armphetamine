@@ -530,13 +530,14 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Constant allocating\n");
   palloc_constant(mychunk);
 //  palloc_nonorthog(mychunk);
-  palloc_fetchmem(mychunk);
+//  palloc_fetchmem(mychunk);
   fprintf(stderr, "Commit shuffling\n");
   palloc_shufflecommit(mychunk);
   phetadism_chunk(mychunk);
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
+  palloc_srcdestalias(mychunk, mychunk->root);
   palloc_printspans(mychunk);
   fprintf(stderr, "Doing linear scan allocation\n");
   mychunk->reguse[0] = mychunk->reguse[1] = mychunk->reguse[2] =

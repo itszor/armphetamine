@@ -99,6 +99,7 @@ typedef struct pheta_basicblock_t {
 } pheta_basicblock;
 
 struct palloc_info;
+struct palloc_liverange;
 
 typedef struct {
   list* blocks;
@@ -112,6 +113,7 @@ typedef struct {
   pheta_basicblock* root;
   pheta_basicblock* currentblock;
   struct palloc_info* alloc;
+  struct palloc_liverange** reversetable;
   uint3 reguse[8];
   uint5 regno;
   pqueue* active;

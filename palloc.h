@@ -17,11 +17,11 @@ typedef enum {
   pal_NUMTYPES
 } palloc_type;
 
-typedef struct {
+struct palloc_liverange {
   uint5 startline;
   uint5 length;
   uint5 reg;
-} palloc_liverange;
+};
 
 struct palloc_info {
   palloc_type type;
@@ -37,8 +37,11 @@ struct palloc_info {
 };
 
 typedef struct palloc_info palloc_info;
+typedef struct palloc_liverange palloc_liverange;
 
-
+extern void palloc_srcdestalias(pheta_chunk* chunk, pheta_basicblock* blk);
+extern void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
+                                      uint5 startline);
 extern void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
                       uint5 startline);
 extern void palloc_printspans(pheta_chunk* chunk);
