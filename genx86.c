@@ -689,10 +689,7 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                             ERR;
                             break;
                           }
-                        }
-                        default:
-                        ERR;
-                        break;
+                        }  // if (tab[])
                       }
                       break;
                     
@@ -768,8 +765,8 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
                         else goto promote_rm32_i8_to_rm32_i32;
                       }
                       break;
-                    }
-                  }
+                    }  // switch (op[0]->width)
+                  }  // op[1]->width == byte
                   break;
                 
                   // nasty nasty nasty
@@ -1909,18 +1906,24 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
       palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_operand* opdest = genx86_findoperand(chunk, dest);
 
       if ((src2->type==pal_CONST || src2->type==pal_CONSTB) && 
           dest->type==pal_IREG)
       {
-        genx86_append(chunk, buf, ab_IMUL, genx86_findoperand(chunk, dest),
+        genx86_append(chunk, buf, ab_IMUL, opdest,
           genx86_findoperand(chunk, src1), genx86_findoperand(chunk, src2));
       }
       else
       {
         genx86_move(chunk, buf, dest, src1);
-        genx86_append(chunk, buf, ab_IMUL, genx86_findoperand(chunk, dest),
+        genx86_append(chunk, buf, ab_IMUL, opdest,
           genx86_findoperand(chunk, src2), 0);
+      }
+
+      if ((buf->expecting & ph_Z) || (buf->expecting & ph_N))
+      {
+        genx86_append(chunk, buf, ab_TEST, opdest, opdest, 0);
       }
     }
     break;
@@ -1952,6 +1955,12 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
       genx86_move(chunk, buf, dest, src);
+
+      if ((buf->expecting & ph_Z) || (buf->expecting & ph_N))
+      {
+        genx86_operand* opdest = genx86_findoperand(chunk, dest);
+        genx86_append(chunk, buf, ab_TEST, opdest, opdest, 0);
+      }
     }
     break;
 
@@ -1959,8 +1968,15 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     {
       palloc_info* dest = &chunk->alloc[instr->data.op.dest];
       palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      genx86_operand* opdest = genx86_findoperand(chunk, dest);
+
       genx86_move(chunk, buf, dest, src);
-      genx86_append(chunk, buf, ab_NOT, genx86_findoperand(chunk, dest), 0, 0);
+      genx86_append(chunk, buf, ab_NOT, opdest, 0, 0);
+
+      if ((buf->expecting & ph_Z) || (buf->expecting & ph_N))
+      {
+        genx86_append(chunk, buf, ab_TEST, opdest, opdest, 0);
+      }
     }
     break;
 
@@ -2042,7 +2058,10 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         off->width = gowidth_BYTE;
         off->data.regdisp.base = EBP;
         off->data.regdisp.disp = offsetof(registerinfo, vflag);
-        genx86_append(chunk, buf, ab_SETO, off, 0, 0);
+        if (buf->beenset & ph_V)
+          genx86_append(chunk, buf, ab_SETO, off, 0, 0);
+        else
+          assert(!"Overflow flag has not been set");
       }
       if (needmask & ph_N)
       {
@@ -2051,7 +2070,10 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         off->width = gowidth_BYTE;
         off->data.regdisp.base = EBP;
         off->data.regdisp.disp = offsetof(registerinfo, nflag);
-        genx86_append(chunk, buf, ab_SETS, off, 0, 0);
+        if (buf->beenset & ph_N)
+          genx86_append(chunk, buf, ab_SETS, off, 0, 0);
+        else
+          assert(!"Negative flag has not been set");
       }
       if (needmask & ph_Z)
       {
@@ -2060,7 +2082,10 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
         off->width = gowidth_BYTE;
         off->data.regdisp.base = EBP;
         off->data.regdisp.disp = offsetof(registerinfo, zflag);
-        genx86_append(chunk, buf, ab_SETE, off, 0, 0);
+        if (buf->beenset & ph_Z)
+          genx86_append(chunk, buf, ab_SETE, off, 0, 0);
+        else
+          assert(!"Zero flag has not been set");
       }
       if (pred)
       {
@@ -2389,9 +2414,6 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
   for (scan=buf->commit; scan; scan=scan->prev)
   {
     genx86_delayedfetchcommit* dfc = scan->data;
-    fprintf(stderr, "Trying commit %d to %d\n", 
-      dfc->var->info.ireg.num, dfc->src);
-    fprintf(stderr, "chunk->alloc[dfc->var].type=%d\n", dfc->var->type);
     switch (dfc->var->type)
     {
       case pal_IREG:
@@ -2434,10 +2456,9 @@ static void killrelocentry(void* data)
   free(data);
 }
 
-void genx86_flatten_code_inner(pheta_basicblock* blk)
+void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_basicblock* blk)
 {
   clist* scancode;
-  nativeblockinfo* nat = rtasm_new();
   
   for (scancode=blk->gxbuffer->buffer->next; scancode->data; 
        scancode=scancode->next)
@@ -2482,20 +2503,199 @@ void genx86_flatten_code_inner(pheta_basicblock* blk)
       }
     }
   }
-  hash_nuke(blk->gxbuffer->reloc, &killrelocentry);
-  relocate_fix(&nat->reloc, nat->base);
-  x86dism_block(nat);
 }
 
 void genx86_flatten_code(pheta_chunk* chunk)
 {
   list* scanblock;
+  nativeblockinfo* nat = rtasm_new();
+  pqueue* queue = pqueue_new();
+  pqueueitem* qitem;
+  pheta_basicblock* last = 0;
   
   palloc_clearmarkers(chunk);
   
-  for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
+  qitem = pqueue_insert(queue, -50);
+  qitem->data = chunk->root;
+  
+  while ((qitem = pqueue_extract(queue)))
   {
-    pheta_basicblock* blk = scanblock->data;
-    genx86_flatten_code_inner(blk);
+    pheta_basicblock* blk = qitem->data;
+    // these might benefit from being weighted by profile data
+    uint5 truepriority = 25, falsepriority = 25;
+
+    if (blk->marker)
+    {
+      free(qitem);
+      continue;
+    }
+
+    if (last && ((last->trueblk && last->trueblk != blk) ||
+                 (last->falseblk && last->falseblk != blk)))
+    {
+      uint5 unconditional = ((last->predicate & 0xf) == ph_AL);
+      genx86_op* op;
+      genx86_operand* off;
+
+      if (!unconditional)
+      {
+        op = cnew(genx86_op);
+        off = cnew(genx86_operand);
+        op->operator = ab_TEST;
+        off->type = gotype_INDREGPLUSDISP8;
+        off->width = gowidth_BYTE;
+        off->data.regdisp.base = EBP;
+        if (blk->predicate & ph_NAT)
+        {
+          off->data.regdisp.disp = offsetof(registerinfo,
+            npredbuf[last->predicate & 0xf]);
+        }
+        else
+        {
+          off->data.regdisp.disp = offsetof(registerinfo,
+            predbuf[last->predicate & 0xf]);
+        }
+        op->op[0] = off;
+        op->op[1] = genx86_makeconstant(chunk, 1);
+        op->op[2] = 0;
+        genx86_asm(nat, op);
+        free(op);
+      }
+      
+      if (last->trueblk && last->trueblk != blk)
+      {
+        reloc_record* reloc;
+        op = cnew(genx86_op);
+        op->operator = ab_JE;
+        op->op[0] = genx86_makeconstant(chunk, 0x100);
+        op->op[1] = op->op[2] = 0;
+        genx86_asm(nat, op);
+        free(op);
+        reloc = cnew(reloc_record);
+        reloc->type = reloc_ABSOLUTE;
+        reloc->value = 0;
+        reloc->offset = nat->length-4;
+        reloc->size = relsize_WORD;
+        list_add(&last->trueblk->reloc);
+        last->trueblk->reloc->data = reloc;
+      }
+
+      if (last->falseblk && last->falseblk != blk)
+      {
+        reloc_record* reloc;
+        op = cnew(genx86_op);
+        op->operator = ab_JNE;
+        op->op[0] = genx86_makeconstant(chunk, 0x100);
+        op->op[1] = op->op[2] = 0;
+        genx86_asm(nat, op);
+        free(op);
+        reloc = cnew(reloc_record);
+        reloc->type = reloc_ABSOLUTE;
+        reloc->value = 0;
+        reloc->offset = nat->length-4;
+        reloc->size = relsize_WORD;
+        list_add(&last->falseblk->reloc);
+        last->falseblk->reloc->data = reloc;
+      }
+    }
+    
+    for (scanblock=blk->reloc; scanblock; scanblock=scanblock->prev)
+    {
+      reloc_record* reloc = scanblock->data;
+      reloc->value = nat->length - reloc->offset - 4;
+    }
+    
+    relocate_fix(&blk->reloc, nat->base);
+
+    blk->natoffset = nat->length;    
+    genx86_flatten_code_inner(nat, blk);
+//    hash_nuke(blk->gxbuffer->reloc, &killrelocentry);
+    
+    blk->marker = 1;
+    
+    if (blk->trueblk && !blk->falseblk) truepriority += 50;
+    
+    // link this block to previously generated code
+    if ((blk->trueblk && blk->trueblk->marker) ||
+        (blk->falseblk && blk->falseblk->marker))
+    {
+      uint5 unconditional = ((blk->predicate & 0xf) == ph_AL);
+      genx86_op* op;
+      genx86_operand* off;
+
+      if (!unconditional)
+      {
+        op = cnew(genx86_op);
+        off = cnew(genx86_operand);
+        op->operator = ab_TEST;
+        off->type = gotype_INDREGPLUSDISP8;
+        off->width = gowidth_BYTE;
+        off->data.regdisp.base = EBP;
+        if (blk->predicate & ph_NAT)
+        {
+          off->data.regdisp.disp = offsetof(registerinfo,
+            npredbuf[blk->predicate & 0xf]);
+        }
+        else
+        {
+          off->data.regdisp.disp = offsetof(registerinfo,
+            predbuf[blk->predicate & 0xf]);
+        }
+        op->op[0] = off;
+        op->op[1] = genx86_makeconstant(chunk, 1);
+        op->op[2] = 0;
+        genx86_asm(nat, op);
+        free(off);
+        free(op);
+      }
+      
+      if (blk->trueblk && blk->trueblk->marker)
+      {
+        op = cnew(genx86_op);
+        op->operator = unconditional ? ab_JMP : ab_JE;
+        op->op[0] = genx86_makeconstant(chunk, blk->trueblk->natoffset - 
+          nat->length - (unconditional ? 5 : 6));
+        op->op[1] = op->op[2] = 0;
+        genx86_asm(nat, op);
+        blk->trueblk = 0;
+        free(op);
+      }
+
+      if (blk->falseblk && blk->falseblk->marker)
+      {
+        op = cnew(genx86_op);
+        op->operator = ab_JNE;
+        op->op[0] = genx86_makeconstant(chunk, blk->falseblk->natoffset -
+          nat->length - 6);
+        op->op[1] = op->op[2] = 0;
+        genx86_asm(nat, op);
+        blk->falseblk = 0;
+        free(op);
+      }
+    }
+    
+    // add child nodes
+    if (blk->trueblk && !blk->trueblk->marker)
+    {
+      pqueueitem* newitem;
+      if (blk->scsubgraph == blk->trueblk->scsubgraph) truepriority += 50;
+      newitem = pqueue_insert(queue, -truepriority);
+      newitem->data = blk->trueblk;
+    }
+    
+    if (blk->falseblk && !blk->falseblk->marker)
+    {
+      pqueueitem* newitem;
+      if (blk->scsubgraph == blk->falseblk->scsubgraph) falsepriority += 50;
+      newitem = pqueue_insert(queue, -falsepriority);
+      newitem->data = blk->falseblk;
+    }
+    
+    last = blk;
+    
+    free(qitem);
   }
+
+  relocate_fix(&nat->reloc, nat->base);
+  x86dism_block(nat);
 }

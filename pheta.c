@@ -75,6 +75,7 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   b->live = pqueue_new();
   b->required = 0;
   b->set = 0;
+  b->reloc = 0;
   
   c->currentblock = b;
 

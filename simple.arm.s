@@ -4,7 +4,13 @@
         .type    simple,function
 
 simple:
-	strb r0,[r2]
-	movs r2,r3,lsl #5
-	ldr r1,[r0,#12]!
-	addeq r2,r2,r2
+	movs r1,#1024
+	beq true
+false:
+	mla r2,r1,r1,r2
+	b done
+true:
+	subs r1,r1,#1
+done:
+	rsb r8,r8,#0
+	mov pc,r14
