@@ -26,7 +26,6 @@
 
 void debug_shell(machineinfo* machine)
 {
-  processor_reset(machine);
   while (1)
   {
     char* buf = readline("debug> ");

@@ -37,6 +37,8 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       case 0x04:
       case 0x08:
       case 0x0c:
+      fprintf(stderr, "Write match register %d to %x (cnt=%x)\n", 
+        (address&0x1f)/4, data, mem->ostimer->clock);
       mem->ostimer->osmr[(address & 0x1f)>>2] = data;
       break;
 
@@ -47,6 +49,12 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       case 0x14:
       /* clears bits set to one in data */
       mem->ostimer->ossr &= ~data;
+      if (!mem->ostimer->ossr)
+      {
+        fprintf(stderr, "Stripping int bits\n");
+        mem->intctrl->icip &= ~0x3c000000;
+        mem->intctrl->icfp &= ~0x3c000000;
+      }
       break;
 
       case 0x18:
@@ -65,8 +73,9 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
     switch (address & 0xff)
     {
       case 0x00:
-      fprintf(stderr, "Writing to icip?\n");
       mem->intctrl->icip &= ~data;
+      fprintf(stderr, "Writing to icip? Aargh aargh panic, dying\n");
+      abort();
       break;
 
       case 0x04:
@@ -78,13 +87,15 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       break;
 
       case 0x10:
-      fprintf(stderr, "Writing to icfp?\n");
       mem->intctrl->icfp &= ~data;
+      fprintf(stderr, "Writing to icfp? Aargh aargh panic, dying\n");
+      abort();
       break;
 
       case 0x20:
-      fprintf(stderr, "Writing to icpr\n");
       mem->intctrl->icpr &= ~data;
+      fprintf(stderr, "Writing to icpr? Aargh aargh panic, dying\n");
+      abort();
       break;
 
       case 0x0c:
@@ -129,18 +140,21 @@ uint5 ostimer_read(meminfo* mem, uint5 address)
     break;
 
     case 0x5:  // interrupt controller
-    fprintf(stderr, "Read interrupt controller @ %x\n", address & 0xff);
+    fprintf(stderr, "Read interrupt controller @ %x, ", address & 0xff);
     switch (address & 0xff)
     {
       case 0x00:
+      fprintf(stderr, "value=%x\n", mem->intctrl->icip);
       return mem->intctrl->icip;
       break;
 
       case 0x04:
+      fprintf(stderr, "value=%x\n", mem->intctrl->icmr);
       return mem->intctrl->icmr;
       break;
 
       case 0x08:
+      fprintf(stderr, "value=%x\n", mem->intctrl->iclr);
       return mem->intctrl->iclr;
       break;
 
@@ -169,6 +183,7 @@ void ostimer_clock(machineinfo* machine)
                                     : reg->r[15]-8;
   instructionformat inst;
   ostimer_registers* oti = mem->ostimer;
+  intctrl_registers* icr = mem->intctrl;
   uint5 i, clk;
 
   clk = oti->clock++;
@@ -186,38 +201,10 @@ void ostimer_clock(machineinfo* machine)
     if (clk==oti->osmr[i])
     {
       /* set corresponding bit in status register */
-      oti->ossr |= 1<<i;
+      fprintf(stderr, "clk matched %d at time %x\n", i, clk);
+      oti->ossr |= (1<<i) & oti->oier;
+      intctrl_fire(machine, 26+i);
     }
-  }
-  
-  /* any enabled interrupts happen? */
-  if (((oti->oier & oti->ossr) & 0xf)>0 && !(reg->cpsr.flag.interrupt&0x2))
-  {
-    uint5 bits;
-/*    fprintf(stderr, "Making ostimer interrupt!\n");
-    fprintf(stderr, "%.8x : %.8x : ", pc, inst.instruction);
-    dispatch(machine, inst, &diss, (void*)pc);
-    fprintf(stderr, "\n");
-    machine->trace = 1;
-    
-    processor_irq(machine);*/
-    
-    // flag as pending
-    mem->intctrl->icpr |= ((oti->oier & oti->ossr) & 0xf) << 26;
-    bits = mem->intctrl->icpr & mem->intctrl->icmr;
-    mem->intctrl->icip = bits & ~mem->intctrl->iclr;
-    mem->intctrl->icfp = bits & mem->intctrl->iclr;
-  }
-  
-  if (mem->intctrl->icfp && !(reg->cpsr.flag.interrupt&0x1))
-  {
-    fprintf(stderr, "Firing FIQ\n");
-    processor_fiq(machine);
-  }
-  else if (mem->intctrl->icip && !(reg->cpsr.flag.interrupt&0x2))
-  {
-    fprintf(stderr, "Firing IRQ\n");
-    processor_irq(machine);
   }
 }
 

@@ -54,7 +54,10 @@
 #else
 #  define PCFLAGPUT(X,V) ({ \
   if ((X)==15) \
+  { \
     reg->cpsr.value = (reg->cpsr.value & 0x0fffffff) | ((V) & 0xf0000000); \
+    fprintf(stderr, "Badly tested code\n"); abort(); \
+  } \
   else \
     reg->r[X] = (V); })
 #endif
@@ -89,6 +92,10 @@
             reg->r[15] = (X); \
             processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode); \
             reg->cpsr.value = spsr; \
+            if (reg->cpsr.flag.interrupt & 0x2) \
+              fprintf(stderr, "-- IRQ Disabled\n"); \
+            else \
+              fprintf(stderr, "-- IRQ Enabled\n"); \
           } while (0);
 #endif
 
@@ -105,6 +112,10 @@
                             processor_mode(machine, \
                               reg->spsr[reg->spsr_current].flag.mode); \
                             reg->cpsr.value = spsr; \
+                            if (reg->cpsr.flag.interrupt & 0x2) \
+                              fprintf(stderr, "-- IRQ Disabled\n"); \
+                            else \
+                              fprintf(stderr, "-- IRQ Enabled\n"); \
                           } \
                         } \
                         else RPUT((C), V)
@@ -117,7 +128,7 @@ extern int exec_dp_26(machineinfo* machine, instructionformat inst,
                        void* null);
 extern int exec_dp_imm_26(machineinfo* machine, instructionformat inst,
                         void* null);
-extern void exec_psrt_26(machineinfo* machine, instructionformat inst,
+extern int exec_psrt_26(machineinfo* machine, instructionformat inst,
                          uint5 op2);
 extern int exec_mul_26(machineinfo* machine, instructionformat inst,
                         void* null);
@@ -148,7 +159,7 @@ extern int exec_dp_32(machineinfo* machine, instructionformat inst,
                        void* null);
 extern int exec_dp_imm_32(machineinfo* machine, instructionformat inst,
                         void* null);
-extern void exec_psrt_32(machineinfo* machine, instructionformat inst,
+extern int exec_psrt_32(machineinfo* machine, instructionformat inst,
                          uint5 op2);
 extern int exec_mul_32(machineinfo* machine, instructionformat inst,
                         void* null);
@@ -179,7 +190,7 @@ extern int exec_dp_thm(machineinfo* machine, instructionformat inst,
                        void* null);
 extern int exec_dp_imm_thm(machineinfo* machine, instructionformat inst,
                         void* null);
-extern void exec_psrt_thm(machineinfo* machine, instructionformat inst,
+extern int exec_psrt_thm(machineinfo* machine, instructionformat inst,
                          uint5 op2);
 extern int exec_mul_thm(machineinfo* machine, instructionformat inst,
                         void* null);

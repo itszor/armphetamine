@@ -46,8 +46,7 @@ void sa1100_serial_initialise(meminfo* mem)
     sprintf(slave, "-S%c%c%d", "pqrs"[devno/16], 
       "0123456789abcdef"[devno&15], mem->sapcm.amaster);
   /*  fprintf(stderr, "Using slave %s\n", slave);*/
-    execlp("/usr/X11/bin/xterm", "/usr/X11/bin/xterm", &slave[0], "-T", 
-      "VirtuaLART", NULL);
+    execlp("xterm", "xterm", &slave[0], "-T", "VirtuaLART", NULL);
   }
 }
 

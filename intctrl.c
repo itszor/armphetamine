@@ -1,9 +1,125 @@
 #include "intctrl.h"
+#include "machine.h"
+#include "registers.h"
 #include "cnew.h"
+
+static const uint5 sourcemod[] =
+  { 0x00000fff,  /* GPIO bits */
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00000fff,
+    0x00001000,  /* LCD ctrl */
+    0x00002000,  /* Serial port 0 */
+    0x00004000,  /* Reserved */
+    0x00008000,  /* Serial port 1b */
+    0x00010000,  /* Serial port 2 */
+    0x00020000,  /* Serial port 3 */
+    0x00040000,  /* Serial port 4a */
+    0x00080000,  /* Serial port 4b */
+    0x00100000,  /* DMA channel 0 */
+    0x00200000,  /* DMA channel 1 */
+    0x00400000,  /* DMA channel 2 */
+    0x00800000,  /* DMA channel 3 */
+    0x01000000,  /* DMA channel 4 */
+    0x02000000,  /* DMA channel 5 */
+    0x3c000000,  /* OS timer */
+    0x3c000000,
+    0x3c000000,
+    0x3c000000,
+    0xc0000000,  /* RTC */
+    0xc0000000
+  };
 
 intctrl_registers* intctrl_new(void)
 {
   intctrl_registers* ir = cnew(intctrl_registers);
   ir->icip = ir->icmr = ir->iclr = ir->icfp = ir->icpr = ir->iccr = 0;
   return ir;
+}
+
+/* intsrc 0..31 */
+void intctrl_fire(machineinfo* machine, uint5 intsrc)
+{
+  intctrl_registers* icr = machine->mem->intctrl;
+  registerinfo* reg = machine->reg;
+  
+  icr->icpr |= (1<<intsrc);
+  if ((1<<intsrc) & icr->icmr)  // not masked
+  {
+    if (icr->iclr & (1<<intsrc))
+    {
+      // fiq
+      icr->icfp |= sourcemod[intsrc];
+      if (!(reg->cpsr.flag.interrupt & 0x1))
+      {
+        fprintf(stderr, "Firing FIQ!\n");
+        processor_fiq(machine);
+      }
+    }
+    else
+    {
+      // irq
+      icr->icip |= sourcemod[intsrc];
+      if (!(reg->cpsr.flag.interrupt & 0x2))
+      {
+        fprintf(stderr, "Firing IRQ!\n");
+        processor_irq(machine);
+      }
+      else
+      {
+        fprintf(stderr, "IRQ masked\n");
+      }
+    }
+  }
+}
+
+void intctrl_pending(machineinfo* machine)
+{
+  sint5 intsrc;
+  intctrl_registers* icr = machine->mem->intctrl;
+  registerinfo* reg = machine->reg;
+
+  for (intsrc=31; intsrc>=0; intsrc--)
+  {
+    if (intsrc==11) break;  // don't mess!!!!!
+    if (intsrc==26) machine->trace = 1;
+    if ((1<<intsrc) & icr->icmr)  // not masked
+    {
+      if (icr->iclr & (1<<intsrc))
+      {
+        // fiq
+        icr->icfp |= sourcemod[intsrc];
+        if (!(reg->cpsr.flag.interrupt & 0x1))
+        {
+          fprintf(stderr, "Firing FIQ from src #%d!\n", intsrc);
+          processor_fiq(machine);
+          break;
+        }
+      }
+      else
+      {
+        // irq
+        icr->icip |= sourcemod[intsrc];
+        if (!(reg->cpsr.flag.interrupt & 0x2))
+        {
+          fprintf(stderr, "Firing IRQ from src #%d!\n", intsrc);
+          processor_irq(machine);
+          break;
+        }
+        else
+        {
+          fprintf(stderr, "IRQ masked\n");
+        }
+      }
+    }
+  }
+  fprintf(stderr, "No interrupts pending\n");
 }

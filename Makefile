@@ -33,7 +33,7 @@ TESTS =	divide simple armtest
 
 LIBS = -lm -lreadline -lhistory -lncurses `sdl-config --libs` -lutil
 
-.PHONY:	clean cleaner package webpkg romdump
+.PHONY:	clean cleaner package webpkg romdump lartrun
 
 all:	.depend emulate simple divide armtest
 
@@ -42,6 +42,9 @@ clean:
 
 cleaner:
 	rm -f *.o emulate $(TESTS) genx86_tab.c rtasm_fns.c rtasm_fns.h .depend
+
+lartrun:	emulate
+	./emulate "script lartup.txt"
 
 dynsupport.asm:	structsupport memory.h structsupport.inc
 execute26.c:	execute.inc.c

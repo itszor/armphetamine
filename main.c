@@ -44,7 +44,7 @@
 //#define LOWER 0x119c
 //#define UPPER 0x11fc
 
-int main(void)
+int main(int argc, char* argv[])
 {
 	machineinfo* machine;
 	meminfo* mem;
@@ -245,6 +245,14 @@ int main(void)
 #endif
 
 #ifdef DEBUGGER
+  processor_reset(machine);
+  {
+    int i;
+    for (i=1; i<argc; i++)
+    {
+      debug_command(machine, argv[i]);
+    }
+  }
   debug_shell(machine);
 #endif
 

@@ -467,11 +467,15 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
           #else
           if (mem->currentmode!=pm_USR32)
             reg->cpsr = reg->spsr[reg->spsr_current];
+          fprintf(stderr, "Ill instruction?\n");
+          abort();
           #endif
         }
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -488,11 +492,15 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
           #else
           if (mem->currentmode!=pm_USR32)
             reg->cpsr = reg->spsr[reg->spsr_current];
+          fprintf(stderr, "Ill instruction?\n");
+          abort();
           #endif
         }
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -504,7 +512,9 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
         SUBFLAGS(op1,op2);  // always affect flags
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -516,7 +526,9 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
         ADDFLAGS(op1,op2);  // always affect flags
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -656,11 +668,15 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
           #else
           if (mem->currentmode!=pm_USR32)
             reg->cpsr = reg->spsr[reg->spsr_current];
+          fprintf(stderr, "Ill instruction?\n");
+          abort();
           #endif
         }
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -677,11 +693,15 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
           #else
           if (mem->currentmode!=pm_USR32)
             reg->cpsr = reg->spsr[reg->spsr_current];
+          fprintf(stderr, "Ill instruction?\n");
+          abort();
           #endif
         }
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -693,7 +713,9 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
         SUBFLAGS(op1,op2);
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -705,7 +727,9 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
         ADDFLAGS(op1,op2);
       }
       else
-        EXECUTEFN(exec_psrt)(machine, inst, op2);
+      {
+        return EXECUTEFN(exec_psrt)(machine, inst, op2);
+      }
     }
     break;
 
@@ -756,7 +780,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
 
 #endif
 
-void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
+int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
   uint5 val)
 {
   registerinfo* reg = machine->reg;
@@ -768,24 +792,6 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     PUT(inst.mrs.rd, inst.mrs.ps ? reg->spsr[reg->spsr_current].value
                                  : reg->cpsr.value);
   }
-  /* MSR (full register) */
- /* else if (inst.msr.ident==0x29f00 && inst.msr.ident2==2)
-  {
-    if (inst.msr.pd)
-    {
-      reg->spsr[reg->spsr_current].value = GET(inst.msr.rm);
-    }
-    else
-    {
-      psrinfo newpsr;
-      uint5 temp;
-      newpsr.value = GET(inst.msr.rm);
-      processor_mode(machine, newpsr.flag.mode);
-      temp = reg->cpsr.flag.mode;
-      reg->cpsr.value = newpsr.value;
-      reg->cpsr.flag.mode = temp;  // urgh
-    }
-  }*/
   /* MSR (field) */
   else if ((inst.msrf.ident&0x20f)==0x20f
            && inst.msrf.ident2==2 && inst.msrf.ident3==0)
@@ -801,12 +807,33 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     }
     else
     {
+      uint5 interrupt = 0;
       reg->cpsr.value &= ~field;
       reg->cpsr.value |= val & field;
+
       /* control fields updated? */
       if (field & 0xff)
       {
         processor_mode(machine, val & 0x1f);
+
+        if (!(reg->cpsr.flag.interrupt & 0x2))
+        {
+          fprintf(stderr, "-- IRQ Enabled\n");
+          interrupt = 1;
+        }
+        else
+        {
+          fprintf(stderr, "-- IRQ Disabled\n");
+        }
+
+        INCPC;
+
+        if (interrupt)
+        {
+          intctrl_pending(machine);
+          return 1;
+        }
+        else return 0;
       }
     }
   }
@@ -820,6 +847,9 @@ void EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     fprintf(stderr, "\n");
 /*    abort();*/
   }
+  
+  INCPC;
+  return 0;
 }
 
 int EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
@@ -1511,14 +1541,22 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0: PCFLAGPUT(inst.crt.rd, 0x4401a100); break;
                 // is the following line right?
                 case 1: PCFLAGPUT(inst.crt.rd, mem->mmucontrol);
-                fprintf(stderr, "Copy mmucontrol to r%d\n", inst.crt.rd);
+                fprintf(stderr, "> Copy mmucontrol to r%d\n", inst.crt.rd);
                 break;
                 case 5: PCFLAGPUT(inst.crt.rd, mem->faultstatus); break;
                 case 6: PCFLAGPUT(inst.crt.rd, mem->faultaddress); break;
                 case 0x8: case 0x9: case 0xa: case 0xb:
-                case 0xc: case 0xd: case 0xe: case 0xf:
+                case 0xc: case 0xf:
                 processor_und(machine);
                 return 1;
+                
+                case 0xd:
+                fprintf(stderr, "> Read process ID\n");
+                PCFLAGPUT(inst.crt.rd, reg->process_id);
+                break;
+                
+                case 0xe:
+                fprintf(stderr, "> Read breakpoint\n");
                 break;
               }
             }
@@ -1626,11 +1664,33 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 }
                 break;
                 
-                case 0x9: case 0xa: case 0xb:
-                case 0xc: case 0xd: case 0xe:
-                fprintf(stderr, "> Throwing undefined instruction (not)\n");
-/*                processor_und(machine);
-                return 1;*/
+                case 0x9:
+                {
+                  fprintf(stderr, "> Read buffer op (SA)\n");
+                }
+                break;
+                
+                case 0xa: case 0xb:
+                case 0xc:
+                fprintf(stderr, "> Throwing undefined instruction for MCR\n");
+/*                machine->trace = 1;
+                machine->detracecounter = 16;
+                reg->r[15] -= 8;*/
+                processor_und(machine);
+                return 1;
+                break;
+                
+                case 0xd: 
+                {
+                  fprintf(stderr, "> Write process ID\n");
+                  reg->process_id = srcreg;
+                }
+                break;
+                
+                case 0xe:
+                {
+                  fprintf(stderr, "> Write breakpoint\n");
+                }
                 break;
                 
                 case 0xf:

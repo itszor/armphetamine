@@ -23,6 +23,7 @@ typedef struct {
   uint5 mode, intmask;
   psrinfo cpsr;
   uint5 pcmask;
+  uint5 process_id;
   // only used by mode switch code (not written yet...)
   uint5 usr[7];		  // saved 'usr' registers
   uint5 fiq[7];		  // saved 'fiq' registers

@@ -34,7 +34,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   uint5 instaddr = PCADDR-8;
   instructionformat inst;
 
-  if (0 /*omode!=newmode*/)
+  if (omode!=newmode)
   {
     fprintf(stderr, "Switching mode from %s to %s\n",
       modename_st[reg->cpsr.flag.mode], modename_st[newmode]);
@@ -56,6 +56,9 @@ void processor_mode(machineinfo* machine, uint5 newmode)
           machine->trace = 1;
           machine->detracecounter = 6;
         }*/
+
+        machine->trace = 1;
+        machine->detracecounter = 0;
 
         fprintf(stderr, "+ %.8x : %.8x : ", instaddr+i, inst.instruction);
         dispatch(machine, inst, &diss, (void*)(instaddr+i));

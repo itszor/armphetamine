@@ -2,6 +2,7 @@
 #define INTCTRL_H 1
 
 #include "defs.h"
+#include "machine.h"
 
 struct intctrl_registers {
   uint5 icip;  // IRQ pending
@@ -15,5 +16,9 @@ struct intctrl_registers {
 typedef struct intctrl_registers intctrl_registers;
 
 extern intctrl_registers* intctrl_new(void);
+
+extern void intctrl_fire(machineinfo* machine, uint5 intsrc);
+
+extern void intctrl_pending(machineinfo* machine);
 
 #endif
