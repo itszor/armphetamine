@@ -530,7 +530,7 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   fprintf(stderr, "Constant allocating\n");
   palloc_constant(mychunk);
 //  palloc_nonorthog(mychunk);
-//  palloc_fetchmem(mychunk);
+  palloc_fetchmem(mychunk);
   fprintf(stderr, "Commit shuffling\n");
   palloc_shufflecommit(mychunk);
   phetadism_chunk(mychunk);

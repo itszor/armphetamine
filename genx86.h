@@ -25,7 +25,11 @@ typedef enum {
   ab_MOV,
   ab_NOT,
   ab_PUSH,
-  ab_POP
+  ab_POP,
+  ab_RCR,
+  ab_RCL,
+  ab_TEST,
+  ab_CMP
 } genx86_ab86;
 
 typedef struct {

@@ -6,10 +6,11 @@
 #include "rtasm.h"
 #include "pheta.h"
 #include "palloc.h"
+#include "pseudo.h"
 
 static const genx86_variant genx86_tab[] =
 {
-  /* lsl */ { NULL,
+  /* shl */ { NULL,
               NULL,
               &rtasm_shl_rm32_imm8,
               NULL,
@@ -17,9 +18,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG, VFLAG|NFLAG|ZFLAG
             },
-  /* lsr */ { NULL,
+  /* shr */ { NULL,
               NULL,
               &rtasm_shr_rm32_imm8,
               NULL,
@@ -27,9 +28,9 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG, VFLAG|NFLAG|ZFLAG
             },
-  /* asr */ { NULL,
+  /* sar */ { NULL,
               NULL,
               &rtasm_sar_rm32_imm8,
               NULL,
@@ -37,7 +38,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG, VFLAG|NFLAG|ZFLAG
             },
   /* ror */ { NULL,
               NULL,
@@ -47,7 +48,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG, VFLAG
             },
   /* rol */ { NULL,
               NULL,
@@ -57,7 +58,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG, VFLAG
             },
   /* and */ { &rtasm_and_r32_rm32,
               &rtasm_and_rm32_r32,
@@ -67,7 +68,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              NFLAG|ZFLAG, CFLAG|VFLAG
             },
   /* or */  { &rtasm_or_r32_rm32,
               &rtasm_or_rm32_r32,
@@ -77,7 +78,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              NFLAG|ZFLAG, CFLAG|VFLAG
             },
   /* xor */ { &rtasm_xor_r32_rm32,
               &rtasm_xor_rm32_r32,
@@ -87,7 +88,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              NFLAG|ZFLAG, CFLAG|VFLAG
             },
   /* add */ { &rtasm_add_r32_rm32,
               &rtasm_add_rm32_r32,
@@ -97,7 +98,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG|VFLAG|NFLAG|ZFLAG, 0
             },
   /* adc */ { &rtasm_adc_r32_rm32,
               &rtasm_adc_rm32_r32,
@@ -107,7 +108,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              CFLAG|VFLAG|NFLAG|ZFLAG, 0
             },
   /* sub */ { &rtasm_sub_r32_rm32,
               &rtasm_sub_rm32_r32,
@@ -117,7 +118,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              ICFLAG|VFLAG|NFLAG|ZFLAG, 0
             },
   /* sbb */ { &rtasm_sbb_r32_rm32,
               &rtasm_sbb_rm32_r32,
@@ -127,7 +128,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, 0
+              ICFLAG|VFLAG|NFLAG|ZFLAG, 0
             },
   /* imul */{ &rtasm_imul_r32_rm32,
               NULL,
@@ -137,7 +138,7 @@ static const genx86_variant genx86_tab[] =
               &rtasm_imul_r32_rm32_imm8,
               &rtasm_imul_r32_rm32_imm32,
               NULL,
-              0, 0
+              0, CFLAG|VFLAG|NFLAG|ZFLAG
             },
   /* lea */ { &rtasm_lea_r32_m32,
               NULL,
@@ -188,6 +189,46 @@ static const genx86_variant genx86_tab[] =
               NULL,
               &rtasm_pop_m32,
               0, 0
+            },
+  /* rcr */ { NULL,
+              NULL,
+              &rtasm_rcr_rm32_imm8,
+              NULL,
+              &rtasm_rcr_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              CFLAG, VFLAG
+            },
+  /* rcl */ { NULL,
+              NULL,
+              &rtasm_rcl_rm32_imm8,
+              NULL,
+              &rtasm_rcl_rm32_cl,
+              NULL,
+              NULL,
+              NULL,
+              CFLAG, VFLAG
+            },
+  /* test */{ NULL,
+              &rtasm_test_rm32_r32,
+              NULL,
+              &rtasm_test_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              NFLAG|ZFLAG, CFLAG|VFLAG
+            },
+  /* cmp */ { &rtasm_cmp_r32_rm32,
+              &rtasm_cmp_rm32_r32,
+              NULL,
+              &rtasm_cmp_rm32_imm32,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              ICFLAG|VFLAG|NFLAG|ZFLAG, 0
             }
 };
 
@@ -267,15 +308,16 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
 
     case COMPOUND(pal_RFILE, pal_CONSTB, pal_UNSET):
     {
-      if (genx86_tab[opcode].rm32_i8)
+      uint5 value = src1->info.value;
+      if (value<128 && genx86_tab[opcode].rm32_i8)
       {
         genx86_tab[opcode].rm32_i8(nat, rtasm_ind8(EBP, dest->info.value*4), 
-          src1->info.value);
+          value);
       }
       else if (genx86_tab[opcode].rm32_i32)
       {
         genx86_tab[opcode].rm32_i32(nat, rtasm_ind8(EBP, dest->info.value*4),
-          src1->info.value);
+          value);
       }
       else ERR;
     }
@@ -376,6 +418,11 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
       {
         genx86_tab[opcode].r32_rm32(nat, dest->info.ireg.num, 
           rtasm_reg(src1->info.ireg.num));
+      }
+      else if (genx86_tab[opcode].rm32_r32)
+      {
+        genx86_tab[opcode].rm32_r32(nat, rtasm_reg(dest->info.ireg.num),
+          src1->info.ireg.num);
       }
       else if (genx86_tab[opcode].rm32_c)
       {
@@ -740,8 +787,28 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
       break;
               
       case ph_RRX:
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        palloc_info one;
+        one.type = pal_CONSTB;
+        one.info.value = 1;
+        genx86_move(nat, dest, src);
+        genx86_out(nat, ab_RCR, dest, &one, &nul);
+      }
+      break;
+      
       case ph_RLX:
-      break;  // two-arg shift operations
+      {
+        palloc_info* dest = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src = &chunk->alloc[blk->base[i+2]];
+        palloc_info one;
+        one.type = pal_CONSTB;
+        one.info.value = 1;
+        genx86_move(nat, dest, src);
+        genx86_out(nat, ab_RCL, dest, &one, &nul);
+      }
+      break;
       
       case ph_MOV:
       {
@@ -760,12 +827,41 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk)
       }
       break;
       
-      case ph_TEQ:
+      case ph_TEQ:  // nasty
+      {
+        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        genx86_out(nat, ab_PUSH, src1, &nul, &nul);
+        genx86_out(nat, ab_XOR, src1, src2, &nul);
+        genx86_out(nat, ab_POP, src1, &nul, &nul);
+      }
+      break;
+      
       case ph_TST:
+      {
+        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        genx86_out(nat, ab_TEST, src1, src2, &nul);
+      }
+      break;
+      
       case ph_CMP:
-      case ph_CMN:
-      rtasm_nop(nat);
-      break;  // comparison operations
+      {
+        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        genx86_out(nat, ab_CMP, src1, src2, &nul);
+      }
+      break;
+      
+      case ph_CMN:  // also nasty
+      {
+        palloc_info* src1 = &chunk->alloc[blk->base[i+1]];
+        palloc_info* src2 = &chunk->alloc[blk->base[i+2]];
+        genx86_out(nat, ab_PUSH, src1, &nul, &nul);
+        genx86_out(nat, ab_ADD, src1, src2, &nul);
+        genx86_out(nat, ab_POP, src1, &nul, &nul);
+      }
+      break;
       
       case ph_LDW:
       case ph_LDB:
