@@ -848,17 +848,871 @@ palloc_info* genx86_closesplit(palloc_info* a, uint5 line)
 }
 */
 
-void genx86_out2(nativeblockinfo* nat, genx86_op inst)
-{
+#define COMPOUND2(A,B) ((A)*gotype_NUMTYPES+(B))
 
-}
+#define COMPOUND3(A,B,C) \
+  ((A)*gotype_NUMTYPES*gotype_NUMTYPES+(B)*gotype_NUMTYPES+(C))
 
-#define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
-                           ((S1)*pal_NUMTYPES) + (S2))
 #define ERR { fprintf(stderr, "Specialisation error at %d. " \
   "Opcode=%s, pattern=%s:%s:%s.\n", \
   __LINE__, abname[opcode], allocname[dest->type], allocname[src1->type], \
   allocname[src2->type]); abort(); }
+
+void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
+{
+  uint5 ops = 0, opcode = inst->type;
+
+  if (inst->op[0]) ops++;
+  if (inst->op[1]) ops++;
+  if (inst->op[2]) ops++;
+
+  if (ops==0)
+  {
+    if (genx86_tab[opcode].narg)
+    {
+      genx86_tab[opcode].narg(nat);
+    }
+    else ERR;
+  }
+  else
+  {
+    switch (inst->op[0]->type)
+    {
+      case gotype_IMMEDIATE:
+      {
+        if (ops==1)
+        {
+          switch (inst->op[0]->width)
+          {
+            case gowidth_BYTE:
+            {
+              if (genx86_tab[opcode].i8)
+              {
+                genx86_tab[opcode].i8(nat, inst->op[0]->imm);
+              }
+              else if (genx86_tab[opcode].i32)
+              {
+                genx86_tab[opcode].i32(nat, inst->op[0]->imm);
+              }
+              else ERR;
+            }
+            break;
+
+            case gowidth_DWORD:
+            {
+              if (genx86_tab[opcode].i32)
+              {
+                genx86_tab[opcode].i32(nat, inst->op[0]->imm);
+              }
+              else ERR;
+            }
+            break;
+
+            default:
+            ERR;
+            break;
+          }
+        }
+      }
+      break;  // immediate
+
+      case gotype_REGISTER:
+      {
+        switch (ops)
+        {
+          case 1:
+          {
+            if (genx86_tab[opcode].rm32)
+            {
+              genx86_tab[opcode].rm32(nat, rtasm_reg(inst->op[0]->reg));
+            }
+            else ERR;
+          }
+          break;
+          
+          case 2:
+          {
+            switch (inst->op[1]->type)
+            {
+              case gotype_REGISTER:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_reg(inst->op[1]->data.reg));
+                }
+                else if (genx86_tab[opcode].rm32_r32)
+                {
+                  genx86_tab[opcode].rm32_r32(nat, 
+                    rtasm_reg(inst->op[0]->data.reg), inst->op[1]->data.reg);
+                }
+              }
+              break;
+              
+              case gotype_IMMEDIATE:
+              {
+                switch (inst->op[1]->width)
+                {
+                  case gowidth_BYTE:
+                  {
+                    if (genx86_tab[opcode].rm32_i8)
+                    {
+                      genx86_tab[opcode].rm32_i8(nat,
+                        rtasm_reg(inst->op[0]->data.reg), 
+                        inst->op[1]->data.imm);
+                    }
+                  }
+                  break;
+                  
+                  case gowidth_DWORD:
+                  {
+                    if (genx86_tab[opcode].rm32_i32)
+                    {
+                      genx86_tab[opcode].rm32_i32(nat,
+                        rtasm_reg(inst->op[0]->data.reg),
+                        inst->op[1]->data.imm);
+                    }
+                  }
+                  break;
+                }
+              }
+              break;
+              
+              case gotype_INDREG:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_ind(inst->op[1]->data.reg));
+                }
+              }
+              break;
+              
+              case gotype_INDREGPLUSDISP8:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_ind8(inst->op[1]->data.regdisp.base,
+                    inst->op[1]->data.regdisp.disp));
+                }
+              }
+              break;
+              
+              case gotype_INDREGPLUSDISP32:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_ind32(inst->op[1]->data.regdisp.base,
+                    inst->op[1]->data.regdisp.disp));
+                }
+              }
+              break;
+              
+              case gotype_INDREGPLUSSCALEDREG:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_scind(inst->op[1]->data.regscale.base,
+                    inst->op[1]->data.regscale.index,
+                    inst->op[1]->data.regscale.scale));
+                }
+              }
+              break;
+              
+              case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_scind8(inst->op[1]->data.regscaledisp.base,
+                    inst->op[1]->data.regscaledisp.index,
+                    inst->op[1]->data.regscaledisp.scale,
+                    inst->op[1]->data.regscaledisp.offset));
+                }
+              }
+              break;
+              
+              case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+              {
+                if (genx86_tab[opcode].r32_rm32)
+                {
+                  genx86_tab[opcode].r32_rm32(nat, inst->op[0]->data.reg,
+                    rtasm_scind32(inst->op[1]->data.regscaledisp.base,
+                    inst->op[1]->data.regscaledisp.index,
+                    inst->op[1]->data.regscaledisp.scale,
+                    inst->op[1]->data.regscaledisp.offset));
+                }
+              }
+              break;
+            }  // switch (op[1]->type)
+          }
+          break;
+          
+          case 3:
+          {
+            if (inst->op[2]->type==gotype_IMMEDIATE)
+            {
+              switch (inst->op[2]->width)
+              {
+                case gowidth_BYTE:
+                {
+                  switch (inst->op[1]->type)
+                  {
+                    case gotype_REGISTER:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_reg(inst->op[1]->data.reg),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREG:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_ind(inst->op[1]->data.reg),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP8:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_ind8(inst->op[1]->data.regdisp.base,
+                            inst->op[1]->data.regdisp.disp),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP32:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_ind32(inst->op[1]->data.regdisp.base,
+                            inst->op[1]->data.regdisp.disp),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREG:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_scind(inst->op[1]->data.regscale.base,
+                            inst->op[1]->data.regscale.index,
+                            inst->op[1]->data.regscale.scale),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_scind8(inst->op[1]->data.regscaledisp.base,
+                            inst->op[1]->data.regscaledisp.index,
+                            inst->op[1]->data.regscaledisp.scale,
+                            inst->op[1]->data.regscaledisp.offset),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i8(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_scind32(inst->op[1]->data.regscaledisp.base,
+                            inst->op[1]->data.regscaledisp.index,
+                            inst->op[1]->data.regscaledisp.scale,
+                            inst->op[1]->data.regscaledisp.offset),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+                  }  // switch (op1 type)
+                }
+                break;
+                
+                case gowidth_DWORD:
+                {
+                  switch (inst->op[1]->type)
+                  {
+                    case gotype_REGISTER:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_reg(inst->op[1]->data.reg),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREG:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_ind(inst->op[1]->data.reg),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP8:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_ind8(inst->op[1]->data.regdisp.base,
+                            inst->op[1]->data.regdisp.disp),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP32:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_ind32(inst->op[1]->data.regdisp.base,
+                            inst->op[1]->data.regdisp.disp),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREG:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_scind(inst->op[1]->data.regscale.base,
+                            inst->op[1]->data.regscale.index,
+                            inst->op[1]->data.regscale.scale),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_scind8(inst->op[1]->data.regscaledisp.base,
+                            inst->op[1]->data.regscaledisp.index,
+                            inst->op[1]->data.regscaledisp.scale,
+                            inst->op[1]->data.regscaledisp.offset),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                    {
+                      if (genx86_tab[opcode].r32_rm32)
+                      {
+                        genx86_tab[opcode].r32_rm32_i32(nat, 
+                          inst->op[0]->data.reg,
+                          rtasm_scind32(inst->op[1]->data.regscaledisp.base,
+                            inst->op[1]->data.regscaledisp.index,
+                            inst->op[1]->data.regscaledisp.scale,
+                            inst->op[1]->data.regscaledisp.offset),
+                          inst->op[2]->data.imm);
+                      }
+                    }
+                    break;
+                  }  // switch (op1 type)
+                }
+                break;
+              }
+            }
+          }
+          break;
+        }  // switch (ops)
+      }
+      break;
+
+      case gotype_INDREG:
+      case gotype_INDREGPLUSDISP8:
+      case gotype_INDREGPLUSDISP32:
+      case gotype_INDREGPLUSSCALEDREG:
+      case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+      case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+      {
+        switch (ops)
+        {
+          case 1:
+          {
+            if (genx86_tab[opcode].rm32)
+            {
+              switch (inst->op[0]->type)
+              {
+                case gotype_INDREG:
+                {
+                  genx86_tab[opcode].rm32(nat, 
+                    rtasm_ind(inst->op[0]->data.reg));
+                }
+                break;
+
+                case gotype_INDREGPLUSDISP8:
+                {
+                  genx86_tab[opcode].rm32(nat, 
+                    rtasm_ind8(inst->op[0]->regdisp.base, 
+                    inst->op[0]->regdisp.disp));
+                }
+                break;
+                
+                case gotype_INDREGPLUSDISP32:
+                {
+                  genx86_tab[opcode].rm32(nat, 
+                    rtasm_ind32(inst->op[0]->regdisp.base, 
+                    inst->op[0]->regdisp.disp));
+                }
+                break;
+                
+                case gotype_INDREGPLUSSCALEDREG:
+                {
+                  genx86_tab[opcode].rm32(nat, 
+                    rtasm_scind(inst->op[0]->regscale.base,
+                    inst->op[0]->regscale.index,
+                    inst->op[0]->regscale.scale));
+                }
+                break;
+                
+                case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                {
+                  genx86_tab[opcode].rm32(nat, rtasm_scind8(
+                    inst->op[0]->regscale.base,
+                    inst->op[0]->regscale.index,
+                    inst->op[0]->regscale.scale,
+                    inst->op[0]->regscale.offset));
+                }
+                break;
+
+                case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                {
+                  genx86_tab[opcode].rm32(nat, rtasm_scind32(
+                    inst->op[0]->regscale.base,
+                    inst->op[0]->regscale.index,
+                    inst->op[0]->regscale.scale,
+                    inst->op[0]->regscale.offset));
+                }
+                break;
+              }
+            }
+            else ERR;
+          }
+          break;
+          
+          case 2:
+          {
+            switch (inst->op[1]->data.type)
+            {
+              case gotype_IMMEDIATE:
+              {
+                switch (inst->op[1]->data.width)
+                {
+                  case gowidth_BYTE:
+                  {
+                    switch (inst->op[0]->data.width)
+                    {
+                      case gowidth_BYTE:
+                      {
+                        if (genx86_tab[opcode].rm8_i8)
+                        {
+                          switch (inst->op[0]->type)
+                          {
+                            case gotype_INDREG:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, 
+                                rtasm_ind(inst->op[0]->data.reg), 
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSDISP8:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, 
+                                rtasm_ind8(inst->op[0]->regdisp.base, 
+                                inst->op[0]->data.regdisp.disp),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSDISP32:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, 
+                                rtasm_ind32(inst->op[0]->regdisp.base, 
+                                inst->op[0]->data.regdisp.disp),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSSCALEDREG:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, 
+                                rtasm_scind(inst->op[0]->data.regscale.base,
+                                inst->op[0]->data.regscale.index,
+                                inst->op[0]->data.regscale.scale),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, rtasm_scind8(
+                                inst->op[0]->data.regscale.base,
+                                inst->op[0]->data.regscale.index,
+                                inst->op[0]->data.regscale.scale,
+                                inst->op[0]->data.regscale.offset),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                            {
+                              genx86_tab[opcode].rm8_i8(nat, rtasm_scind32(
+                                inst->op[0]->data.regscale.base,
+                                inst->op[0]->data.regscale.index,
+                                inst->op[0]->data.regscale.scale,
+                                inst->op[0]->data.regscale.offset),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+                          }
+                        }
+                      }
+                      break;
+                    
+                      case gowidth_DWORD:
+                      {
+                        if (genx86_tab[opcode].rm32_i8)
+                        {
+                          switch (inst->op[0]->type)
+                          {
+                            case gotype_INDREG:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, 
+                                rtasm_ind(inst->op[0]->data.reg), 
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSDISP8:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, 
+                                rtasm_ind8(inst->op[0]->regdisp.base, 
+                                inst->op[0]->data.regdisp.disp),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSDISP32:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, 
+                                rtasm_ind32(inst->op[0]->regdisp.base, 
+                                inst->op[0]->data.regdisp.disp),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSSCALEDREG:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, 
+                                rtasm_scind(inst->op[0]->data.regscale.base,
+                                inst->op[0]->data.regscale.index,
+                                inst->op[0]->data.regscale.scale),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, rtasm_scind8(
+                                inst->op[0]->data.regscale.base,
+                                inst->op[0]->data.regscale.index,
+                                inst->op[0]->data.regscale.scale,
+                                inst->op[0]->data.regscale.offset),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+
+                            case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                            {
+                              genx86_tab[opcode].rm32_i8(nat, rtasm_scind32(
+                                inst->op[0]->data.regscale.base,
+                                inst->op[0]->data.regscale.index,
+                                inst->op[0]->data.regscale.scale,
+                                inst->op[0]->data.regscale.offset),
+                                inst->op[1]->data.imm);
+                            }
+                            break;
+                          }
+                        }
+                        else ERR;
+                      }
+                      break;
+                    }
+                  }
+                  break;
+                
+                  case gowidth_DWORD:
+                  {
+                    switch (inst->op[0]->type)
+                    {
+                      case gotype_INDREG:
+                      {
+                        genx86_tab[opcode].rm32_i32(nat, 
+                          rtasm_ind(inst->op[0]->data.reg), 
+                          inst->op[1]->data.imm);
+                      }
+                      break;
+
+                      case gotype_INDREGPLUSDISP8:
+                      {
+                        genx86_tab[opcode].rm32_i32(nat, 
+                          rtasm_ind8(inst->op[0]->regdisp.base, 
+                          inst->op[0]->data.regdisp.disp),
+                          inst->op[1]->data.imm);
+                      }
+                      break;
+
+                      case gotype_INDREGPLUSDISP32:
+                      {
+                        genx86_tab[opcode].rm32_i32(nat, 
+                          rtasm_ind32(inst->op[0]->regdisp.base, 
+                          inst->op[0]->data.regdisp.disp),
+                          inst->op[1]->data.imm);
+                      }
+                      break;
+
+                      case gotype_INDREGPLUSSCALEDREG:
+                      {
+                        genx86_tab[opcode].rm32_i32(nat, 
+                          rtasm_scind(inst->op[0]->data.regscale.base,
+                          inst->op[0]->data.regscale.index,
+                          inst->op[0]->data.regscale.scale),
+                          inst->op[1]->data.imm);
+                      }
+                      break;
+
+                      case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                      {
+                        genx86_tab[opcode].rm32_i32(nat, rtasm_scind8(
+                          inst->op[0]->data.regscale.base,
+                          inst->op[0]->data.regscale.index,
+                          inst->op[0]->data.regscale.scale,
+                          inst->op[0]->data.regscale.offset),
+                          inst->op[1]->data.imm);
+                      }
+                      break;
+
+                      case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                      {
+                        genx86_tab[opcode].rm32_i32(nat, rtasm_scind32(
+                          inst->op[0]->data.regscale.base,
+                          inst->op[0]->data.regscale.index,
+                          inst->op[0]->data.regscale.scale,
+                          inst->op[0]->data.regscale.offset),
+                          inst->op[1]->data.imm);
+                      }
+                      break;
+                    }
+                  }
+                  break;
+                }
+              }
+              break;
+              
+              case gotype_REGISTER:
+              {
+                if (genx86_tab[opcode].rm32_r32)
+                {
+                  switch (inst->op[0]->type)
+                  {
+                    case gotype_INDREG:
+                    {
+                      genx86_tab[opcode].rm32_r32(nat, 
+                        rtasm_ind(inst->op[0]->data.reg), 
+                        inst->op[1]->data.reg);
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP8:
+                    {
+                      genx86_tab[opcode].rm32_r32(nat, 
+                        rtasm_ind8(inst->op[0]->regdisp.base, 
+                        inst->op[0]->data.regdisp.disp),
+                        inst->op[1]->data.reg);
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP32:
+                    {
+                      genx86_tab[opcode].rm32_r32(nat, 
+                        rtasm_ind32(inst->op[0]->regdisp.base, 
+                        inst->op[0]->data.regdisp.disp),
+                        inst->op[1]->data.reg);
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREG:
+                    {
+                      genx86_tab[opcode].rm32_r32(nat, 
+                        rtasm_scind(inst->op[0]->data.regscale.base,
+                        inst->op[0]->data.regscale.index,
+                        inst->op[0]->data.regscale.scale),
+                        inst->op[1]->data.reg);
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                    {
+                      genx86_tab[opcode].rm32_r32(nat, rtasm_scind8(
+                        inst->op[0]->data.regscale.base,
+                        inst->op[0]->data.regscale.index,
+                        inst->op[0]->data.regscale.scale,
+                        inst->op[0]->data.regscale.offset),
+                        inst->op[1]->data.reg);
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                    {
+                      genx86_tab[opcode].rm32_r32(nat, rtasm_scind32(
+                        inst->op[0]->data.regscale.base,
+                        inst->op[0]->data.regscale.index,
+                        inst->op[0]->data.regscale.scale,
+                        inst->op[0]->data.regscale.offset),
+                        inst->op[1]->data.reg);
+                    }
+                    break;
+                  }
+                }
+                else if (inst->op[1]->data.reg==ECX &&
+                         genx86_tab[opcode].rm32_c)
+                {
+                  switch (inst->op[0]->type)
+                  {
+                    case gotype_INDREG:
+                    {
+                      genx86_tab[opcode].rm32_c(nat, 
+                        rtasm_ind(inst->op[0]->data.reg));
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP8:
+                    {
+                      genx86_tab[opcode].rm32_c(nat, 
+                        rtasm_ind8(inst->op[0]->regdisp.base, 
+                        inst->op[0]->data.regdisp.disp));
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSDISP32:
+                    {
+                      genx86_tab[opcode].rm32_c(nat, 
+                        rtasm_ind32(inst->op[0]->regdisp.base, 
+                        inst->op[0]->data.regdisp.disp));
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREG:
+                    {
+                      genx86_tab[opcode].rm32_c(nat, 
+                        rtasm_scind(inst->op[0]->data.regscale.base,
+                        inst->op[0]->data.regscale.index,
+                        inst->op[0]->data.regscale.scale));
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP8:
+                    {
+                      genx86_tab[opcode].rm32_c(nat, rtasm_scind8(
+                        inst->op[0]->data.regscale.base,
+                        inst->op[0]->data.regscale.index,
+                        inst->op[0]->data.regscale.scale,
+                        inst->op[0]->data.regscale.offset));
+                    }
+                    break;
+
+                    case gotype_INDREGPLUSSCALEDREGPLUSDISP32:
+                    {
+                      genx86_tab[opcode].rm32_c(nat, rtasm_scind32(
+                        inst->op[0]->data.regscale.base,
+                        inst->op[0]->data.regscale.index,
+                        inst->op[0]->data.regscale.scale,
+                        inst->op[0]->data.regscale.offset));
+                    }
+                    break;
+                  }
+                }
+              }
+              break;
+            }  // switch (op1 type)
+          }
+          break;
+        }
+      }
+      break;
+    }
+  }
+  break;
+}
+
+#undef COMPOUND2
+#undef COMPOUND3
+
+#define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
+                           ((S1)*pal_NUMTYPES) + (S2))
+
+void genx86_produce(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
+  palloc_info* src1, palloc_info* src2)
+{
+  genx86_operand a, b, c;
+  genx86_op x;
+  
+  
+  
+  x.op[0] = &a;
+  x.op[1] = &b;
+  x.op[2] = &c;
+  
+}
 
 void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                 palloc_info* src1, palloc_info* src2, list* map)

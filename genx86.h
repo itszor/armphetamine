@@ -111,17 +111,23 @@ typedef struct {
     } regdisp;
     struct {
       uint5 base;
-      uint5 offset;
+      uint5 index;
       uint3 scale;
     } regscale;
     struct {
       uint5 base;
+      uint5 index;
       uint5 offset;
-      uint5 disp;
       uint3 scale;
     } regscaledisp;
   } data;
 } genx86_operand;
+
+typedef struct {
+  genx86_operand* start;
+  genx86_operand* end;
+  uint5 reg;
+} genx86_registerlifetime;
 
 /*
 +++ Each op points to an entry in a table corresponding to each virtual register. List-form code might be generated at an earlyish stage of compilation, say after the source-dest aliasing phase. Then, register non-orthogonalities can be used to guide allocation decisions, especially function calling conventions etc.
@@ -131,9 +137,7 @@ Temporaries in x86 code can be handled by extending the virtual register mapping
 
 typedef struct {
   genx86_ab86 operator;
-  genx86_operand* op1;
-  genx86_operand* op2;
-  genx86_operand* op3;
+  genx86_operand *op[3];
 } genx86_op;
 
 typedef void (*genx86_r32_rm32)(nativeblockinfo*, uint3, rtasm_mtype);
