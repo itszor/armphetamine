@@ -533,8 +533,15 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_init(mychunk);
   fprintf(stderr, "Constant allocating\n");
   palloc_constant(mychunk);
+  fprintf(stderr, "Outputting gdl prior to branch optimisation\n");
+  pheta_gdlprint(mychunk, "controlgraphpre.gdl");
+  fprintf(stderr, "Transitive branch optimising\n");
+  pheta_optimise_transitive_branch(mychunk);
+  pheta_cull_unused_nodes(mychunk);
 //  palloc_nonorthog(mychunk);
 //  palloc_fetchmem(mychunk);
+  fprintf(stderr, "Using dfs to get parents\n");
+  pheta_dfs(mychunk);
   fprintf(stderr, "Commit shuffling\n");
   palloc_shufflecommit(mychunk);
   phetadism_chunk(mychunk);
@@ -544,6 +551,8 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   pheta_scc(mychunk);
   fprintf(stderr, "Fixing up flags & predicates\n");
   pheta_fixup_flags(mychunk);
+  fprintf(stderr, "Outputting gdl\n");
+  pheta_gdlprint(mychunk, "controlgraph.gdl");
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
@@ -555,8 +564,6 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_clearmarkers(mychunk);
   palloc_findspans(mychunk, mychunk->root, 0);
   palloc_printspans(mychunk);
-  fprintf(stderr, "Outputting gdl\n");
-  pheta_gdlprint(mychunk, "controlgraph.gdl");
   fprintf(stderr, "Doing linear scan allocation\n");
 /*  fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);*/

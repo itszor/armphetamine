@@ -228,6 +228,7 @@ extern const uint3 pheta_instlength[];
 extern pheta_chunk* pheta_newchunk(uint5 start, uint5 length);
 
 extern pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr);
+extern void pheta_destroybasicblock(pheta_basicblock* blk);
 
 extern pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
                                          uint5 length);
@@ -248,11 +249,16 @@ extern void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag);
 extern void pheta_fixup_flags(pheta_chunk* chunk);
 
+extern void pheta_optimise_transitive_branch(pheta_chunk* chunk);
+extern void pheta_cull_unused_nodes(pheta_chunk* chunk);
+
 extern uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno);
 
 extern void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno);
 
 extern void pheta_lsync(pheta_chunk* chunk);
+
+extern pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line);
 
 extern void pheta_dp(machineinfo* machine, instructionformat inst,
                      void* chunk);

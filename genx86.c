@@ -25,7 +25,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG|NFLAG|ZFLAG
+              ph_C, ph_V|ph_N|ph_Z
             },
   /* shr */ { NULL,
               NULL,
@@ -38,7 +38,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG|NFLAG|ZFLAG
+              ph_C, ph_V|ph_N|ph_Z
             },
   /* sar */ { NULL,
               NULL,
@@ -51,7 +51,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG|NFLAG|ZFLAG
+              ph_C, ph_V|ph_N|ph_Z
             },
   /* ror */ { NULL,
               NULL,
@@ -64,7 +64,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG
+              ph_C, ph_V
             },
   /* rol */ { NULL,
               NULL,
@@ -77,7 +77,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG
+              ph_C, ph_V
             },
   /* and */ { &rtasm_and_r32_rm32,
               &rtasm_and_rm32_r32,
@@ -90,7 +90,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              NFLAG|ZFLAG, CFLAG|VFLAG
+              ph_N|ph_Z, ph_C|ph_V
             },
   /* or */  { &rtasm_or_r32_rm32,
               &rtasm_or_rm32_r32,
@@ -103,7 +103,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              NFLAG|ZFLAG, CFLAG|VFLAG
+              ph_N|ph_Z, ph_C|ph_V
             },
   /* xor */ { &rtasm_xor_r32_rm32,
               &rtasm_xor_rm32_r32,
@@ -116,7 +116,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              NFLAG|ZFLAG, CFLAG|VFLAG
+              ph_N|ph_Z, ph_C|ph_V
             },
   /* add */ { &rtasm_add_r32_rm32,
               &rtasm_add_rm32_r32,
@@ -129,7 +129,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG|VFLAG|NFLAG|ZFLAG, 0
+              ph_C|ph_V|ph_N|ph_Z, 0
             },
   /* adc */ { &rtasm_adc_r32_rm32,
               &rtasm_adc_rm32_r32,
@@ -142,7 +142,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG|VFLAG|NFLAG|ZFLAG, 0
+              ph_C|ph_V|ph_N|ph_Z, 0
             },
   /* sub */ { &rtasm_sub_r32_rm32,
               &rtasm_sub_rm32_r32,
@@ -155,7 +155,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              ICFLAG|VFLAG|NFLAG|ZFLAG, 0
+              ph_IC|ph_V|ph_N|ph_Z, 0
             },
   /* sbb */ { &rtasm_sbb_r32_rm32,
               &rtasm_sbb_rm32_r32,
@@ -168,7 +168,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              ICFLAG|VFLAG|NFLAG|ZFLAG, 0
+              ph_IC|ph_V|ph_N|ph_Z, 0
             },
   /* imul */{ &rtasm_imul_r32_rm32,
               NULL,
@@ -181,7 +181,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              0, CFLAG|VFLAG|NFLAG|ZFLAG
+              0, ph_C|ph_V|ph_N|ph_Z
             },
   /* lea */ { &rtasm_lea_r32_m32,
               NULL,
@@ -259,7 +259,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG
+              ph_C, ph_V
             },
   /* rcl */ { NULL,
               NULL,
@@ -272,7 +272,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, VFLAG
+              ph_C, ph_V
             },
   /* test */{ NULL,
               &rtasm_test_rm32_r32,
@@ -285,7 +285,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              NFLAG|ZFLAG, CFLAG|VFLAG
+              ph_N|ph_Z, ph_C|ph_V
             },
   /* cmp */ { &rtasm_cmp_r32_rm32,
               &rtasm_cmp_rm32_r32,
@@ -298,7 +298,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              ICFLAG|VFLAG|NFLAG|ZFLAG, 0
+              ph_IC|ph_V|ph_N|ph_Z, 0
             },
   /* ret */ { NULL,
               NULL,
@@ -701,7 +701,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               &rtasm_call_rel32,
               NULL,
-              0, CFLAG|VFLAG|NFLAG|ZFLAG
+              0, ph_C|ph_V|ph_N|ph_Z
             },
 /* jecxz */ { NULL,
               NULL,
@@ -727,7 +727,7 @@ static const genx86_variant genx86_tab[] =
               NULL,
               NULL,
               NULL,
-              CFLAG, 0
+              ph_C, 0
             }
 };
 
@@ -1589,12 +1589,14 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
       case ph_NFCOMMIT:
       {
         uint5 pred = instr->data.flag.pred;
+        
+        off.type = pal_RFILE;
         if (pred)
         {
           uint5 j;
           for (j=0; j<14; j++)
           {
-            if (pred & (1<<(j&15)))
+            if (pred & (1<<j))
             {
               off.info.value = offsetof(registerinfo, npredbuf[j]);
               genx86_out(nat, predset[j], &off, &nul, &nul, map);
