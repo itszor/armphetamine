@@ -1813,7 +1813,7 @@ void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
     case pal_ALIAS:
     {
       // *** ignore for now ***
-      dest->type = gotype_EMPTY;
+//      abort();
 //      genx86_translatealloc(chunk, dest, &chunk->alloc[src->info.value]);
     }
     break;
@@ -1832,17 +1832,40 @@ void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
   genx86_op* x = cnew(genx86_op);
   clist* newinst;
 
-  if (!dest->slot) dest->slot = cnew(genx86_operand);
-  if (!src1->slot) src1->slot = cnew(genx86_operand);
-  if (!src2->slot) src2->slot = cnew(genx86_operand);
-  if (dest->type != pal_UNSET) a = dest->slot;
-  if (src1->type != pal_UNSET) b = src1->slot;
-  if (src2->type != pal_UNSET) c = src2->slot;
+  if (dest->type != pal_UNSET)
+  {
+    if (!dest->slot)
+    {
+      dest->slot = cnew(genx86_operand);
+      genx86_translatealloc(dest->slot, dest);
+    }
+    a = dest->slot;
+    fprintf(stderr, "dest->slot=%p ", dest->slot);
+  }
+
+  if (src1->type != pal_UNSET)
+  {
+    if (!src1->slot)
+    {
+      src1->slot = cnew(genx86_operand);
+      genx86_translatealloc(src1->slot, src1);
+    }
+    b = src1->slot;
+    fprintf(stderr, "src1->slot=%p ", src1->slot);
+  }
   
-  genx86_translatealloc(a, dest);
-  genx86_translatealloc(b, src1);
-  genx86_translatealloc(c, src2);
-  
+  if (src2->type != pal_UNSET)
+  {
+    if (!src2->slot)
+    {
+      src2->slot = cnew(genx86_operand);
+      genx86_translatealloc(src2->slot, src2);
+    }
+    c = src2->slot;
+    fprintf(stderr, "src2->slot=%p", src2->slot);
+  }
+  fprintf(stderr, "\n");
+
   x->op[0] = a;
   x->op[1] = b;
   x->op[2] = c;
