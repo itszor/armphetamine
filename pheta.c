@@ -17,56 +17,6 @@
 // this should be moved somewhere sensible
 extern uint5 setbits(uint5);
 
-const uint3 pheta_instlength[] = {
-  6,  /* const */
-  3,  /* constb */
-  3,  /* fetch */
-  3,  /* commit */
-  3,  /* assoc */
-  2,  /* spill */
-  2,  /* reload */
-  2,  /* fexpect */
-  5,  /* fcommit */
-  2,  /* fensure */
-  2,  /* nfexpect */
-  5,  /* nfcommit */
-  2,  /* nfensure */
-  3,  /* fwrite */
-  4,  /* lsl */
-  4,  /* lsr */
-  4,  /* asr */
-  4,  /* ror */
-  4,  /* rol */
-  3,  /* rrx */
-  3,  /* rlx */
-  3,  /* mov */
-  3,  /* not */
-  4,  /* and */
-  4,  /* or */
-  4,  /* eor */
-  3,  /* teq */
-  3,  /* tst */
-  4,  /* add */
-  4,  /* adc */
-  4,  /* sub */
-  4,  /* sbc */
-  3,  /* cmp */
-  3,  /* cmn */
-  4,  /* mul */
-  3,  /* ldw */
-  3,  /* ldb */
-  3,  /* stw */
-  3,  /* stb */
-  1,  /* swi */
-  1,  /* undef */
-  5,  /* state */
-  1,  /* sync */
-  5,  /* xjmp */
-  1,  /* ukjmp */
-  1,  /* cajmp */
-  1   /* rts */
-};
-
 const static uint5 ccflags[] =
 {
   /* eq */ ph_Z,
@@ -418,6 +368,7 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     break;
     
     case ph_STATE:
+    case ph_PHI:
     instr->data.imm = va_arg(ap, uint5);
     break;
     

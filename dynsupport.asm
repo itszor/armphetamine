@@ -27,9 +27,42 @@ extern memory_virtualtophysical
 ; arg1: address
 ; arg2: tlb entry
 
-; duplicating this functionality is stupid.
-global dynsupport_readdataword:function
+%macro readbank 1
+global dynsupport_readbank%1:function
+dynsupport_readbank%1
+        mov eax,[esp+4]  ; meminfo* mem
+        mov ecx,[esp+8]  ; phys address
+        and ecx,0xfffffc
+        mov edx,[eax+meminfo_bank%1]
+        mov eax,[edx+ecx]
+        xor ecx,ecx
+        ret
+%endmacro
 
+        readbank 0
+        readbank 1
+        readbank 2
+        readbank 3
+
+%macro writebank 1
+global dynsupport_writebank%1:function
+dynsupport_writebank%1
+        mov eax,[esp+4]  ; meminfo* mem
+        mov ecx,[esp+8]  ; phys address
+        and ecx,0xfffffc
+        mov edx,[eax+meminfo_bank%1]
+        mov [edx+ecx],eax
+        xor ecx,ecx
+        ret
+%endmacro
+
+        writebank 0
+        writebank 1
+        writebank 2
+        writebank 3
+
+; duplicating this functionality is stupid, but hey
+global dynsupport_readdataword:function
 dynsupport_readdataword:
         push esi
         push edi
@@ -37,8 +70,6 @@ dynsupport_readdataword:
         mov eax,[esp+16]  ; eax contains memoryinfo*
         mov ecx,[esp+20]  ; ecx contains address
         mov edx,[esp+24]  ; edx contains tlb entry
-
-        test byte [ebp+37],1
 
         mov ebx,[edx+tlbentry.modestamp]
         cmp ebx,[eax+meminfo_currentmode]
@@ -56,7 +87,7 @@ dynsupport_readdataword:
 
         push ecx  ; phys addr
         push eax  ; meminfo
-        call [edx+tlbentry.rdword]
+        jmp [edx+tlbentry.rdword]
         add esi,8
         pop ebx
         pop edi
@@ -73,7 +104,7 @@ tlbmiss:
         add esp,12
         push esi
         push edi
-        call [edx+tlbentry.rdword]
+        jmp [edx+tlbentry.rdword]
         add esp,8
 
         pop ebx

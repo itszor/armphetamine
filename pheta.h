@@ -17,6 +17,7 @@ typedef enum {
   ph_ASSOC,
   ph_SPILL,
   ph_RELOAD,
+  ph_PHI,
   ph_FEXPECT,
   ph_FCOMMIT,
   ph_FENSURE,

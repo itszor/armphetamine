@@ -8,14 +8,14 @@
 #include "list.h"
 
 static const char* opname[] = { "const", "constb", "fetch", "commit", "assoc", 
-  "spill", "reload", "fexpect", "fcommit", "fensure", "nfexpect", "nfcommit", 
-  "nfensure", "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", "rlx", "mov", 
-  "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub", "sbc", "cmp", 
-  "cmn", "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", "state", "sync", 
-  "xjmp", "ukjmp", "cajmp", "rts" };
+  "spill", "reload", "phi", "fexpect", "fcommit", "fensure", "nfexpect", 
+  "nfcommit", "nfensure", "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", 
+  "rlx", "mov", "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub", 
+  "sbc", "cmp", "cmn", "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", 
+  "state", "sync", "xjmp", "ukjmp", "cajmp", "rts" };
 
 const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
-                            "hi","ls","ge","lt","gt","le","al","nv"};
+                     "hi","ls","ge","lt","gt","le","al","nv"};
 
 static const char* txtflag[] = {"z", "c", "n", "v", "i"};
 
@@ -245,6 +245,12 @@ void phetadism_instruction(FILE* f, pheta_instr* instr)
         first = 0;
       }
       fprintf(f, ")");
+    }
+    break;
+
+    case ph_PHI:
+    {
+      fprintf(f, "%-10s(format undecided)", opname[opcode]);
     }
     break;
 

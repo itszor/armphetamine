@@ -39,7 +39,7 @@ clean:
 cleaner:
 	rm -f *.o emulate rtasm_fns.c rtasm_fns.h .depend
 
-dynsupport.asm:	structsupport memory.h
+dynsupport.asm:	structsupport memory.h structsupport.inc
 execute26.c:	execute.inc.c
 execute32.c:	execute.inc.c
 
