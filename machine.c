@@ -61,7 +61,8 @@ void machine_start(machineinfo* machine)
       uint5 retcode = dispatch(machine, inst, machine->exectab, 0);
       if (retcode==1)
       {
-        /* do something */
+        /* Uses instruction ptr in state before execute has mangled it */
+        profile_feedaddr(mem, machine->pstate, instaddr);
       }
     }
       

@@ -244,7 +244,7 @@ meminfo* memory_initialise(uint5 bytes)
   mem->mmuactive = 0;
 
   // a larger physical memory map will need more hashes than this
-  mem->transmap = cnewarray(hashtable*, 0x20000000/4096);
+  mem->transmap = cnewarray(hashtable*, 1<<20);
 	
 #ifdef EMULART
   mem->sapcm.dma = cnewarray(sapcm_dma_channel, 6);

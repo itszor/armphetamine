@@ -32,7 +32,9 @@ void transmap_addentry(meminfo* mem, uint5 physaddr, transmap_entry* entry)
 transmap_entry* transmap_getentry(meminfo* mem, uint5 physaddr)
 {
   uint5 page = physaddr >> 12;
-  hashentry* e = hash_lookup(mem->transmap[page], physaddr);
+  hashentry* e = mem->transmap[page]
+                   ? hash_lookup(mem->transmap[page], physaddr)
+                   : 0;
   
   if (!e) return 0;
   

@@ -2,21 +2,14 @@
 
 int testfunc(void)
 {
-  int x, y, z, i=0;
+  int i, j;
 
-  for (z=0; z<1000; z++)
+  for (i=1; i<100; i++)
   {
-    for (y=0; y<100; y++)
-    {
-      for (x=0; x<100; x++)
-      {
-        if (y>50 && x<25 && y<75)
-          i += x+y+5;
-      }
-    }
+    j += 10000/i;
   }
   
-  return i;
+  return j;
 }
 
 int done(void) {}

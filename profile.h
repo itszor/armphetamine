@@ -12,6 +12,8 @@ struct profile_state {
   transmap_entry* currenttrans;
 };
 
+#define RECOMPILE_THRESHOLD 16
+
 typedef struct profile_state profile_state;
 
 #endif
