@@ -12,6 +12,10 @@
 
 <p>The first prototype is complete, and is described in <a href="diss.ps">this</a> postscript file. This document describes the changes and improvements already implemented or planned for version two of the system.
 
+<h3>Context</h3>
+
+<p>This work falls into several categories of wider research. Compilation techniques: partial evaluation, dynamic code generation, dynamic optimisation. Architecture: instruction-set simulation, fast approximations to hardware models, etc.
+
 <h3>Overall Structure</h3>
 
 <p>At the lowest level of the system lies an interpretive emulation core. This supports:
@@ -28,7 +32,7 @@
 
 <p>Instructions are fetched and executed sequentially by the interpretive core, as would be done by a real processor. These instructions are decoded and executed in software, and their effects are mirrored in the state of the virtual processor and memory system (this is a very processor-intensive task).
 
-<p>As this is done, the flow of control is examined by a profiler, which identifies chunks of commonly-executed code. If a particular chunk of code is executed often, we assume the overall speed of execution will benefit from this piece of code being run faster in the future. So, we take that piece of binary code and translate it into a fragment of binary code for the host computer. When the chunk is encountered on subsequent occasions, we can transfer control directly to the newly-compiled piece of code intead of doing the time-consuming interpretation of the code in software. This technique is known as dynamic recompilation, or perhaps more accurately, dynamic binary code translation, and is capable of speeding up the emulation of a virtual machine by orders of magnitude.
+<p>As this is done, the flow of control is examined by a profiler, which identifies chunks of commonly-executed code. If a particular chunk of code is executed often, we assume the overall speed of execution will benefit from this piece of code being run faster in the future. So, we take that piece of binary code and translate it into a fragment of binary code for the host computer. When the chunk is encountered on subsequent occasions, we can transfer control directly to the newly-compiled piece of code intead of doing the time-consuming interpretation of the code in software. This technique is known as dynamic recompilation, or perhaps more accurately, dynamic binary code translation, and is capable of speeding up the emulation of a virtual machine by several orders of magnitude.
 
 <p>In Java terminology, this technique would be called Just-In-Time (JIT) compilation. The difference in this case is that binary code for the typical processor is not designed with the intention of being used as the source code for any sort of compiler, so various new methods need to be developed to deal with the special problems involved (discussed further <a href="oldinfo.html">here</a> or <a href="diss.ps">here</a>).
 
@@ -50,7 +54,7 @@
 
 <p>The TLB is also tagged with the current processor mode, to avoid potential unsafe access by user-mode code by a tuple which was set up in a priveleged mode.
 
-<p>It might be worth investigating whether more than one TLB entry provides better results. Intuition suggests otherwise, since emulating CAM in software is not a particularly fast operation. However, one interesting scheme to try might be to keep a buffer containing the last few translated entries - still always only checking the first on most memory accesses, but keeping the previous few entries in a fifo or move-to-front buffer before doing a full page-table walk.
+<p>It might be worth investigating whether more than one TLB entry provides better results. Intuition suggests otherwise, since emulating CAM in software is not a particularly fast operation. However, one interesting scheme to try might be to keep a buffer containing the last few translated entries - still always only checking the first on most memory accesses, but keeping the previous few entries in a fifo or move-to-front buffer to search before doing a full page-table walk.
 
 <h3>A Malleable Intermediate Representation: ph2</h3>
 
@@ -137,6 +141,30 @@
 
 <p>are used directly after an fcommit or nfcommit instruction to signal that a particular predicate number should be set, and the condition which it should be set by. Code can be pruned at the IR level to remove unnecessary condition-code storing/retrieval.
 
+<h5>Condition-Code Abstraction</h5>
+
+<p>One of the driving forces behind the design of ph2 is its amenability to abstracting condition flags and flow control out of the original binary code. On the ARM (as in many) architecture, flow control is achieved using condition codes, which are combinations of particular flags. For example, a piece of code might want to jump somewhere if one register is greater than or equal to another register:
+<pre>
+        <b>cmp</b> r4,r5
+        <b>bge</b> somewhere
+</pre>
+<p>The first instruction sets four flags, named Z (zero), N (negative), V (overflow) and C (carry). The second tests a combination of those flags for the "greater-than or equal" condition, which is defined by "N set and V set, or N clear and V clear", or more concisely as "N==V".
+
+<p>The two architectures in question (ARM and IA-32) both employ flags for controlling flow like this, but have quite different semantics for setting and testing those flags. On the ARM for example, setting flags is optional for ALU operations, and any instruction may be conditionally executed. In IA-32, virtually all instructions unconditionally set (or corrupt) the processor flags. Nevertheless, we can still utilise the native processor's flag-calculation logic in recompiled code, although great care must be taken.
+
+<p>One approach (that used in ARMphetamine v1), is to save and restore flags individually, on-demand, in recompiled code. This was proven to work adequately, but produced bulky and slow code. The reason is mainly a shortcoming of IA-32, which makes it particularly difficult to alter individual bits corresponding to the S, Z and O flags in the flags register. The code sequence used - not necessarily the best - took between 9 and 18 instructions to restore between one and four bits. When this was multiplied by the number of times such an operation was necessary in a chunk of code, this meant a fairly large proportion of code was dedicated to essentially twiddling just a couple of bits.
+
+<p>A better approach is to group flags forming a condition code together, and treat them as an atomic unit (IA-32 provides convenient <tt>set<i>xx</i></tt> instruction which allow you to do just that). This means that the state of the flags is not mirrored exactly in recompiled code, and the on-demand scheme can no longer be utilised. Trivially, when we encounter a conditional branch (say), we scan the ph2 representation backwards (over block boundaries if necessary) until we find the instruction which last altered the flags correponding to the relevent condition code. Then we insert an instruction which saves that condition code into a predicate buffer, and use that value rather than the condition flags when we decide where to go after the branch.
+
+is capable of writing perfectly legal but nasty code like this:
+<pre>
+        <b>movs</b> r0,r1,ror #3   <i># sets C flag</i>
+        <b>add</b> r0,r0,r3        <i># sets nothing, IA-32 add destroys C,V,N,Z equivalents</i>
+        <b>tst</b> r0,r2           <i># sets N,Z flags</i>
+        <b>bhi</b> somewhere       <i># depends on C,Z (unsigned higher)</i>
+</pre>
+<p>Inserting an instruction in the ph2 representation of this to save the "hi" condition after the <tt>tst</tt> instruction will lead to different results than the original code. This isn't insurmountable obviously, but hopefully illustrates that the successful implementation of this algorithm would be a bit tricky. This is mainly why ph2 has such a verbose syntax for "expecting" and "committing" flags.
+
 <h5>Summary of ph2</h5>
 
 <p>ph2 is essentially a register-transfer language. The translation stage from ARM code to ph2 performs <b>register renaming</b> in much the same way as many modern superscalar processors, which aids register allocation later by splitting the liveness of registers in many fragments of ARM code into smaller pieces, which overlap less and thus ease the allocation of registers on the register-starved IA-32 architecture.
@@ -152,21 +180,26 @@
 <p>Register allocation uses the fast <a href="linearscan.ps">Linear Scan</a> algorithm, which the Poletto &amp; Sarkar claim produces code within 10% of the speed of that generated with a register allocator based on Chaitin-style graph colouring, but with O(n) time complexity rather than O(n<sup>2</sup>).
 
 <p>An additional phase is employed, which I call "source-destination aliasing", which opportunistically aliases the destination register for ph2 instructions to the first source register, which can aid in the generation IA-32 code: since ph2 code uses three addresses for each operation,
-
-<blockquote><tt>add    %3,%6,%5</tt></blockquote>
+<pre>
+        <b>add</b> %3,%6,%5
+</pre>
 
 <p>Whereas IA-32 instructions use a two-address format:
-
-<blockquote><tt>mov    %ebx,%ecx</tt>
-<br><tt>add     %eax,%ecx</tt></blockquote>
+<pre>
+        <b>mov</b> %ebx,%ecx
+        <b>add</b> %eax,%ecx
+</pre>
 
 <p>The 'first' source operand, <tt>ecx</tt> in this case, is overwritten with the result of the operation. We can rewrite the original ph2 code as the following, so long as (the original) register %6 is not used afterwards:
 
-<blockquote><tt>add    %6,%6,%5</tt></blockquote>
+<pre>
+        <b>add</b> %6,%6,%5
+</pre>
 
 <p>Now we've eliminated a <tt>mov</tt> instruction, so we can just do this:
-
-<blockquote><tt>add     %eax,%ecx</tt></blockquote>
+<pre>
+        <b>add</b> %eax,%ecx
+</pre>
 
 <h5>Instruction Selection</h5>
 
@@ -233,12 +266,12 @@
 <p>Both of these conditions can be implemented extremely efficiently in the target machine code, and should serve to speed up emulation considerably.
 
 <pre>
-        <b>movl</b> %eax,%ecx           <i># eax contains emulated system's program counter</i>
-        <b>shrl</b> $7,%ecx
-        <b>xorl</b> %eax,%ecx           <i># some fast, arbitrary hash function</i>
+        <b>mov</b> %eax,%ecx           <i># eax contains emulated system's program counter</i>
+        <b>shr</b> $7,%ecx
+        <b>xor</b> %eax,%ecx           <i># some fast, arbitrary hash function</i>
 
 <b>tablestart:</b>
-        <b>andl</b> $3,%ecx             <i># size of hash table</i>
+        <b>and</b> $3,%ecx             <i># size of hash table</i>
         <b>jmp</b> *hashtab(,%ecx,4)
 
 <b>hashtab:</b>
@@ -248,27 +281,27 @@
         <b>.long</b> hashcase3
 
 <b>hashcase0:</b>
-        <b>cmpl</b> $0x12345678,%eax
+        <b>cmp</b> $0x12345678,%eax
         <b>je</b> code_at_12345678
 
 <b>hashcase1:</b>
-        <b>cmpl</b> $0x23456781,%eax
+        <b>cmp</b> $0x23456781,%eax
         <b>je</b> code_at_23456781
 
 <b>hashcase2:</b>
         <b>jmp</b> default              <i># for fall-through case</i>
 
 <b>hashcase3:</b>
-        <b>cmpl</b> $0x23000000,%eax
+        <b>cmp</b> $0x23000000,%eax
         <b>je</b> code_at_23000000
 
         <b>jmp</b> hashcase0            <i># continue search from start of table</i>
 
 <b>default:</b>
-        <b>pushl</b> $tablestart        <i># rewrite the hash table to contain a new entry</i>
-        <b>pushl</b> %eax
-        <b>pushl</b> $<i>&lt;global state&gt;</i>
-        <b>lcall</b> patchup_hash_table
+        <b>push</b> $tablestart         <i># rewrite the hash table to contain a new entry</i>
+        <b>push</b> %eax
+        <b>push</b> $<i>&lt;global state&gt;</i>
+        <b>call</b> patchup_hash_table
 </pre>
 
 <p>There must be at least one jump to the default case in the table, otherwise we might go into an infinite loop if we encounter an unknown address. The patchup code should therefore have the ability to extend the hash table as necessary (probably by doubling its size). To do this it's probably necessary (or at least desirable) to maintain some metadata along with each block, containing the (emulated address, native address) tuples which the hash table encodes, to avoid having to parse code we've previously created to recover this information.
@@ -283,7 +316,7 @@
 
 <p>Timer interrupts can be handled fairly easily, assuming the timer runs at some (high) fixed division of the processor clock: keep a rough (statically analysed) count of the number of cycles each instruction in a basic block takes to execute, then decrement a counter by that amount at the end of the block. If it crosses zero, call a function to cause a timer interrupt. This obviously won't give the best latency possible and won't be totally accurate, but if the aim is to simulate a machine at a behavioural rather than a timing-sensitive level it should do nicely.
 
-<p>Precise exceptions are more tricky, and might severely limit the extent to which we can perform optimisations on translated code. The basic problem is that every load or store instruction can potentially cause a data abort condition, at which point it must be possible to extract the state of the original machine at the exact location that the exception occurred. We can't return to recompiled code after the exception, because the state of the machine might have caused that code to become invalid, eg. if the operating system performs a task switch. We can't easily recover the state of the ARM registers, since we've done register allocation (and since thrown away our temporary data) and don't know where the correct values are (in registers, on stack, in the memory-based register file, etc.).
+<p>Precise exceptions are more tricky, and might severely limit the extent to which we can perform optimisation on translated code. The basic problem is that every load or store instruction can potentially cause a data abort condition, at which point it must be possible to extract the state of the original machine at the exact location that the exception occurred. We can't return to recompiled code after the exception, because the state of the machine might have caused the code at the return address to become invalid, eg. if the operating system performs a task switch. We can't easily recover the state of the ARM registers, since we've done register allocation (and since thrown away our temporary data) and don't know where the correct values are (in registers, on stack, in the memory-based register file, etc.).
 
 <p>There are two easy solutions: the first is so synchronise the state before every memory access, ie store all registers back to memory. This would cause sub-optimal-for-speed code. The second (due to David Sharp) is to return a flag from each memory access and test it on return, generating specialised escape-condition code for every single memory access. This would cause sub-optimal-for-space code, but is probably the solution I'll go for when the time comes unless I have any better ideas.
 
@@ -316,6 +349,10 @@
 <p>The ARM registers are held in an array whose base is at %ebp. The ratio of source:destination intructions (for this example at least) is better than that reported by some other systems, which are typically of the order 1:10. Addition of load/store instructions will blow the code up immensely though.
 
 <p>The interpretive emulator can run the first (couple of million?) instructions of a real operating system (Acorn's RISC OS 3.70), but is unfortunately let down by poor/non-existent hardware emulation after that.
+
+<h3>References</h3>
+
+<p>Embra, Shade, IBM's Daisy, Transmeta's Code Morpher, ARDI's Executor, Cifuentes' work on UBQT, Sun's Hotspot, Apple's 68k emulation layer for Mac OS 7-9, UltraHLE N64 emulator, Mike Koenig's DRFAQ, Neil Bradley's DRMZ80, ARMphetamine v1, Dave Sharp's tARMac, ARM's ARMulator, UAE's dynarec, Squish's Generator, Connectix' Virtual PC & Virtual Gamestation, Intel's IA-32 compatibility layer for Itanic, Poletto et al's tcc, probably some I've forgotten (that one about IA-32 compilation in particular).
 
 <hr>
 

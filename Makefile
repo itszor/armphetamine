@@ -41,11 +41,11 @@ execute32.c:	execute.inc.c
 emulate: $(OBJ)
 	$(CC) -o emulate $(OBJ) $(LDFLAGS) $(LIBS) 
 
-simple:	simple2.arm.s
-	arm-linux-elf-as simple2.arm.s -o simple
+simple:	simple.arm.s
+	arm-linux-elf-as $< -o $@
 
 divide:	divide.arm.s
-	arm-linux-elf-as divide.arm.s -o divide
+	arm-linux-elf-as $< -o $@
 
 package:	cleaner
 	tar -c -v -z -C .. -f ../armphetamine-0.2.tar.gz armphetamine
