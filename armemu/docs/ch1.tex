@@ -1,0 +1,54 @@
+\chapter{Introduction}
+
+\section{The beginning}
+
+According to Alan Turing, all computing machines are equivalent in power, from the fastest supercomputers to abstract constructions capable of nothing but seeking and rewriting symbols on infinite streams of paper tape. In a sense, this can be appreciated most intuitively when one computer is programmed to imitate another, a process known as `emulation'.
+
+Emulation is useful for many reasons. Perhaps a new hardware system is to be built, and some aspect of it must be tested before anything is actually fabricated, or perhaps a secure `sandbox' is needed inside a system for debugging programs or for isolating computer viruses. By far the most visible purpose for emulation though is in running legacy code -- application software which will no longer run on the latest hardware, or computer games written for systems which are no longer manufactured. It isn't always possible to simply recompile these programs from source: perhaps they were written in a language for which there isn't a compiler on the new system, or they are written in an inherently unportable language like assembler, or perhaps the source code has been accidentally lost or destroyed. In these cases, if people still want to use the software, emulation is the only option.
+
+The ARM processor, designed by Steve Furber and Sophie Wilson at Acorn around 1985, is believed by some to have the best-designed instruction set of any contemporary processor. The first commercially exploited version was an 8MHz ARM2 in the Archimedes A300 and A400 series of computers. The 16 general-purpose registers, barrel shifter, and ability to conditionally execute any instruction make life fairly easy for both assembly language programmers and compiler writers. Code density is good compared to other RISC chips and even compares favourably to some CISC processors, important when there is a limited amount of memory available as in the early Archimedes machines. Although now used almost exclusively in embedded systems due to its low power consumption, until fairly recently desktop machines were produced based on the StrongARM chip made by Digital.
+
+The \ia\ series of processor designed by Intel have a more convoluted history, from the decimal-manipulation instructions of the 1976-vintage 8086 intended for use in pocket calculators, to the 64k segment-size limit so beloved of MS-DOS programmers, to the myriad extensions like 32-bit protected mode addressing on the 80386 and new instruction families like MMX on the Pentium and its successors. At every iteration, the chips got bigger, more complex and much faster. The vast majority of desktop PCs are presently based on \ia\ architecture processors, and Intel's legacy shows no signs of abating.
+
+Interpretation of ARM programs seems to pose particular problems for traditional emulators. By glancing at example code sequences, you may fail to appreciate the complexity of each supposedly RISC instruction -- complexity which must be decoded by many tens or even hundreds of instructions of emulator code each time an instruction is encountered. This makes ARM emulation grindingly slow, to the extent that powerful, up-to-date desktop PCs are barely able to emulate the original 8MHz ARM2 based computers thirteen years after their release.
+
+It is the need for fast \arm\ emulation which this project intends to satisfy.
+
+\section{Closing the gap}
+
+Emulation places high demands on the host system, so the more powerful the guest system is, the more difficulty will be encountered in attempting to execute its code at a reasonable speed using a software-based processor. Recently, a more sophisticated type of emulation has surfaced, which uses a fiendish technique called ``dynamic recompilation'' or ``binary code translation'' and, sometimes, application-level system call trapping\footnote{So-called ``high-level emulation'', mainly used for 3D graphics rendering using the dedicated hardware now common on PCs, but also used by Executor in its reimplementation of the MacOS API.} to enable the use of the host machine's real processor to execute emulated code directly, causing considerable acceleration when using the same hardware.
+
+Binary code translation has been deployed with a great deal of success by several free and commercially-available emulators. A quick run-down follows:
+
+\begin{itemize}
+
+\item Executor \cite{Executor}, an Apple Mac emulator for Intel-based PCs
+\item Virtual PC, an Intel PC emulator for the Apple Power Mac
+\item Virtual Game Station, a Sega Playstation emulator for the Apple Power Mac \& PCs
+\item FX!32, an Intel to Alpha binary code translator for Windows NT
+\item Generator, a Sega Megadrive emulator for various platforms\footnote{Though on most platforms, Generator doesn't produce `real' machine code but a simple, stylised form called `threaded' code, consisting of subroutine calls back to the interpretive emulator.}
+\item UltraHLE, a Nintendo 64 emulator for Intel PCs
+
+\end{itemize}
+
+Information about most of these emulators is available on the internet. The complexity and approach taken varies depending on the complexity of the host and guest systems: the two most impressive emulators are probably Executor and Virtual PC, a large portion of the latter supposedly being hand-written in PowerPC assembly language for maximum performance.
+
+\section{The project}
+
+This project will attempt to exploit binary code translation to speed up emulation of the \arm\ processor on an \ia-based host, a feat which, to the best of my knowledge, has not been attempted before by anyone.
+
+\section{Assembler convention}
+
+There are (at least) two completely incompatible assembly-language formats for the Intel chip. I will use the one preferred by the GNU compiler toolchain, which places the destination operand on the right-hand side of instructions and includes the width of the operands in the instruction mnemonic: eg, I use:
+
+\begin{code}
+subl~\%eax,\%ebx~~~~~; ebx~-=~eax
+\end{code}
+
+rather than:
+
+\begin{code}
+sub~ebx,eax~~~~~~~~; ebx~-=~eax
+\end{code}
+
+The operands {\tt eax} and {\tt ebx} refer to 32-bit registers in either case.

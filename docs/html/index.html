@@ -1,0 +1,218 @@
+<html><head><title>ARMphetamine</title></head>
+<body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
+<h2><center><img alt="ARMphetamine" src="images/ap.png"></center></h2>
+
+<p align=center>[ <a href="#news">news</a> | <a
+href="#overview">overview</a> | <a href="#status">status</a> | <a
+href="#documentation">documentation</a> | <a
+href="#download">download</a> | <a href="#feedback">feedback</a> 
+| <a href="#links">links</a> ]
+
+<h1><a name="news">News</a></h1>
+
+<h3>7 March 2001</h3>
+
+<p>Slightly troubled by ph2. I'd quite like to have a go at implementing the "linear scan" register allocation technique (as documented in a paper discovered by David Sharp), but it doesn't seem to entirely mesh with the <tt>fetch</tt>/<tt>commit</tt> mechanism which I envisaged using. I've tweaked it so temporaries aren't refetched from registers every time they're used. Now the behaviour is to fetch the minimum set of registers necessary in a basic block as they're needed and commit all the (latest) results generated immediately before exiting the block. This just isn't quite right. Specifically, it creates a sort-of triangular register-need shape through each block, where each block starts out needing no registers and then accumulate liveness for registers as it proceeds, then chucking them all away right at the end. Better if registers are committed after the last time they're used, but that means more passes over the code and/or the ability to insert instructions into blocks. Or perhaps I should treat blocks as immutable, and generate new copies with commits in the right place.
+
+<p>Still doesn't quite mesh with linear scan though. I have to think about that some more, maybe I'll take a couple of weeks off work to do it <tt>;o)</tt>.
+
+<p>Also, I've possibly bugfixed the runtime assembler re: some bit-manipulation instructions. Still untested. I might get around to testing it one day, but hey, I'm supposed to be working on image analysis all the time. Ho hum.
+
+<h3>2 March 2001</h3>
+<p>A new solution to the global transmap problem: <a href="livehash.html">Active hashing</a>.
+
+<h3>20 February 2001</h3>
+<p>Improvements to ALU shift-generating code. For an example session with the debugger demonstrating ARM->ph2 code translation, <a href="translation.txt">see here</a>.
+
+<h3>17 February 2001</h3>
+<p>Now the debugger knows how to translate ARM code into ph2 code, using the command <tt>phetatrans</tt>. Unfinished enhancements to the crappy "parser" in the debugger mean that this one command temporarily uses a different number syntax to all the rest, ie you have to prepend "0x" to your hex values for the start and end address as passed to this command, but not any others.
+
+<p>I have a couple of new reservations about ph2 in general. I'm mainly worried by how opaque the generated code seems to be, despite my best efforts to keep things looking simple. Even single instructions with register-specified shifts are virtually impossible to understand. That might just be because they're broken though.
+
+<p>Doing register allocation 'properly'  is going to be <em>really</em> hard, I think. I'm thinking things like preliminary 'priming' passes which ensure that register-shifts get allocated to the x86 <tt>cl</tt> register and results from function calls get magically put in <tt>eax</tt> whenever possible, to cut down on unnecessary swapping. Also perhaps it will be necessary or desirable to nominate one particular register for memory-only access in data-processing type operations. Perhaps not always one of the 'source' registers either, like in the case where register result isn't used again except to dump it to memory later, perhaps we might as well just dump it to memory immediately...
+
+<p>I'm considering adding a predicate buffer to each chunk, so each basic block within that chunk just checks whether a particular entry in that buffer (ie, byte-wide memory location) is one or zero, and takes one of two choices depending on the result. How the setting of these predicates can be neatly extracted from low-level flag operations, I don't know exactly. This would replace the scheme where each basic block has a condition associated with it, as currently it's not clear in what sense that condition actually holds - the assumption that the condition is implicit (ie, in the <tt>EFLAGS</tt> register or whatever) is precisely the nasty sort of thing ph2 was trying to avoid.
+
+<p>&lt;Sigh&gt;, so much talk, so little action.
+
+<h3>4 February 2001</h3>
+<p>Debugger enhancements: now offers quite a bit more functionality, including being able to actually emulate programs. Also contains a scripting mechanism: try typing "script startup.txt" when the program starts. (Hint: after succesful execution, r0 contains the result of 0x100 / 0x9, and r1 contains 0x100 % 0x9).
+<p>I <b>really will</b> put this thing on Sourceforge soon. Right after I get some unmetered internet access, anyway. (Mumbles incoherently about <a href="http://www.telewest.com/">Telewest</a>, <a href="http://www.equifax.co.uk/">Equifax</a> and the data protection act. Don't even ask.)
+
+<h3>3 February 2001</h3>
+<p>Started a new in-built mini debugger, which will become the default 'user interface' to ARMphetamine for the time being, I think. I should have written this a long time ago, but it really didn't occur to me how useful it might be. Bugfixes in multi-word load/store emulation, which was broken when the new memory system was written. More functionality added to ARM->pheta2 translator.
+
+<h3>21 January 2001</h3>
+<p>Slightly tidier source available from <a href="#download">download</a>
+section. There's a new, short and unfinished document about the <a href="pheta2.html">new intermediate representation</a>, which it'd be nice to have some feedback on, if you're knowledgable in these things and have the time...
+
+<h3>17 January 2001</h3>
+<p>Moving development onto <a href="http://www.sourceforge.net/">Sourceforge</a>. See <a href="http://www.sourceforge.net/projects/armphetamine">here</a>.
+
+<h3>16 January 2001</h3>
+<p>I've been hacking the source of ARMphetamine slowly and irregularly over
+the last few months. Recent (and not-so-recent) developments include:
+
+<ul>
+  <li>A new intermediate representation (sorry Neil ;-)), which solves some of
+the problems with the old one (but doubtless adds some of its own).
+Only about half the ARM->intermediate translation
+stage has been written though, and none of the intermediate->x86 stage.
+  <li>Some new instructions have been implemented (<code>msr</code>,
+<code>mrs</code>, <code>teqp</code>) in the interpreter.
+  <li>Processor mode switching has been added (<strong>without</strong> a
+register indirection array - you know who you are...)
+  <li>ARM610/710 MMU emulation is in place (yippee!), although it is completely
+untested. Includes a nice, efficient two-entry TLB scheme (one data,
+one code), which is also untested of course. Should support all MMU features
+(memory protection, domains, etc.) without too much overhead.
+  <li>Stub functions for VIDC/IOMD support.
+  <li>Minor improvements to asm ALU core.
+</ul>
+
+The current target is to complete emulation of (the most important bits of) an
+ARM7500 chip, then continue working on the recompiler. New source will become
+available when I've had the chance to clean it up a lot.
+
+<h3>12 July 2000</h3>
+<p>There's a new run-time assembler, but I don't know if it works and it's not used yet. But it's nicer than the old one.
+
+<h3>18 June 2000</h3>
+<p>I've rewritten part of the ALU emulation in x86 assembler, just for fun (speed increase is negligible, though - 5750 vs 5500ish Dhystones/sec). Also, subtle bugfix in dynarec code - BASIC now runs for a little bit longer <tt>;-)</tt>. Available as a snapshot of my CVS directory, see instructions in Download section for extracting it.
+
+<h3>14 June 2000</h3>
+<p>Another new design. New <a href="further.html">further work</a> to be done page.
+
+<h3>5 May 2000</h3>
+<p>New design.
+
+<hr>
+
+<h1><a name="overview">Overview</a></h1>
+
+<p>ARMphetamine is a project to create a fast and accurate ARM emulator for IBM PC-compatible computers running Linux. A technique known as "dynamic recompilation" is used so that high speeds can be achieved - ARM code programs are translated into native Pentium code as they are being emulated.
+
+<hr>
+
+<h1><a name="status">Status</a></h1>
+
+<p>Some preliminary comparative benchmarks are available:
+
+<p><table align=center>
+<tr>
+<td><b>Processor [recomp]</b></td>
+<td><b>Compiler/OS</b></td>
+<td><b>Platform</b></td>
+<td><b>Dhrystones/sec</b></td>
+</tr>
+ 
+<tr>
+<td>ARMphetamine [off]</td>
+<td>GCC/NetBSD</td>
+<td>Linux/x86</td>
+<td>5527</td>
+</tr>
+ 
+<tr>
+<td>12MHz ARM250</td>
+<td>Norcroft/RISC OS</td>
+<td>RISC OS/arm26</td>
+<td>6169</td>
+</tr>
+ 
+<tr>
+<td>ARMphetamine [on]</td>
+<td>GCC/NetBSD</td>
+<td>Linux/x86</td>
+<td>34843</td>
+</tr>
+
+<tr>
+<td>233MHz StrongARM</td>
+<td>GCC/NetBSD</td>
+<td>NetBSD/arm32</td>
+<td>275482</td>
+</tr>
+ 
+<tr>
+<td>450MHz AMD K6-2</td>
+<td>GCC/Linux</td>
+<td>Linux/x86</td>
+<td>823045</td>
+</tr>
+</table>
+
+<p>These benchmarks were obtained using the standard (if aging) "Dhrystone" program (higher numbers are better). As you may infer, the emulator currently runs somewhere around the speed of an ARM610. Performance increases are expected.
+
+<hr>
+
+<h1><a name="documentation">Documentation</a></h1>
+
+<p>There are two main documents describing ARMphetamine. The first is older and
+more likely to be out-of-date, the second is the dissertation I wrote as part
+of the university project ARMphetamine was written for.
+
+<ul>
+<li>View the older HTML document <a href="oldinfo.html">here</a>.
+<li>Download the postscript dissertation <a href="diss.ps">here</a>.
+<li>My thoughts on further work to be done on the project <a href="further.html">here</a>.
+<li>The <a href="pheta2.html">new intermediate representation</a>.
+</ul>
+
+<hr>
+
+<h1><a name="download">Download</a></h1>
+
+<p>You can download the latest ARMphetamine source code here, for your
+pleasure and enjoyment. So long as you like to read C code anyway, 'cos it
+doesn't do very much when you run it at the moment...
+
+<p>Download <a href="bin/armphetamine-0.2.tar.gz">armphetamine-0.2.tar.gz</a>.
+
+<p>Enjoy...
+
+<hr>
+
+<h1><a name="feedback">Feedback</a></h1>
+
+<p>You can get in contact with me about ARMphetamine at <a
+href="mailto:jules@dynarec.com">jules@dynarec.com</a>.
+
+<p>You can find more information about dynamic recompilation at <a
+href="http://www.dynarec.com/">dynarec.com</a>. Thanks to Neil Bradley for the web space!
+
+<hr>
+
+<h1><a name="links">Links</a></h1>
+
+<p>A few links relating to dynamic recompilation and ARM emulation in
+general...
+
+<ul>
+
+<li>David Sharp's <a href="http://www.dcs.warwick.ac.uk/~csuix/project.html">tARMac</a> dynarec project page
+
+<li>Dave Gilbert's <a href="http://www.treblig.org">home page</a>,
+featuring ArcEm
+
+<li>Dynamic recompilation resources page at <a
+href="http://www.dynarec.com/">dynarec.com</a>
+
+<li><a href="http://www.dcs.gla.ac.uk/~michael/phd">SWARM</a> (software
+ARM) emulator
+
+<li><a href="http://www.redsquirrel.fsnet.co.uk/">Red Squirrel</a>
+
+<li><a href="http://www.geocities.com/chris-o/">Archie</a>
+
+<li>Personal <a href="http://www.ndirect.co.uk/~ebrown/jules">home page</a>
+
+<li>University <a href="http://www.cs.bris.ac.uk/~brown">home page</a>
+
+</ul>
+<hr>
+
+<font size=-1>&copy; <a href="mailto:jules@dynarec.com">Julian Brown</a>, 1999-2001</font>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+I believe it is important to have the former working correctly before embarking on the latter. Work can be split into the following sections:
+
+\begin{itemize}
+
+\item Writing an interpreting emulator capable of executing simple programs in `user' mode in a flat address space
+\item Writing a suite of simple test programs and ensuring they run correctly
+\item Add support for switching processor modes, and fake system calls
+
+\end{itemize}
+	
+The interpreting emulator should at this point be finished and
+working, so work can commence on the dynamically-recompiling emulator:
+
+\begin{itemize}
+
+\item Add support for statistic gathering on emulated code
+\item Researching register allocation techniques
+\item Working out sequences of Intel instructions equivalent to each ARM instruction (will require much research)
+\item Write code to `dry' test conversion of sequences of ARM instructions, outputting Intel assembler (rather than machine code)
+\item Writing a system which can output streams of Intel instructions at runtime
+\item Extensive testing and inevitable bug fixing
+
+\end{itemize}
+
+The dynamically-recompiling emulator should now be finished, so only
+the dissertation will need to be written.
+
+These sections will naturally take different lengths of time to
+complete, but I will attempt to fit the sections of work outlined above into fixed-size
+chunks, keeping to the following schedule (where each enumeration represents a two-week period):
+
+\subsection*{Michaelmas term}
+
+\begin{enumerate}
+
+\item Background research, writing proposal document,
+planning the project
+
+\item Writing the interpreting emulator
+
+\item Writing a test suite, adding support for switching between processor
+modes and fake system calls
+
+\item Adding support for statistic gathering on emulated code
+
+\end{enumerate}
+
+\subsection*{Lent term}
+
+\begin{enumerate}
+
+\item Reseaching register allocation techniques
+
+\item Working out ARM-equivalent Intel instruction sequences, and
+dry-testing them
+
+\item Writing code to generate and call Intel instructions at runtime
+
+\item Testing and fixing bugs
+
+\end{enumerate}
+
+\subsection*{Easter term}
+
+\begin{enumerate}
+
+\item Writing dissertation
+
+\end{enumerate}
+
+This plan leaves time during vacations in case the project falls
+behind schedule. With luck, all coding should be finished by the end
+of Lent term, which should leave space for revision for exams and writing the
+dissertation in the Easter vacation.

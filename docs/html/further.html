@@ -1,0 +1,84 @@
+<html><head><title>ARMphetamine</title></head>
+<body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
+
+<h1>Further work</h1>
+
+Much work remains to be done on this emulator. Some areas I've had some ideas on are listed below...
+
+<h3>Smarter condition codes</h3>
+
+<p>Currently, all ARM flags are mirrored in blocks of recompiled code precisely. There are two ways in which this strategy can be improved: the first, implemented by most (?) dynarecs, is redundant flag calculation removal - this isn't so important for an ARM source processor since flags are only calculated when the 'S' bit of an instruction is set anyway.
+
+<p>A more complex (and probably more beneficial) optimisation would be to store flags as compounded condition codes, depending on which condition codes the following instructions utilise. The rationale behind this is that although the IA-32 architecture makes it easy to store the values of flags (in byte-wide memory locations), it makes it difficult to do the reverse operation of getting a value in a byte-wide memory location back into a flag. However, IA-32 makes it easy to do a simple comparison with a byte-wide memory location.
+
+<p>So, my proposed scheme is to scan code backwards until the instructions which generate a particular condition code are found, then store that condition code directly (using the IA <tt>set</tt> instruction):
+
+<pre>
+  cmp r0,r1
+   .
+  (recompiled code which will corrupt flags)
+   .
+  bgt wherever
+</pre>
+
+<p>Now, say <tt>r0</tt> is allocated to the <tt>eax</tt> register and <tt>r1</tt> to <tt>ebx</tt>, we could generate the following code:
+
+<pre>
+  cmpl %ebx,%eax
+  setgt $gtoffset(%ebp)
+   .
+  (corrupt flags)
+   .
+  testb $gtoffset(%ebp)
+  jne wherever
+</pre>
+
+<p>Compare this with the current approach, which needs 5+2*(number_of_flags) IA instructions each time flags must be restored.
+
+<p>Naturally, it's important that flags hold the right values between recompiled code chunks - ie, they must be held in a fixed location (as currently) at the entry point and each possible exit point of each chunk.
+
+<h3>Cleaning up run-time assembly</h3>
+
+<p>It's a bit ugly at the moment ;-)
+<p>It may be beneficial to abstract the assembler a bit, so that it can include features like instruction reordering or cache alignment, or substitute more efficient encodings of some instructions (like those involving the ax register).
+
+<h3>Virtual memory</h3>
+<h3>Self-modifying code</h3>
+
+<p>Write-protecting pages of the ARM address space, then trapping writes and discarding invalidated blocks... how do you go about doing something like this in Linux?
+
+<h3>Code expiry</h3>
+
+<p>Code expiry could be linked to the virtual memory system, so that each page has a hash table of recompiled blocks, and all of those can be discarded when a page becomes unmapped. Sort of coarse-grained approach, not sure how well it'd work.
+
+<h3>Exceptions</h3>
+
+<p>Exceptions currently aren't dealt with <b>at all</b>, and implementing them could get a bit tricky. On the ARM, they come in the following forms:
+
+<ul>
+<li>Reset
+<li>Undefined instruction
+<li>SWI
+<li>Prefetch/data abort
+<li>IRQ
+<li>FIQ
+</ul>
+
+<p>I didn't envisage most of these being a problem: IRQs and FIQs can probably be dealt with, to a first approximation, outside of recompiled code chunks. SWIs can pre-set the program counter before they are called, and return to the interpreter when they finish.
+
+<p>The problem comes with undefined instructions (including FP operations) and prefetch/data aborts (actually, undefined instructions aren't a problem - they can be done much the same as SWIs). In chunks of recompiled code, it is far preferable to update the program counter 'lazily' than to ensure it's updated after every recompiled instruction. Consider though that any memory access can cause an exception, so the program counter must have the correct value before each one - this would lead to a fair amount of overhead, which is particularly undesirable since exceptions won't happen very often.
+
+<p>My proposed solution to this involves generating a look-up table containing mappings of memory-accessing instructions from IA to ARM addresses. When an exception occurs (which can be detected in whatever subroutine deals with memory accesses), the stack can be examined to find the calling location, and this address can be mapped back to the equivalent ARM instruction, so the exception can be returned from properly. This should give little overhead most of the time, which is probably a good thing.
+
+<p>Update: I realised that idea wouldn't work, because exceptions within a recompiled chunk won't be able to preserve the ARM<>IA register mapping (and also the base-register writeback semantics over exceptions are horrible). That means that the mapping will need to be <i>synchronised</i> before every memory read/write. That isn't very nice.
+
+<h3>Processor mode switching</h3>
+<h3>Hardware emulation</h3>
+
+<p>OK, I need this before the emulator will be any use to anyone, but it's not ready for it yet...
+
+<hr>
+
+<font size=-1>&copy; <a href="mailto:jules@dynarec.com">Julian Brown</a>, 1999-2000</font>
+
+</body></html>

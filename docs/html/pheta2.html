@@ -1,0 +1,357 @@
+<html><head><title>Notes on IR</title></head>
+<body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
+
+<center><h1>Notes on revised Intermediate Representation (ph2)</h1></center>
+<p align=center>Julian Brown, 21 January 2001. Updated 4 February 2001.
+
+<p>The original intermediate representation used by ARMphetamine ("Phetacode"), while just about adequate, suffered from a couple of fairly serious flaws which limited its usefulness. These included:
+
+<ul>
+  <li> Grungy flag handling, no support for "meta" control-flow
+  <li> Poorly-defined flow control between basic blocks
+  <li> Dubious register handling, especially for temporaries
+  <li> Pessimal translation to x86 code
+  <li> Bulky, ugly, etc. etc. etc.
+</ul>
+
+<p>Ideally, we want a language which is amenable to 'real' register allocation and flow control. We want to keep everything well-defined and mind-numbingly simple, so it's easy to see when things are going wrong. We want to be able to do condition-code abstraction (see later), without hurting our heads.
+
+<p>Some things remain the same: the "chunk-based" profiling algorithm, the rationale behind not jumping into the middle of blocks, dynamic register allocation, the existence of an intermediate representation at all, etc. <b>ph2</b> will primarily support the 32-bit addressing mode of the ARM, but the 26-bit addressing mode will be kept in mind for later addition.
+
+<p>In contrast to the original phetacode, we're going to use a variable-length bytecode, mainly to keep things neat but extendable, but also because we're only building a decoder in software, and it won't hurt much. Note though that it may be necessary to scan this code backwards, so each instruction shall be postfixed with its length in bytes.
+
+<p>Basic operations shall include:
+
+<ul>
+  <li> Arithmetic (addition, subtraction, multiplication, etc)
+  <li> Logic (and, or, shifts, etc)
+  <li> Load/store
+  <li> The 'xjmp' from the original phetacode, to transfer control to the start of another *chunk*
+  <li> Software interrupt
+  <li> Undefined instruction
+  <li> Load byte/word constant
+</ul>
+
+<p>None of these instructions deals with 'real' ARM registers, nor does it reference condition-code flags directly. Instead, a special set of (currently 256) registers is used to hold values used in calculations. A pair of instructions:
+
+<ul>
+  <li> fetch
+  <li> commit
+</ul>
+
+<p>Are used to move registers from the ARM to the <b>ph2</b> registers when they're needed, and move them back when they're done with. This means a register-allocation function need concern itself <em>only</em> with the fetch and commit instructions.
+
+<p>Each time a <b>ph2</b> instruction generates a result, <b>a new register is allocated</b>. This is important for register-colour based allocation (I believe?). With 256 registers available in one byte of storage, this places a worst-case theoretical limit of 1kb on each chunk of code, but I don't see this being a serious restriction since most chunks will probably be much shorter than this.
+
+<p>If a <b>ph2</b> instruction must modify ARM flags, it must be wrapped in a pair of instructions:
+
+<ul>
+  <li> fexpect
+  <li> fcommit
+</ul>
+
+<p>Writing these explicitly around instructions which modify flags has the advantage that a function to remove redundant flag calculations may modify (only) fexpect and fcommit instructions in-place.  There is also an instruction,
+
+<ul>
+  <li> fensure
+</ul>
+
+<p>Which is used when the following instruction requires a particular set of flags to be valid (eg, ADC, RRX). These instructions should greatly facilitate condition code abstraction.
+
+<p>The instruction,
+
+<ul>
+  <li> fwrite
+</ul>
+
+<p>allows a flag's value to be written directly.
+
+<p>When "meta" control flow is required, such as in the fiddly translation of shift-by-register instructions, the variations of the above instructions:
+
+<ul>
+  <li> nfexpect  ('n' for native)
+  <li> nfcommit
+  <li> nfensure
+</ul>
+
+<p>can be used instead.
+
+<p><b>ph2</b> code offers NO internal branch instruction. Instead, the natural grouping of instructions is the basic block, and a graph of basic blocks is generated on-the-fly as ARM code is translated to intermediate code. Each <b>ph2</b> basic block has an associated condition, a <b>TRUE</b> destination block and a <b>FALSE</b> destination block. Although this makes translation from ARM code to <b>ph2</b> code more difficult, the gain in ease of manipulation should make it worthwhile.
+
+<p>The exact algorithm for translating <b>ph2</b> code to native x86 code has not yet been fully designed. It will hopefully include:
+
+<ul>
+  <li> Register allocation, done a bit better this time
+  <li> Less brain-damage in instruction selection
+  <li> The new runtime assembler
+  <li> Maybe a bit of peephole optimisation
+</ul>
+
+<h2>Opcode listing and format</h2>
+
+<p>In full, the current <b>ph2</b> instruction set looks like this:
+
+<p><table align=center>
+<tr>
+  <td><tt>CONST</tt></td>
+  <td>Load constant word</td>
+  <td>Immediate word (4-byte, little-endian) value</td>
+</tr>
+
+<tr>
+  <td><tt>CONSTB</tt></td>
+  <td>Load constant byte</td>
+  <td>Immediate byte value</td>
+</tr>
+
+<tr>
+  <td><tt>FETCH</tt></td>
+  <td>Fetch ARM register</td>
+  <td>ph2 r# (one byte), ARM r# (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>COMMIT</tt></td>
+  <td>Commit ARM register</td>
+  <td>ARM r#, ph2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>FEXPECT</tt></td>
+  <td>Prime following instruction for setting flags</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>FCOMMIT</tt></td>
+  <td>Indicate that flags should have been set, write into ARM flags</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>FENSURE</tt></td>
+  <td>Ensure that flags are resident in native flags register</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+  <td><tt>NFEXPECT</tt></td>
+  <td>Same as fexpect, but don't involve ARM flags</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>NFCOMMIT</tt></td>
+  <td>Indicate that (native) flags should have been set</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>NFENSURE</tt></td>
+  <td>Roughly the same as fensure</td>
+  <td>condition-code set (one byte)</td>
+</tr>
+
+<tr>
+  <td><tt>FWRITE</tt></td>
+  <td>Write bit zero of register into a flag</td>
+  <td>flag number, ph2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>XJMP</tt></td>
+  <td>Transfer control to start of another chunk</td>
+  <td>Address of destination chunk (4 bytes)</td>
+</tr>
+
+<tr>
+  <td><tt>LSL</tt></td>
+  <td>Logical shift-left</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>LSR</tt></td>
+  <td>Logical shift right</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ASR</tt></td>
+  <td>Arithmetic shift right</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ROR</tt></td>
+  <td>Rotate right</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ROL</tt></td>
+  <td>Rotate left</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>RRX</tt></td>
+  <td>Rotate with extend through carry flag</td>
+  <td>dest r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>RLX</tt></td>
+  <td>Rotate left with extend through carry flag</td>
+  <td>dest r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>MOV</tt></td>
+  <td>Copy register</td>
+  <td>dest r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>NOT</tt></td>
+  <td>Copy negated register</td>
+  <td>dest r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>AND</tt></td>
+  <td>Bitwise AND</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>OR</tt></td>
+  <td>Bitwise OR</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>EOR</tt></td>
+  <td>Bitwise Exclusive OR</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>TEQ</tt></td>
+  <td>Bitwise Exclusive OR, discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>TST</tt></td>
+  <td>Bitwise AND, discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ADD</tt></td>
+  <td>Addition</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>ADC</tt></td>
+  <td>Add with carry</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>SUB</tt></td>
+  <td>Subtract</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>SBC</tt></td>
+  <td>Subtract with carry (in the ARM sense, ie rd = rm + rn + NOT(c))</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>CMP</tt></td>
+  <td>Subtract discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>CMN</tt></td>
+  <td>Add discarding result</td>
+  <td>src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>MUL</tt></td>
+  <td>Multiply</td>
+  <td>dest r#, src1 r#, src2 r#</td>
+</tr>
+
+<tr>
+  <td><tt>LDW</tt></td>
+  <td>Load word</td>
+  <td>dest r#, addr r#</td>
+</tr>
+
+<tr>
+  <td><tt>LDB</tt></td>
+  <td>Load byte</td>
+  <td>dest r#, addr r#</td>
+</tr>
+
+<tr>
+  <td><tt>STW</tt></td>
+  <td>Store word</td>
+  <td>addr r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>STB</tt></td>
+  <td>Store byte</td>
+  <td>addr r#, src r#</td>
+</tr>
+
+<tr>
+  <td><tt>SWI</tt></td>
+  <td>Generate software interrupt</td>
+  <td>(none?)</td>
+</tr>
+
+<tr>
+  <td><tt>UNDEF</tt></td>
+  <td>Trigger undefined instruction exception</td>
+  <td>(none?)</td>
+</tr>
+
+<tr>
+  <td><tt>SYNC</tt></td>
+  <td>Synchronise register allocation (dump all registers to memory)</td>
+  <td>(none)</td>
+</tr>
+
+<tr>
+  <td><tt>END</tt></td>
+  <td>Finish a basic block</td>
+  <td>(none)</td>
+</tr>
+
+</table>
+
+<h2>Miscellaneous extras</h2>
+
+<h3>Interrupts</h3>
+
+<p>It is the intention that cycles will be (approximately) counted (decremented), and checked for zero-crossings at the end of each basic block, for the purposes of interrupt handling, which should hopefully provide "good enough" latency for most applications. In the unlikely event that enough instructions accumulate inbetween checks that two or more interrupts should have been fired, both can (probably?) be done simultaneously until the 'debt' is repaid. This will undoubtedly cause havoc with timing-sensitive code.
+
+<h3>Memory access</h3>
+
+<p>Memory access should use the two-entry TLB (not) documented elsewhere. There is a big problem though, and that is restoring registers after an exception. In general, we won't be returning to the original recompiled chunk after an exception has occured (well, we never will be), but before it happened our register values could have been anywhere.
+
+<p>We're going to take the stance that page faults, access permission faults, etc. hardly ever happen, so try to streamline the most frequent case (that is, hopefully, we have the right TLB entry and the access has the correct permissions). In that case, we run inline code. The next-worst scenario, TLB miss, will be dealt with by a function call, in the same way that memory access works in the current system. This can harmlessly continue running the same recompiled chunk.
+
+<p>In the worst scenario, page fault/access denied, one way of coping with the situation would be to have a look-up table associated with each load/store instruction in each block, which stores the mapping between ARM and x86 registers at the corresponding point in the code, so the complete transfer to the memory-based register file need be done only when an exception occurs. There would probably be a good deal of evil which needed to be done to get that working properly though - whether it'd be worth the effort over just saving all registers before memory accesses and hence avoiding the problem at the expense of potentially less efficient code, I don't know.
+
+</body>
+</html>

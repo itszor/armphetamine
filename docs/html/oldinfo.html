@@ -1,0 +1,272 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<html><head><title>ARMphetamine</title></head>
+<body text="#ffffff" bgcolor="#000080" link="#00ffff" vlink="#ffffff" alink="#00ffff">
+
+<p><h3>Introduction</h3>
+
+<p>The program I have written for my Computer Science Part II project
+contains a substantial portion of the functionality required to emulate an
+ARM-based machine on an Intel <i>x</i>86 system running the Linux operating
+system. Rather than emulating in a traditional interpretive way (which is
+very slow), I am using a technique called dynamic recompilation (or binary
+code translation), as used in programs such as Executor, Virtual PC and
+UltraHLE. My aim is to run user-mode-only code in a flat, unprotected memory
+space with a high degree of accuracy and speed. This text forms a
+description of some of the code, intended for any potentially interested
+people and as a starting point for my dissertation.
+
+<p><h3>Dynamic recompilation</h3>
+
+<p>Given that our aim is to translate code from one instruction-set
+architecture (ISA) to another, there are probably two approaches we could
+take. The first would be to convert an entire program at once, which seems
+like a fairly sensible idea. As I see it though, there is a simple,
+fundamental problem if we want to be able to emulate any program: given an
+arbitrary chunk of code, there is no simple way of telling what is code and
+what is data (and attempting to interpret data as code would be a bad thing
+to do). You might think (if you knew an assembly language) that simply
+starting at the entry point of your code and following all the branch
+instructions recursively would get you to all the executable bits. The
+problem with this comes when you consider calculated jumps. For instance,
+the C <tt>switch</tt> statement is often compiled (on the ARM processor) to
+something like:
+
+<p><pre>
+  add pc,pc,r0,lsl #2
+  mov r0,r0
+  b zero_code
+  b one_code
+  b two_code
+  ...
+</pre>
+
+<p>That is, it's possible to modify the program counter (pc) arbitrarily, as
+the result of virtually any operation. Now, it may be possible to work out a
+set of heuristics to recognize common code sequences such as this, but they
+will <b>not</b> form a solid algorithm which will work in the general case.
+
+<p>Another example: consider the contrived (but not unlikely) code sequence:
+
+<p><pre>
+  cmp r0,#5
+  ble lessthan
+  bgt greaterthan
+.word some_data
+  ...
+</pre>
+
+<p>Any algorithm walking over this code to try and find the executable bits
+would need to know that the two conditions were mutually exclusive, and that
+the data word should never be run. This is unlikely to be impossible, but in
+the general case would be very hard.
+
+<p>The alternative approach, which I've taken, is to use a traditional
+emulator to run the code and discover which code is executable empirically.
+After code is executed a certain number of times, it is translated into
+native code ('recompiled') and stored somewhere, and henceforth can be
+executed much faster. This is similar to what a Java JIT compiler does of
+course, but I hate the term, so I'm not calling it that.
+
+<p>The project is written in C, naturally.
+
+<p><h3>Hurdles to overcome</h3>
+
+<p>There are many differences between the ARM and Intel processor
+architecture (IA). Some of these don't really matter, others cause
+significant headache. A quick, non-exhaustive list of similarities and
+differences:
+
+<ul>
+
+<li>Registers: The ARM has 16 concurrently-visible 32-bit registers, the IA has 8 general purpose 32-bit registers, some of which are more general purpose than others.
+
+<li>Memory access: The ARM has 8 and 32-bit memory access instructions. Non-word aligned 32-bit accesses cause word-aligned transfers with the bits of the transferred register rotated by an amount which would cause 'correct' operation if the access was for one byte only. The IA allows 8, 16 and 32-bit non-word aligned memory access.
+
+<li>Instruction length: The ARM has fixed-length instructions. The IA has variable-length instructions.
+
+<li>Paging/segmentation schemes: Significantly different, I believe.
+
+<li>Flags: The ARM allows control over whether flags are affected by any instruction, the IA does not. IA and ARM flags are treated differently by some otherwise equivalent instructions - in particular, the IA uses the carry flag in the opposite sense in subtraction instructions to the ARM (this includes the very common CMP instruction).
+
+<li>Conditional execution: The ARM allows conditional execution of any instruction, the IA only supports conditional branches.
+
+<li>Operands: ARM ALU instructions typically have three operands - a destination register and two source registers. IA ALU instructions typically have two operands, where one acts as both a source and destination register. Certain operations natural on the ARM are rather awkward to implement on the IA, such as "a := b-a".
+
+<li>Barrel shifter: The ARM allows one operand of any ALU instruction to be shifted in a variety of ways by any amount. The IA does not.
+
+<li>Processor modes: These are conceptually similar on both architectures I think.
+
+<li>Endianness: IA has little endian words, ARM is either little or big endian. I'll be using little-endian ARM code.
+
+</ul>
+
+<p>The task of converting directly from IA code to ARM code is considered
+too difficult. Instead, an intermediate representation is used, which breaks
+ARM code instructions down into very simple components. Hopefully, this
+format retains all the semantics of the original code. Once this code is
+generated, the remainder of the project is remarkably similar to a
+traditional compiler backend. Some things are more difficult however:
+
+<ul>
+
+<li>A traditional compiler knows when it has a complete program, function,
+or whatever unit of code it tries to compile in one go. In this project, the
+amount of code present is indeterminable. This means some things become
+complicated, such as free-variable analysis, and determining the
+destinations of branch instructions.
+
+<li>Far more so than with a normal compiler, it is vital that compilation is
+extremely fast. The aim is to get executable code out of the recompiler as
+quickly as possible - it probably isn't worthwhile doing any optimisation.
+Machine code is generated directly, rather than via an (GCC-style)
+assembly-language stage.
+
+</ul>
+
+<p>Some things are obviously easier:
+
+<ul>
+
+<li>In a traditional compiler, there are usually an arbitrary number of
+variables which must have data-flow analysis done on them, have memory
+locations assigned to them, etc. In my project, there are a fixed number of
+variables (registers) which can be statically allocated. Where set
+operations are necessary, all the registers fit into a single word, and so
+can be manipulated with bitwise operators.
+
+<li>It can be assumed that the input ARM code has already been optimised
+once during compilation (or indeed hand-assembly). It's unnecessary to worry
+about constant folding, and to some extent copy and branch propagation, code
+movement, and all the other tricks available to compiler writers.
+
+</ul>
+
+<p><h3>Execution environment</h3>
+<p>The idea is that ARM code runs in some sort of virtual machine. At the moment, this isn't very far abstracted from the real machine, but will probably get further away as the emulator progresses, if you see what I mean.
+<p>A block of memory is allocated, and a test binary is loaded at some location within it. The program counter is set to the start of the binary, and instructions are executed one by one.
+<p>As each instruction is executed, the current program-counter location is fed to a profiler. This maintains a table of contiguous chunks of code, hashed by the start of each, and a pointer to a 'current' block. If the program counter is within the current block, no action is taken (other than to increment a use counter). If the program counter is one word beyond the block, the block is extended by that amount. If the program counter is anything else, firstly a check is made to see if there is a block which starts there. If so, that block is made the current block (and its use count is incremented). If not, a new block is created. Note that each block must now consist entirely of code.
+<p>If a block has been executed more than a certain number of times, it is converted to intermediate code, and henceforth to native code. This code is then executed whenever the program counter is at the location of the start of that block. It's impossible to jump into the middle of a block - this is an important feature, because to be able to do that would make things much more difficult and memory-hungry (think about register allocation and the state at an arbitrary point in a block).
+<p>This chunk of code is to the recompiler what an entire program (or perhaps function) is to a traditional compiler. This is the unit is split into basic blocks (more later), allocated registers, etc. At the start and end of each such block, all ARM registers must be stored in known memory locations.
+<p>In recompiled code, it is necessary for the state of the virtual processor to be visible. This is achieved by using a single register (EBP for those familiar with the IA) as a base pointer to access a block of memory containing register values, the state of processor flags, the current processor mode, information about the virtual machine's memory, and anything else necessary.
+<p>ARM registers are 'lazily' allocated to IA registers - if possible, memory locations indexed from EBP are often used directly in instructions generated to conserve the scarce IA registers. Flags are cached lazily in the IA EFLAGS register, only storing them to memory when an IA instruction is generated which would overwrite their values, in a case where the equivalent ARM instruction does not.
+
+<p><h3>Program structure</h3>
+<p>The project as it stands is structured something like this:
+<p align=center><img alt="Structure diagram" border=0 src="images/structure.gif">
+<p>Dotted lines indicate stuff for debugging purposes. I may repeat myself in what I say below and still omit all the important details, forgive me if I do.
+
+<p><h3>Dispatcher</h3>
+<p>ARM instructions need to be decoded at various points of the program (disassembler, executor, intermediate-code generator). The dispatcher serves to determine which function, from one of several tables, should be used to deal with a particular instruction.
+<p align=center><img alt="ARM instruction format overview" border=0 src="images/armformat.png">
+<p>The best way I could find of doing this was a <tt>switch</tt> on bits 24-27 of the instruction, then particular tests to resolve ambiguities (such as between multiplications and some data processing instructions). Instructions are grouped roughly as the labels on the right of the diagram.
+
+<p><h3>Disassembler</h3>
+<p>This is a fairly complete, if messy, ARM disassembler. It just decodes and prints out a given ARM instruction. Uses the dispatcher mentioned above.
+
+<p><h3>Executor</h3>
+<p>Executes individual ARM instructions. There is nothing particularly special about this, it is just a traditional-style processor emulator. It is now accurate enough to run ARM BBC BASIC, with system calls trapped and 'faked' by the emulator.
+
+<p><h3>Profiler</h3>
+<p>The profiler is fed with program-counter locations, and builds information in a hash table about groups of instructions. When a particular block of code has been executed more than a certain number of times, the recompiler (consisting of the intermediate code translator, code analyser, pattern matcher, etc.) is invoked.
+
+<p><h3>Intermediate code translator</h3>
+<p>Now things start getting interesting. This part of the code translates ARM code into a self-invented intermediate code, of similar form to the "three-address code" used by a traditional compiler. The reason for using an intermediate code, rather than attempting to translate code directly from ARM to Intel, is that despite being RISC, some ARM instructions are actually quite complicated and perform several operations in one go. The intermediate code is much simpler, and separates out ARM instructions into very basic primitives. It is also very uniform in structure, so it's easier to analyse than raw ARM code.
+<p>The intermediate-code instructions are composed of an opcode, a destination register, three source registers, a side-effect field and an optional 32-bit immediate value. The registers in these instructions are a superset of those available on the ARM - the number concurrently accessable has been doubled to 32. This allows condition code flags to be referred to individually (which is sometimes useful), and also includes several temporary registers which are needed due to the splitting of instructions.
+<p>Opcodes currently in use are:
+<ul>
+<li>Conditional branch (14 flavours)
+<li>Unconditional branch
+<li>Shifts - logical left and right, arithmetic right, rotate right, rotate right through carry
+<li>Logical - bitwise and, or, eor, not
+<li>Arithmetic - add, add with carry, subtract, subtract with carry, multiply
+<li>Comparison - subtract, add, eor and and equivalents which discard their results
+<li>Data movement - Register transfer, byte and word load and store
+<li>Move constant into register
+<li>Execution block control transfer
+<li>Program counter set indicator
+<li>End
+</ul>
+<p>All shift, logical, arithmetic, comparison and data movement instructions may have only registers as arguments. The side-effect field describes which condition flags (zero, negative, overflow, carry) should be affected by each intermediate instruction.
+<p>It is fairly straightforward to convert ARM code into this type of intermediate representation. No attempt at optimisation is made at this point.
+<p>As a simple example, the ARM instruction:
+<pre>
+  add r0,r1,#5
+</pre>
+<p>Might be converted to:
+<pre>
+  t0 &lt;- #5       (load constant into temporary register 0)
+  r0 &lt;- r1 + t0  (add r1 to t0, put result in r0)
+</pre>
+<p>Note that all ARM instructions are conditional, but the only conditional instructions in the intermediate code are branches. Conditional instructions are simulated using branches.
+<p>There are four types of flow control which can occur:
+<ol>
+<li>Fixed jump local to the current intermediate code block
+<li>Fixed jump outside current block, to the start of another block
+<li>Fixed jump outside current block, to an unknown location
+<li>Calculated jump
+</ol>
+<p>The first case will be the most efficient - a simple (conditional) branch instruction can be generated. The translation is done using one pass over the code, and forward references are dealt with using a technique called backpatching. The second case generates an unconditional "xjmp" to the start of the destination block - control can be transferred directly without returning to the interpreter. The third case sets the program counter register and a "setpc" instruction. The fourth case just generates a "setpc" instruction (after the program counter has been set, as the destination register, by whatever calculation was done). This means that recompiled code will never run completely independently of the interpreter and profiler for very long.
+
+<p><h3>Code analyser</h3>
+<p>There are two different things done by the code analyser. The first is to determine so-called "basic blocks" from a group of instructions (a basic block is a section of straight-line code containing nothing that can modify the flow of execution). The second is data-flow analysis within those basic blocks (which is actually done concurrently). Free-variable analysis is not done, nor is peephole optimisation, although both could be added without upsetting anything too badly. Free-variable analysis is probably less important than for a normal compiler anyway. Copy and branch propagation may be beneficial in some circumstances though.
+<p>The data-flow analysis involves building up next-used and last-set information, where relevant, for each argument of each instruction in each basic block. This is important for the pattern matcher.
+
+<p><h3>Instruction patterns and the pattern matcher</h3>
+<p>In an abstract sense, the code generator works by ad hoc tree matching. IA instructions (or small groups of IA instructions) are associated with tree fragments. The algorithm used tries to match the largest number of intermediate code instructions possible to a single instruction pattern ("rule").
+<p>Rules are held in a single structure, an <i>n</i>-ary tree. Each node is actually a hash table, and each branch can be one of:
+<ul>
+<li>opcode
+<li>reg<i>x</i>, reg<i>y</i>, reg<i>z</i>, reg<i>t</i>, reg<i>u</i>, reg<i>v</i>
+<li>constant
+<li>generator rule
+</ul>
+<p>The reg<i>n</i> are placeholders which stand for any register. Multiple instances of, say, reg<i>x</i> in an instruction must stand for the same register, and different registers must have different <i>n</i>.
+<p>Patterns have the form &lt;operator&gt; &lt;dest&gt; &lt;arg1&gt; &lt;arg2&gt; &lt;arg3&gt; ... &lt;code generator&gt;
+<p>An example: the intermediate code instruction
+<pre>
+  r0 &lt;- r1 + r0
+</pre>
+<p>would be matched by a rule like:
+<pre>
+  ADD REGX REGY REGX CODEGEN
+</pre>
+<p>As a rule is matched, the mappings REGX=r0 and REGY=r1 are stored.
+<p>The complications start to come when more than one intermediate code operation forms a single rule. Say, because an Intel instruction can add an immediate to a register directly without the need to move the immediate into a register first, it is desirable to condense instruction sequences like:
+<pre>
+  t0 &lt;- #5
+  r0 &lt;- r0 + t0
+</pre>
+<p>into a single Intel instruction,
+<pre>
+  addl $5,%eax
+</pre>
+<p>The rule to match this might look like:
+<pre>
+  ADD REGX REGX CONST REGY IMM CODEGEN
+</pre>
+<p>That is, the first intermediate code instruction is embedded <i>within</i> the rule for the second. This seems like a pretty powerful mechanism, especially as there's no need for the instructions to be consecutive. At the moment, the rules present refer to at most two instructions, but more could be added easily. There are certain situations this could prove to be a neat solution - consider the IA <tt>lea</tt> instruction, which could sometimes be used to translate ARM instruction of the form <tt>add rx,ry,rz,asl #n</tt> extremely efficiently. So, with this mechanism, a sort of simple peephole optimisation can be done without any additional passes over the intermediate code.
+<p>A complete section of tree for one intermediate opcode is shown below:
+<p align=center><img alt="Tree diagram" border=0 src="images/tree.gif">
+<p align=center><i>A cutting from the rule tree. Instruction matching starts at the root node, then matches an operator, then follows the appropriate path. Code generator nodes omitted.</i>
+<p>This is how it works, using the data flow information gathered in the analysis section above: When the second instruction is reached (the first instruction will already have matched successfully), it is matched as usual. For any argument registers which have valid last-set information, the instruction which that register was last set by is matched recursively. There are situations when assimilating an earlier instruction would be a bad thing to do (eg, in the example above, if the value of t0 was used again), and in these cases the rule assimilation is not done, and the matcher falls back to using two seperate rules. In other cases, a single rule can be assimilated successfully by more than one instruction (it's vital that nested rules don't have any side effects!).
+
+<p><h3>Code generator, register allocator</h3>
+<p>When the pattern matcher has finished, some intermediate instructions will have rules, some will not. These rules (currently numbering around 120) actually contain pointers to functions which generate Intel code directly. Before they are called, the intermediate-code registers must have Intel registers assigned to them. There are 32 of the former and only 8 of the latter, and once the stack pointer (ESP) has been factored out (it's not really useful to us) and a register-block base register has been chosen (EBP), there are only 6 left. Clearly some sort of register allocation strategy is needed: the one used is pretty simplistic. The destination registers of instructions are always assigned to actual IA registers. Source registers are kept in memory unless specific instructions require them to be in IA registers, or they are already in IA registers as a result of previous instructions. When no IA registers are left, one is chosen (cyclically at the moment) to be stored back in the memory-based register dump, and is recycled. This doesn't actually seem to happen all that often.
+
+<p><h4>Flag cacheing</h4>
+<p>As mentioned before, the status flags (zero, negative, overflow, carry) of the emulated ARM are calculated using the IA's native logic, where possible. When flag values are not destroyed (ie, they don't diverge between the two types of code), this means that, say, a comparison followed directly by a conditional branch will work as expected, in an efficient manner. Other times, flags need to be stored in memory between calculation and use - the IA makes it very easy to store a flag in a byte-wide memory location, so this is what's done. Unfortunately, it's not nearly so easy to get those flag values back into the flag register when they're needed - the way it's done at the moment is ugly and verbose, but was the best I could think of (never having seriously programmed in IA assembler before now...).
+<p>There are technicalities when dealing with the program counter as an operand when in the 26-bit addressing mode, but they're too traumatic for me to go into right now.
+
+<p><h3>Intel assembler</h3>
+<p>The program generates binary code directly (although it only knows about a subset of Intel instructions). The way it does this is mostly through the use of preprocessor macros, and is quite ugly and horrible. The less said about it the better.
+
+<p><h3>Intel disassembler</h3>
+<p>This just execs objdump, which is nice and easy...
+
+
+<hr>
+<font size=-1>&copy; <a href="mailto:jules@dynarec.com">Julian Brown</a>, 1999-2000</font>
+
+</body>
+</html>

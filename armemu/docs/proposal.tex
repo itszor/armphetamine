@@ -1,0 +1,27 @@
+% This is a LaTeX driving document to produce a standalone copy
+% of the project proposal held in propbody.tex.  Notice that
+% propbody can be used in this context as well as being incorporated
+% in the dissertation (see diss.tex).
+
+\documentclass[a4paper]{article}
+
+\usepackage{fancyhdr}
+\usepackage{ltxtable}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.5ex}
+
+\newcommand \sigline {
+\begin{picture}(150,1)
+\put(0,0){\line(1,0){150}}
+\end{picture}
+}
+
+\begin{document}
+
+\include{propbody}
+
+\end{document}
+
+
+

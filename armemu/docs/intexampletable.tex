@@ -1,0 +1,37 @@
+\begin{longtable}{XXX}
+
+Conditional (any) & {\tt xxx{\it cc}} & b{\it ncc} next; {\it body}; next: \\
+
+Simple data-processing op & {\tt eor r0,r1,r2} & r0 <- r1 \^ r2; \\
+
+Data-processing op with shift & {\tt and r0,r1,r2,asl \#5} & t0 <- \#5; t1 <- r2 << t0; r0 <- r1 \& t1; \\
+
+{\centering \begin{tabular}{|c|c|}
+\hline 
+\multicolumn{2}{|c|}{Data-processing operation with shift}\\
+\hline 
+\hline 
+and r0,r1,r2,asl \#5&
+\( \begin{array}{rcl}
+t_{0} & \leftarrow  & \#5\\
+t_{1} & \leftarrow  & r_{2}<<t_{0}\\
+r_{0} & \leftarrow  & r_{1}\wedge t_{1}\\
+\end{array} \)\\
+\hline 
+\end{tabular}\par}
+
+Data-processing op with register-specified shift & {\tt add r0,r1,r2,lsr r3} & t0 <- \#31; cmp r3,t0; bgt ldzero; t1 <- r2 >>> r3; bal notzero; ldzero: t1 <- \#0; notzero: r0 <- r1 + t1; \\
+
+Data-processing op with immediate operand & {\tt sub r0,r1,\#5} & t1 <- \#5; r0 <- r1 + t1; \\
+
+Multiply-with-accumulate & {\tt mla r0,r1,r2,r3} & t0 <- r1 * r2; r0 <- t0 + r3; \\
+
+Single-word load & {\tt ldr r0,[r1,r2,asl \#2]} & t0 <- \#2; t1 <- r2 << t0; t2 <- r1 + t1; r0 <- !t2; \\
+
+Multi-word store & {\tt stmfd r13!,\{r0,r1\}} & t0 <- r13; t1 <- \#4; !t0 <- r1; t0 <- t0 - t1; !t0 <- r0; t0 <- t0 - t1; r13 <- t0; \\
+
+Software interrupt & {\tt swi 0x30} & swi 0x30 \\
+
+Branch table lookup & {\tt adds pc,pc,r0,asl \#2} & pc <- pc-restore(\#{\it ARM instruction address}, flags, mode, intmask); t0 <- \#2; t1 <- r0 << t0; pc <- pc + t1; pc-set; \\
+
+\end{longtable}

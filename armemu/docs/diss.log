@@ -1,0 +1,411 @@
+This is TeX, Version 3.14159 (Web2C 7.3.1) (format=latex 1999.8.27)  26 JUN 2000 01:08
+**diss
+(diss.tex
+LaTeX2e <1998/12/01> patch level 1
+Babel <v3.6x> and hyphenation patterns for american, french, german, ngerman, i
+talian, nohyphenation, loaded.
+(/usr/share/texmf/tex/latex/base/report.cls
+Document Class: report 1999/01/07 v1.4a Standard LaTeX document class
+(/usr/share/texmf/tex/latex/base/size12.clo
+File: size12.clo 1999/01/07 v1.4a Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf/tex/latex/ntgclass/a4.sty
+Package: a4 1999/03/03 v1.2f A4 based page layout
+)
+(/usr/share/texmf/tex/latex/tools/verbatim.sty
+Package: verbatim 1997/04/30 v1.5k LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks14
+\verbatim@line=\toks15
+\verbatim@in@stream=\read1
+)
+(/usr/share/texmf/tex/latex/fancyhdr/fancyhdr.sty
+\headwidth=\dimen103
+)
+(/usr/share/texmf/tex/latex/carlisle/ltxtable.sty
+Package: ltxtable 1995/12/11 v0.2 longtable/tabularx merge (DPC)
+
+(/usr/share/texmf/tex/latex/tools/tabularx.sty
+Package: tabularx 1999/01/07 v2.07 `tabularx' package (DPC)
+
+(/usr/share/texmf/tex/latex/tools/array.sty
+Package: array 1998/05/13 v2.3m Tabular extension package (FMi)
+\col@sep=\dimen104
+\extrarowheight=\dimen105
+\NC@list=\toks16
+\extratabsurround=\skip43
+\backup@length=\skip44
+)
+\TX@col@width=\dimen106
+\TX@old@table=\dimen107
+\TX@old@col=\dimen108
+\TX@target=\dimen109
+\TX@delta=\dimen110
+\TX@cols=\count88
+\TX@ftn=\toks17
+)
+(/usr/share/texmf/tex/latex/tools/longtable.sty
+Package: longtable 1998/05/13 v4.09 Multi-page Table package (DPC)
+\LTleft=\skip45
+\LTright=\skip46
+\LTpre=\skip47
+\LTpost=\skip48
+\LTchunksize=\count89
+\LTcapwidth=\dimen111
+\LT@head=\box26
+\LT@firsthead=\box27
+\LT@foot=\box28
+\LT@lastfoot=\box29
+\LT@cols=\count90
+\LT@rows=\count91
+\c@LT@tables=\count92
+\c@LT@chunks=\count93
+\LT@p@ftn=\toks18
+))
+(/usr/share/texmf/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 1996/11/03 v2.2b
+
+(/usr/share/texmf/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 1997/09/17 v2.2e
+\@emptytoks=\toks19
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 133.
+))
+(/usr/share/texmf/tex/latex/psnfss/palatino.sty
+Package: palatino 1999/03/29 PSNFSS v.7.2 Palatino font as default roman : S Ra
+htz
+)
+(/usr/share/texmf/tex/plain/dvips/epsf.tex
+This is `epsf.tex' v2.7k <10 July 1997>
+\epsffilein=\read2
+\epsfframemargin=\dimen112
+\epsfframethickness=\dimen113
+\epsfrsize=\dimen114
+\epsftmp=\dimen115
+\epsftsize=\dimen116
+\epsfxsize=\dimen117
+\epsfysize=\dimen118
+\pspoints=\dimen119
+\epsfnoopenhelp=\toks20
+) (diss.aux (title.aux) (proforma.aux) (intermeddefs.aux) (ch1.aux) (ch2.aux)
+(ch3.aux) (ch4.aux) (ch5.aux) (apa.aux) (apb.aux) (apc.aux) (propbody.aux))
+\openout1 = `diss.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Try loading font information for OT1+ppl on input line 42.
+
+(/usr/share/texmf/tex/latex/psnfss/ot1ppl.fd
+File: ot1ppl.fd 1998/07/06 Fontinst v1.800 font definitions for OT1/ppl.
+)
+\openout2 = `title.aux'.
+
+ (title.tex
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <20.74> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 5.
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <17.28> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 7.
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <24.88> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 15.
+) [1
+
+
+] [2
+
+
+]
+\openout2 = `proforma.aux'.
+
+ (proforma.tex
+LaTeX Font Info:    Try loading font information for U+msa on input line 4.
+(/usr/share/texmf/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 1995/01/05 v2.2e AMS font definitions
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 4.
+
+(/usr/share/texmf/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 1995/01/05 v2.2e AMS font definitions
+)
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <14.4> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 5.
+) [1
+
+] [2
+
+
+] (diss.toc
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 1.
+ [3
+
+] [4]
+[5])
+\tf@toc=\write3
+\openout3 = `diss.toc'.
+
+ [6] (diss.lof)
+\tf@lof=\write4
+\openout4 = `diss.lof'.
+
+ [7
+
+] [8]
+\openout2 = `intermeddefs.aux'.
+
+ (intermeddefs.tex)
+\openout2 = `ch1.aux'.
+
+ (ch1.tex
+Chapter 1.
+[1
+
+
+
+
+
+] [2]
+LaTeX Font Info:    Try loading font information for OMS+ppl on input line 25.
+ (/usr/share/texmf/tex/latex/psnfss/omsppl.fd
+File: omsppl.fd 
+)
+LaTeX Font Info:    Font shape `OMS/ppl/m/n' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 25.
+ [3]) [4]
+\openout2 = `ch2.aux'.
+
+ (ch2.tex
+Chapter 2.
+[5
+
+
+
+
+] [6] [7] [8] [9] [10]) [11] [12
+
+
+]
+\openout2 = `ch3.aux'.
+
+ (ch3.tex
+Chapter 3.
+[13
+
+
+]
+LaTeX Font Info:    Try loading font information for OT1+phv on input line 21.
+ (/usr/share/texmf/tex/latex/psnfss/ot1phv.fd
+File: ot1phv.fd 1998/07/06 Fontinst v1.800 font definitions for OT1/phv.
+)
+Overfull \hbox (26.34593pt too wide) in paragraph at lines 21--21
+ [][] 
+ []
+
+[14] [15] [16] [17] [18] [19] [20] [21] [22] [23]
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 361
+.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 361.
+
+
+LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
+(Font)              using `OMS/cmsy/m/n' instead
+(Font)              for symbol `textbraceleft' on input line 361.
+
+[24] [25] [26] [27] [28] [29] [30] [31] [32] [33] [34]
+Overfull \hbox (21.7568pt too wide) in paragraph at lines 716--716
+[]  \OT1/cmtt/m/n/12 allocate[]preflags(alloc, MOVdef|MOVundef|IMULdef|IMULunde
+f,  
+ []
+
+[35] [36] [37] [38] [39] [40]) [41] [42]
+\openout2 = `ch4.aux'.
+
+ (ch4.tex
+Chapter 4.
+[43
+
+
+
+
+]
+Underfull \hbox (badness 1163) in paragraph at lines 25--26
+\OT1/ppl/m/n/12 The re-com-piler (com-pris-ing pheta-code trans-la-tor, code an
+al-yser, pat-tern
+ []
+
+[44] [45] [46] [47] [48] [49] [50] [51] [52]) [53] [54]
+\openout2 = `ch5.aux'.
+
+ (ch5.tex
+Chapter 5.
+[55
+
+
+
+
+] [56]) [57] [58
+
+
+] (diss.bbl
+Underfull \hbox (badness 10000) in paragraph at lines 18--21
+[]\OT1/ppl/m/n/12 University of Utah Flux Re-search Group.  OS-Kit.
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 33--36
+[]\OT1/ppl/m/n/12 Randall Hyde.  \OT1/ppl/m/it/12 The Art of As-sem-bly Lan-gua
+ge Pro-gram-ming\OT1/ppl/m/n/12 .
+ []
+
+
+Overfull \hbox (39.47931pt too wide) in paragraph at lines 42--45
+[]\OT1/ppl/m/n/12 `Invictus'.  3DOpen.  http://www.flatearthmultimedia.com/3dop
+en/default.asp,
+ []
+
+
+Overfull \hbox (8.08772pt too wide) in paragraph at lines 47--50
+[]\OT1/ppl/m/n/12 David Ju-r-gens.  \OT1/ppl/m/it/12 HelpPC\OT1/ppl/m/n/12 , c.
+ 1990.  http://millenium.atcg.com/~taco/helppc/
+ []
+
+) [59
+
+] [60
+
+]
+\openout2 = `apa.aux'.
+
+ (apa.tex
+Appendix A.
+(apctable.tex) (apctable.tex) (apctable.tex
+Underfull \hbox (badness 1852) in paragraph at lines 9--10
+[]|\OT1/ppl/m/n/12 Branch if pos-i-tive or zero
+ []
+
+
+Underfull \hbox (badness 1852) in paragraph at lines 12--13
+[]|\OT1/ppl/m/n/12 Branch if un-signed higher
+ []
+
+
+Underfull \hbox (badness 3229) in paragraph at lines 14--15
+[]|\OT1/ppl/m/n/12 Branch if greater than or
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 23--24
+[]|\OT1/ppl/m/n/12 Rotate right one place
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 35--36
+[]|\OT1/ppl/m/n/12 Test equiv-a-lence (bit-wise
+ []
+
+[61
+
+
+]
+Underfull \hbox (badness 2326) in paragraph at lines 43--44
+[]|\OT1/ppl/m/n/12 Software in-ter-rupt (sys-tem
+ []
+
+
+Underfull \hbox (badness 1331) in paragraph at lines 45--46
+\OT1/ppl/m/n/12 flags, pro-ces-sor mode and
+ []
+
+
+Underfull \hbox (badness 6173) in paragraph at lines 46--47
+\OT1/ppl/m/n/12 tion ad-dress, the cur-rent
+ []
+
+
+Underfull \hbox (badness 1331) in paragraph at lines 46--47
+\OT1/ppl/m/n/12 flags, pro-ces-sor mode and
+ []
+
+
+Underfull \hbox (badness 2096) in paragraph at lines 46--47
+\OT1/ppl/m/n/12 in-ter-rupt mask sta-tus into
+ []
+
+[62])) [63] [64
+
+
+]
+\openout2 = `apb.aux'.
+
+ (apb.tex
+Appendix B.
+[65
+
+
+] [66] [67] [68]) [69] [70
+
+
+]
+\openout2 = `apc.aux'.
+
+ (apc.tex
+Appendix C.
+[71
+
+
+] (pheta.tex) (pheta.tex [72]) [73] [74] [75] [76] [77]) [78]
+Appendix D.
+[79
+
+
+
+]
+\openout2 = `propbody.aux'.
+
+ (propbody.tex [80
+
+] [81]
+Overfull \hbox (18.00253pt too wide) in paragraph at lines 98--98
+[]\OT1/ppl/m/n/12 http://www.cybervillage.co.uk/acorn/emulation/dynrcomp.htm 
+ []
+
+[82] [83] [84] [85] (timescale.tex) (timescale.tex) (timescale.tex [86]))
+[87] (diss.aux (title.aux) (proforma.aux) (intermeddefs.aux) (ch1.aux) (ch2.aux
+) (ch3.aux) (ch4.aux) (ch5.aux) (apa.aux) (apb.aux) (apc.aux) (propbody.aux))
+
+LaTeX Font Warning: Some font shapes were not available, defaults substituted.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 1219 strings out of 10898
+ 12958 string characters out of 96881
+ 82836 words of memory out of 263001
+ 4101 multiletter control sequences out of 10000+0
+ 21395 words of font info for 73 fonts, out of 400000 for 1000
+ 14 hyphenation exceptions out of 1000
+ 28i,16n,40p,1081b,356s stack positions out of 300i,100n,500p,50000b,4000s
+
+Output written on diss.dvi (97 pages, 197656 bytes).

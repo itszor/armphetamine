@@ -1,0 +1,45 @@
+\chapter{Conclusion}
+
+\section{On current status}
+
+This project encompasses significant portions of the fields of both emulation and compilation. All major sections of code are at, or close to, the stage anticipated in the plans for the end of the project. For the subset of the \arm\ processor attacked, the program is able to execute code reliably under traditional emulation and reasonably in many cases when recompilation is enabled.
+
+I feel that I have proved the point that binary code translation techniques can be successfully employed to significantly speed up emulation of the \arm\ processor on \ia\ machines. Further work could be beneficial in various areas of the program, discussed below.
+
+\section{Future expansion}
+
+\subsection{Full processor emulation}
+
+Of obvious importance to the emulator if it is to be deployed in larger projects is the completeness of processor emulation. Extending the project to cover all the functionality of a real \arm\ chip is of high priority -- although this may require some slight departures in some areas of the emulator's infrastructure, particularly with respect to memory management.
+
+\subsubsection{MMU emulation}
+
+It may be possible to program the \ia\ memory controller to mimic the \arm\ MMU device. This would allow virtual memory and paging inside an emulated environment at little cost above the current linear memory map, but would not be easy to achieve. Exploitation of various existing projects\footnote{like Plex86 \cite{Plex86}, which aims to provide virtual machine functionality within Linux/x86 or OSKit \cite{OSKit}, which provides a framework for helping to write proprietary operating systems.} may help, or at least provide some insight into how to approach the problem.
+
+This sort of trick has been performed successfully already in the commercial emulator Virtual PC, although the details would be slightly different in this case due to the different processors involved.
+
+\subsubsection{Self-modifying code}
+
+Various approaches could be taken to deal with self-modifying code: relying on explicit cache-flushing as defined on the StrongARM processor, watch all memory writes or do something more sophisticated involving write-protecting pages of memory containing recompiled code and so trapping attempted writes into those pages with hopefully little overhead. The last of these would probably be most effective.
+
+\subsection{Optimising code generation}
+
+A lot could be done to improve code generation, much at little cost. As well as the flag-caching improvement mentioned in the last chapter, improvements could be made through cross-block register allocation, constant folding, copy and branch propagation. The last three could probably be implemented very efficiently using finite state machines of some description, although I haven't worked out the details as yet.
+
+It's probably worth looking into issues of code alignment for improved use of Pentium II-class processors' cache lines -- it's possible that significant speed improvements could be made just by aligning code blocks at multiples of 16 or 32 bytes.
+
+It would be interesting to explore whether a more abstract intermediate representation would be beneficial (one which `understood' more about what the source code was trying to achieve), or would just slow things down.
+
+\subsection{Full machine emulation}
+
+Various computer systems have been built around \arm\ processors -- Acorn's Archimedes and Risc PC computers, Apple's Newton and eMate, the 3DO games console, the Psion series 5, the Sega Dreamcast (sound hardware) and others. Incorporating this project (when completed) into an emulator for the hardware of any of these machines would allow reasonable emulation performance to be achieved on current PCs -- probably full speed for several of the systems mentioned.
+
+\subsection{Extending API emulation}
+
+On a slightly different note, another interesting possibility for future development of the emulator might be to implement a large enough subset of Acorn's RISC OS so that full applications written for that operating system could run under emulation, utilising the X windowing system, in a manner not entirely unlike a cross between Wine \cite{Wine} and Executor \cite{Executor}.
+
+\section{Wrapping it up}
+
+This has been a large and difficult project, but also a very successful and rewarding one. I feel I have learned much about emulation and compilation techniques in particular, and also a fair amount about Linux and BSD-derived Unix system internals. And that isn't to mention the amount I've learned about the two processor architectures involved in the project, using \LaTeX\ for document typesetting, various GNU tools, and many other things.
+
+I hope to do further work on dynamic recompilation techniques in the future.

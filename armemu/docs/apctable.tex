@@ -1,0 +1,49 @@
+\begin{longtable}{cccX}
+Mnemonic & Written form & Implicit & Meaning\\
+\hline
+{\tt BEQ} & $\beqfn label$ & {\tt Z} & Branch if equal to ($z=1$)\\
+{\tt BNE} & $\bnefn label$ & {\tt Z} & Branch if not equal to ($z=0$)\\
+{\tt BCS} & $\bcsfn label$ & {\tt C} & Branch if carry set ($c=1$)\\
+{\tt BCC} & $\bccfn label$ & {\tt C} & Branch if carry clear ($c=0$)\\
+{\tt BMI} & $\bmifn label$ & {\tt N} & Branch if negative ($n=1$)\\
+{\tt BPL} & $\bplfn label$ & {\tt N} & Branch if positive or zero ($n=0$)\\
+{\tt BVS} & $\bvsfn label$ & {\tt V} & Branch if overflow set ($v=1$)\\
+{\tt BVC} & $\bvcfn label$ & {\tt V} & Branch if overflow clear ($v=0$)\\
+{\tt BHI} & $\bhifn label$ & {\tt CZ} & Branch if unsigned higher ($c=1 \wedge z=0$)\\
+{\tt BLS} & $\blsfn label$ & {\tt CZ} & Branch if unsigned lower or same ($c=0 \vee z=1$)\\
+{\tt BGE} & $\bgefn label$ & {\tt NV} & Branch if greater than or equal to ($(n=1 \wedge v=1) \vee (n=0 \wedge v=0)$)\\
+{\tt BLT} & $\bltfn label$ & {\tt NV} & Branch if less than ($(n=1 \wedge v=0) \vee (n=0 \wedge v=1)$)\\
+{\tt BGT} & $\bgtfn label$ & {\tt NVZ} & Branch if greater than ($z=0 \wedge ((n=1 \wedge v=1) \vee (n=0 \wedge v=0))$)\\
+{\tt BLE} & $\blefn label$ & {\tt NVZ} & Branch if less than or equal to ($z=1 \wedge ((n=1 \wedge v=0) \vee (n=0 \wedge v=1))$)\\
+{\tt BAL} & $\balfn label$ & & Unconditional branch\\
+{\tt LSL} & $a \leftarrow b \aslfn c$ & & Logical shift left, $0 \leq c \leq 31$\\
+{\tt LSR} & $a \leftarrow b \lsrfn c$ & & Logical shift right, $0 \leq c \leq 31$\\
+{\tt ASR} & $a \leftarrow b \asrfn c$ & & Arithmetic shift right, $0 \leq c \leq 31$\\
+{\tt ROR} & $a \leftarrow b \rorfn c$ & & Rotate right, $0 \leq c \leq 31$\\
+{\tt RRX} & $a \leftarrow \rrxfn b$ & {\tt C} & Rotate right one place through carry\\
+{\tt AND} & $a \leftarrow b \wedge c$ & & Bitwise AND\\
+{\tt EOR} & $a \leftarrow b \oplus c$ & & Bitwise exclusive-OR\\
+{\tt SUB} & $a \leftarrow b - c$ & & Subtract\\
+{\tt SBC} & $a \leftarrow b - c - \overline{carry}$ & {\tt C} & Subtract with carry\\
+{\tt ADD} & $a \leftarrow b + c$ & & Add\\
+{\tt ADC} & $a \leftarrow b + c + carry$ & {\tt C} & Add with carry\\
+{\tt OR} & $a \leftarrow b \vee c$ & & Bitwise OR\\
+{\tt MOV} & $a \leftarrow b$ & & Move\\
+{\tt MVN} & $a \leftarrow \overline{b}$ & & Bitwise NOT\\
+{\tt CMP} & $a \cmpfn b$ & & Compare (subtract discarding result)\\
+{\tt CMN} & $a \cmnfn b$ & & Compare negative (add discarding result)\\
+{\tt TEQ} & $a \teqfn b$ & & Test equivalence (bitwise EOR discarding result)\\
+{\tt TST} & $a \tstfn b$ & & Test (bitwise AND discarding result)\\
+{\tt MUL} & $a \leftarrow b * c$ & & Multiply\\
+{\tt CONST} & $a \leftarrow \#imm$ & & Load constant\\
+{\tt LDW} & $a \leftarrow !b$ & & Load word from memory\\
+{\tt LDB} & $a \leftarrow ?b$ & & Load byte from memory\\
+{\tt STW} & $!a \leftarrow b$ & & Store word to memory\\
+{\tt STB} & $?a \leftarrow b$ & & Store byte to memory\\
+{\tt SWI} & $\swifn num$ & & Software interrupt (system call) {\it num}\\
+{\tt XJMP} & $\xjmpfn loc$ & & Jump to the start of a different chunk\\
+{\tt SETPC} & $\pcsetfn$ & {\tt =r15} & Add offset due to pipelining to program counter, unpack flags, processor mode and interrupt mask status if necessary then return control to emulator\\
+{\tt RECPC} & $\pcrestorefn$ & {\tt =r15,F,M,I} & Pack original \arm\ instruction address, the current flags, processor mode and interrupt mask status into the program counter\\
+{\tt END} & $\endfn$ & & Return control to emulator
+
+\end{longtable}

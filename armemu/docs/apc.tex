@@ -1,0 +1,223 @@
+\chapter{Code translation example}
+
+This appendix contains the complete translation of an \arm\ division routine into \ia\ assembler via phetacode. Note that this function happens to have the right characteristics to be considered as a single, complete `chunk' by the profiling function.
+
+Firstly, the original \arm\ code:
+
+\begin{code}
+\# divides r0 by r1, putting result in r0\\
+\# \& remainder in r1\\
+divide:\\
+~~~~~~~~stmfd~r13!,\{r4,r14\}\\
+~~~~~~~~mov~r2,r0\\
+~~~~~~~~mov~r3,r1\\
+~\\
+~~~~~~~~mov~r4,\#0\\
+~~~~~~~~cmp~r2,\#0\\
+~~~~~~~~rsblt~r2,r2,\#0\\
+~~~~~~~~sublt~r4,r4,\#1\\
+~~~~~~~~cmp~r3,\#0\\
+~~~~~~~~rsblt~r3,r3,\#0\\
+~~~~~~~~mvnlt~r4,r4\\
+~\\
+~~~~~~~~mov~r0,\#32\\
+~~~~~~~~mov~r1,\#0\\
+divloop:\\
+~~~~~~~~adds~r2,r2,r2\\
+~~~~~~~~adcs~r1,r1,r1\\
+~~~~~~~~cmp~r1,r3\\
+~~~~~~~~subge~r1,r1,r3\\
+~~~~~~~~addge~r2,r2,\#1\\
+~~~~~~~~subs~r0,r0,\#1\\
+~~~~~~~~bne~divloop\\
+~~~~~~~~cmp~r4,\#0\\
+~~~~~~~~rsbne~r2,r2,\#0\\
+~~~~~~~~mov~r0,r2\\
+~\\
+~~~~~~~~ldmfd~r13!,\{r4,pc\}\^{}
+\end{code}
+
+The phetacode equivalent of this can be written:
+
+\LTXtable{\textwidth}{pheta.tex}
+
+The \ia\ code produced from this looks like:
+
+\begin{verbatim}
+   0:	8b 45 34             	movl   0x34(%ebp),%eax
+   3:	81 e8 04 00 00 00    	subl   $0x4,%eax
+   9:	89 45 40             	movl   %eax,0x40(%ebp)
+   c:	ff 75 38             	pushl  0x38(%ebp)
+   f:	ff f0                	pushl  %eax
+  11:	68 48 ba 05 08       	pushl  $0x805ba48
+  16:	c7 c3 f4 93 05 08    	movl   $0x80593f4,%ebx
+  1c:	ff d3                	call   *%ebx
+  1e:	81 c4 0c 00 00 00    	addl   $0xc,%esp
+  24:	8b 45 40             	movl   0x40(%ebp),%eax
+  27:	81 e8 04 00 00 00    	subl   $0x4,%eax
+  2d:	89 45 40             	movl   %eax,0x40(%ebp)
+  30:	ff 75 10             	pushl  0x10(%ebp)
+  33:	ff f0                	pushl  %eax
+  35:	68 48 ba 05 08       	pushl  $0x805ba48
+  3a:	c7 c3 f4 93 05 08    	movl   $0x80593f4,%ebx
+  40:	ff d3                	call   *%ebx
+  42:	81 c4 0c 00 00 00    	addl   $0xc,%esp
+  48:	8b 45 40             	movl   0x40(%ebp),%eax
+  4b:	89 c1                	movl   %eax,%ecx
+  4d:	8b 55 00             	movl   0x0(%ebp),%edx
+  50:	8b 75 04             	movl   0x4(%ebp),%esi
+  53:	c7 c7 00 00 00 00    	movl   $0x0,%edi
+  59:	81 fa 00 00 00 00    	cmpl   $0x0,%edx
+  5f:	f5                   	cmc    
+  60:	0f 92 45 58          	setb   0x58(%ebp)
+  64:	0f 90 45 59          	seto   0x59(%ebp)
+  68:	0f 94 45 5a          	sete   0x5a(%ebp)
+  6c:	0f 98 45 5b          	sets   0x5b(%ebp)
+  70:	0f 8d 11 00 00 00    	jge    0x87
+  76:	c7 c0 00 00 00 00    	movl   $0x0,%eax
+  7c:	ff f0                	pushl  %eax
+  7e:	87 c2                	xchgl  %eax,%edx
+  80:	29 c2                	subl   %eax,%edx
+  82:	8f c0                	popl   %eax
+  84:	89 45 40             	movl   %eax,0x40(%ebp)
+  87:	89 4d 34             	movl   %ecx,0x34(%ebp)
+  8a:	9c                   	pushf  
+  8b:	8f c3                	popl   %ebx
+  8d:	81 e3 7f f7 ff ff    	andl   $0xfffff77f,%ebx
+  93:	0f b6 4d 5b          	movzbl 0x5b(%ebp),%ecx
+  97:	c1 e1 07             	shll   $0x7,%ecx
+  9a:	09 cb                	orl    %ecx,%ebx
+  9c:	0f b6 4d 59          	movzbl 0x59(%ebp),%ecx
+  a0:	c1 e1 0b             	shll   $0xb,%ecx
+  a3:	09 cb                	orl    %ecx,%ebx
+  a5:	ff f3                	pushl  %ebx
+  a7:	9d                   	popf   
+  a8:	0f 8d 06 00 00 00    	jge    0xb4
+  ae:	81 ef 01 00 00 00    	subl   $0x1,%edi
+  b4:	81 fe 00 00 00 00    	cmpl   $0x0,%esi
+  ba:	f5                   	cmc    
+  bb:	0f 92 45 58          	setb   0x58(%ebp)
+  bf:	0f 90 45 59          	seto   0x59(%ebp)
+  c3:	0f 94 45 5a          	sete   0x5a(%ebp)
+  c7:	0f 98 45 5b          	sets   0x5b(%ebp)
+  cb:	0f 8d 11 00 00 00    	jge    0xe2
+  d1:	c7 c0 00 00 00 00    	movl   $0x0,%eax
+  d7:	ff f0                	pushl  %eax
+  d9:	87 c6                	xchgl  %eax,%esi
+  db:	29 c6                	subl   %eax,%esi
+  dd:	8f c0                	popl   %eax
+  df:	89 45 40             	movl   %eax,0x40(%ebp)
+  e2:	9c                   	pushf  
+  e3:	8f c3                	popl   %ebx
+  e5:	81 e3 7f f7 ff ff    	andl   $0xfffff77f,%ebx
+  eb:	0f b6 4d 5b          	movzbl 0x5b(%ebp),%ecx
+  ef:	c1 e1 07             	shll   $0x7,%ecx
+  f2:	09 cb                	orl    %ecx,%ebx
+  f4:	0f b6 4d 59          	movzbl 0x59(%ebp),%ecx
+  f8:	c1 e1 0b             	shll   $0xb,%ecx
+  fb:	09 cb                	orl    %ecx,%ebx
+  fd:	ff f3                	pushl  %ebx
+  ff:	9d                   	popf   
+ 100:	0f 8d 02 00 00 00    	jge    0x108
+ 106:	f7 d7                	notl   %edi
+ 108:	89 55 08             	movl   %edx,0x8(%ebp)
+ 10b:	c7 c2 20 00 00 00    	movl   $0x20,%edx
+ 111:	89 75 0c             	movl   %esi,0xc(%ebp)
+ 114:	c7 c6 00 00 00 00    	movl   $0x0,%esi
+ 11a:	89 7d 10             	movl   %edi,0x10(%ebp)
+ 11d:	8b 7d 08             	movl   0x8(%ebp),%edi
+ 120:	01 ff                	addl   %edi,%edi
+ 122:	11 f6                	adcl   %esi,%esi
+ 124:	3b 75 0c             	cmpl   0xc(%ebp),%esi
+ 127:	f5                   	cmc    
+ 128:	0f 92 45 58          	setb   0x58(%ebp)
+ 12c:	0f 90 45 59          	seto   0x59(%ebp)
+ 130:	0f 94 45 5a          	sete   0x5a(%ebp)
+ 134:	0f 98 45 5b          	sets   0x5b(%ebp)
+ 138:	0f 8c 03 00 00 00    	jl     0x141
+ 13e:	2b 75 0c             	subl   0xc(%ebp),%esi
+ 141:	9c                   	pushf  
+ 142:	8f c3                	popl   %ebx
+ 144:	81 e3 7f f7 ff ff    	andl   $0xfffff77f,%ebx
+ 14a:	0f b6 4d 5b          	movzbl 0x5b(%ebp),%ecx
+ 14e:	c1 e1 07             	shll   $0x7,%ecx
+ 151:	09 cb                	orl    %ecx,%ebx
+ 153:	0f b6 4d 59          	movzbl 0x59(%ebp),%ecx
+ 157:	c1 e1 0b             	shll   $0xb,%ecx
+ 15a:	09 cb                	orl    %ecx,%ebx
+ 15c:	ff f3                	pushl  %ebx
+ 15e:	9d                   	popf   
+ 15f:	0f 8c 06 00 00 00    	jl     0x16b
+ 165:	81 c7 01 00 00 00    	addl   $0x1,%edi
+ 16b:	81 ea 01 00 00 00    	subl   $0x1,%edx
+ 171:	f5                   	cmc    
+ 172:	0f 92 45 58          	setb   0x58(%ebp)
+ 176:	0f 90 45 59          	seto   0x59(%ebp)
+ 17a:	0f 94 45 5a          	sete   0x5a(%ebp)
+ 17e:	0f 98 45 5b          	sets   0x5b(%ebp)
+ 182:	89 7d 08             	movl   %edi,0x8(%ebp)
+ 185:	8b 7d 10             	movl   0x10(%ebp),%edi
+ 188:	0f 85 8c ff ff ff    	jne    0x11a
+ 18e:	81 ff 00 00 00 00    	cmpl   $0x0,%edi
+ 194:	f5                   	cmc    
+ 195:	0f 92 45 58          	setb   0x58(%ebp)
+ 199:	0f 90 45 59          	seto   0x59(%ebp)
+ 19d:	0f 94 45 5a          	sete   0x5a(%ebp)
+ 1a1:	0f 98 45 5b          	sets   0x5b(%ebp)
+ 1a5:	0f 84 1d 00 00 00    	je     0x1c8
+ 1ab:	c7 c0 00 00 00 00    	movl   $0x0,%eax
+ 1b1:	89 7d 10             	movl   %edi,0x10(%ebp)
+ 1b4:	ff f0                	pushl  %eax
+ 1b6:	8b 7d 08             	movl   0x8(%ebp),%edi
+ 1b9:	87 c7                	xchgl  %eax,%edi
+ 1bb:	29 c7                	subl   %eax,%edi
+ 1bd:	8f c0                	popl   %eax
+ 1bf:	89 7d 08             	movl   %edi,0x8(%ebp)
+ 1c2:	89 45 40             	movl   %eax,0x40(%ebp)
+ 1c5:	8b 7d 10             	movl   0x10(%ebp),%edi
+ 1c8:	8b 55 08             	movl   0x8(%ebp),%edx
+ 1cb:	8b 45 34             	movl   0x34(%ebp),%eax
+ 1ce:	89 45 40             	movl   %eax,0x40(%ebp)
+ 1d1:	89 55 00             	movl   %edx,0x0(%ebp)
+ 1d4:	ff f0                	pushl  %eax
+ 1d6:	68 48 ba 05 08       	pushl  $0x805ba48
+ 1db:	c7 c3 18 94 05 08    	movl   $0x8059418,%ebx
+ 1e1:	ff d3                	call   *%ebx
+ 1e3:	81 c4 08 00 00 00    	addl   $0x8,%esp
+ 1e9:	89 c7                	movl   %eax,%edi
+ 1eb:	8b 45 40             	movl   0x40(%ebp),%eax
+ 1ee:	81 c0 04 00 00 00    	addl   $0x4,%eax
+ 1f4:	89 7d 10             	movl   %edi,0x10(%ebp)
+ 1f7:	89 45 40             	movl   %eax,0x40(%ebp)
+ 1fa:	ff f0                	pushl  %eax
+ 1fc:	68 48 ba 05 08       	pushl  $0x805ba48
+ 201:	c7 c3 18 94 05 08    	movl   $0x8059418,%ebx
+ 207:	ff d3                	call   *%ebx
+ 209:	81 c4 08 00 00 00    	addl   $0x8,%esp
+ 20f:	89 c7                	movl   %eax,%edi
+ 211:	8b 45 40             	movl   0x40(%ebp),%eax
+ 214:	81 c0 04 00 00 00    	addl   $0x4,%eax
+ 21a:	89 c3                	movl   %eax,%ebx
+ 21c:	81 c7 08 00 00 00    	addl   $0x8,%edi
+ 222:	0f ba e7 1c          	btl    $0x1c,%edi
+ 226:	0f 92 45 59          	setb   0x59(%ebp)
+ 22a:	0f ba e7 1d          	btl    $0x1d,%edi
+ 22e:	0f 92 45 58          	setb   0x58(%ebp)
+ 232:	0f ba e7 1e          	btl    $0x1e,%edi
+ 236:	0f 92 45 5a          	setb   0x5a(%ebp)
+ 23a:	0f ba e7 1f          	btl    $0x1f,%edi
+ 23e:	0f 92 45 5b          	setb   0x5b(%ebp)
+ 242:	81 e7 fc ff ff 03    	andl   $0x3fffffc,%edi
+ 248:	89 75 04             	movl   %esi,0x4(%ebp)
+ 24b:	89 5d 34             	movl   %ebx,0x34(%ebp)
+ 24e:	89 7d 3c             	movl   %edi,0x3c(%ebp)
+ 251:	89 45 40             	movl   %eax,0x40(%ebp)
+ 254:	c3                   	ret    
+ 255:	c7 c1 e8 11 00 00    	movl   $0x11e8,%ecx
+ 25b:	89 4d 3c             	movl   %ecx,0x3c(%ebp)
+ 25e:	c3                   	ret    
+\end{verbatim}
+
+A couple of things are apparent; in particular, that code blows up quite considerably, and that the resulting \ia\ code bears very little resemblance to the original \arm\ code.
+
+The flag caching mechanism can be seen in operation around addresses {\tt 0x120}-{\tt 0x122} where the adjacent {\tt add}, {\tt adc} operations correspond to the adjacent {\tt adds} and {\tt adcs} operations in the original \arm\ code.

@@ -1,0 +1,108 @@
+22:37 Oct 19 1999
+=================
+
+Started log. Draft proposal writtenn, instruction decoding almost working.
+
+00:11 Oct 26 1999
+=================
+
+Problem with instruction decoding identified; the encodings of ALU opcodes and
+MUL seem to overlap. Code reorganisation to tidy up and fix instruction decode
+started.
+
+14:00 Oct 29 1999
+=================
+
+Project supervision with Martin Richards - suggestion to write a proper loader
+for ARM a.out binaries for testing purposes, and to form some sort of plans
+for project aims and implementation strategies.
+
+20:00 Oct 30 1999
+=================
+
+Found 'a.out' loader in Linux kernel source - might be able to steal it.
+
+18:00 Oct 31 1999
+=================
+
+Patched parts of the old 'decode.c' into a new file, execute.c, which contains
+functions to execute the different instruction types. There is now a
+centralised system for dispatching instructions together with different
+'action' function-pointer tables to perform some action for each function type,
+eg disassembling or execution. This seems to work well, but will have a slight
+time overhead. Saving and restoring the program counter, and possibly the
+whole of the block-data-transfer execution function, are broken.
+
+19:49 Oct 31 1999
+=================
+
+Changed PC to point to current instruction+8, which should rationalise reading
+from and writing to it a bit.
+
+01:45 Nov 01 1999
+=================
+
+Executed a division routine seemingly correctly - test program prints integers
+from 0 to 100.
+
+16:30 Nov 08 1999
+=================
+
+Fixed a bug in data op shift-by-immediate code
+
+xx:xx Nov 09 1999
+=================
+
+Started using autoconf and automake to help with Makefile maintainance and
+portability.
+
+xx:xx Nov 10 1999
+=================
+
+Moved development tree to CVS.
+
+22:30 Nov 11 1999
+=================
+
+Discovered that NetBSD swi '0' with r0=n is equivalent to swi 'n'. Feel
+physically ill.
+Also, problem with sysctl found.
+
+14:52 Nov 19 1999
+=================
+
+Fixed bugs with shifting op2 in ALU instructions, and incorrect handling of
+condition codes in SUB-style operands.
+
+17:07 Nov 24 1999
+=================
+
+NetBSD system call faking is not going anywhere useful, and is therefore
+judged to be a bad idea (it is wasting too much time). Work will continue on
+other parts of the emulator (processor mode switching and coprocessor
+instructions, interrupt support) until a better idea is had.
+
+23:10 Nov 25 1999
+=================
+
+Supervision today: code generation using trees, ARM->register transfer language
+idea.
+
+18:17 Dec 03 1999
+=================
+
+Discovered that it is possible to use mmap() to map logical to physical memory
+by using /dev/mem. Solves some of those little MMU problems :-)
+
+14:14 Dec 10 1999
+=================
+
+mmap() probably won't work. Intermediate code translator seems to work
+approximately well, working on flow analysis stuff. Some problems with
+branches within blocks.
+
+19:54 Feb 12 2000
+=================
+
+First real code has been recompiled and executed (the factorial test). No
+updates to news for a while, but you may find something in the CVS comments...

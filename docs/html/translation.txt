@@ -1,0 +1,57 @@
+ARMphetamine v0.2 alpha
+Recompilation OFF
+C ALU
+debug> script si.txt 
+Loaded file 'simple' to 10000000
+Disassembling from 10000034 to 10000048
+10000034 : e3a00064 : mov r0,#100
+10000038 : e2500001 : subs r0,r0,#1
+1000003c : e1856054 : orr r6,r5,r4,asr r0
+10000040 : cafffffc : bgt pc-8
+10000044 : e1a0f00e : mov r15,r14
+Translating from 10000034 to 10000048
+-- block base: 80aaa20  (source start ffffffff)
+-- block condition: gt  true block: 80aa870  false block: 80aa808
+
+-- block base: 80aa9c0  (source start ffffffff)
+asr %12, %9, %8
+fetch %13, r5
+or %14, %13, %12
+commit r6, %14
+-- block condition: al  true block: 80aaa20  false block: 0
+
+-- block base: 80aa960  (source start ffffffff)
+asr %9, %4, %7
+fetch %10, r5
+or %11, %10, %9
+commit r6, %11
+-- block condition: al  true block: 80aaa20  false block: 0
+
+-- block base: 80aa8d8  (source start 10000034)
+constb %0, #0x64
+commit r0, %0
+-- block condition: al  true block: 80aa8d8  false block: 0
+
+-- block base: 80aa870  (source start 10000038)
+constb %1, #0x01
+fetch %2, r0
+fexpect c,v,n,z
+sub %3, %2, %1
+fcommit c,v,n,z
+commit r0, %3
+fetch %4, r4
+fetch %5, r0
+constb %6, #0xff
+and %7, %5, %6
+constb %8, #0x1f
+nfexpect c,v,n,z
+cmp %7, %8
+nfcommit c,v,n,z
+-- block condition: gt  true block: 80aa9c0  false block: 80aa960
+
+-- block base: 80aa808  (source start 10000044)
+fetch %15, r14
+commit r15, %15
+-- block condition: (null)  true block: 0  false block: 0
+
+debug> q

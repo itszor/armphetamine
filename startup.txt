@@ -1,0 +1,10 @@
+load div 10000000
+setreg 0 100
+setreg 1 9
+setreg 13 10000400
+breakset 1000008c
+trace on
+run 10000034
+registers
+disassemble 10000034 10000038
+phetatrans 0x10000034 0x10000038
