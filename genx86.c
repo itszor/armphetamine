@@ -2432,7 +2432,7 @@ void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
     {
       list_add(&buf->commit);
       buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
-      dfc->var = chunk->alloc[range->reg].arm_affiliation;
+      dfc->var = &chunk->alloc[palloc_close(chunk, range->reg)];
       dfc->src = range->reg;
       dfc->loc = buf->buffer->prev;
       fprintf(stderr, "Attempting to recover %d, arm: %d\n", range->reg,
@@ -2464,7 +2464,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       genx86_delayedfetchcommit* dfc;
       list_add(&buf->fetch);
       buf->fetch->data = dfc = cnew(genx86_delayedfetchcommit);
-      dfc->var = instr->data.op.dest;
+      dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.dest)];
       dfc->src = instr->data.op.src1;
       dfc->loc = buf->buffer->prev;
 
@@ -2502,7 +2502,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       list_add(&buf->commit);
       buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
       dfc->src = instr->data.op.dest;
-      dfc->var = instr->data.op.src1;
+      dfc->var = &chunk->alloc[palloc_close(chunk, instr->data.op.src1)];
       dfc->loc = buf->buffer->prev;
       fprintf(stderr, "Storing commit %d to %d\n", instr->data.op.src1,
         instr->data.op.dest);
@@ -2886,6 +2886,9 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
 
     case ph_FENSURE:
     {
+      /* it's possible to optimise this away a bit, but the logic's a bit
+       * tricky & I can't work it out right now
+       */
       uint5 mask = instr->data.flag.need;
       genx86_operand* zero, *off;
       if (mask)
@@ -3092,21 +3095,19 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
   for (scan=buf->fetch; scan; scan=scan->prev)
   {
     genx86_delayedfetchcommit* dfc = scan->data;
-    uint5 cvar = palloc_close(chunk, dfc->var);
-    if (chunk->alloc[cvar].type == pal_IREG)
+    if (dfc->var->slot->type == gotype_REGISTER)
     {
       genx86_operand* reg = cnew(genx86_operand);
       genx86_operand* mem = cnew(genx86_operand);
       reg->type = gotype_REGISTER;
       reg->width = gowidth_DWORD;
-      reg->data.reg = chunk->alloc[cvar].info.ireg.num;
+      reg->data.reg = dfc->var->slot->data.reg;
       mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8 : 
                                      gotype_INDREGPLUSDISP32;
       mem->width = gowidth_DWORD;
       mem->data.regdisp.base = EBP;
       mem->data.regdisp.disp = dfc->src*4;
-      fprintf(stderr, "Fetch %d to %d\n", dfc->src, 
-        chunk->alloc[cvar].info.ireg.num);
+      fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->slot->data.reg);
       genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, reg, mem, 0);
     }
   }
@@ -3114,24 +3115,22 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
   for (scan=buf->commit; scan; scan=scan->prev)
   {
     genx86_delayedfetchcommit* dfc = scan->data;
-    uint5 cvar = palloc_close(chunk, dfc->var);
-    fprintf(stderr, "Trying commit %d to %d\n", chunk->alloc[cvar].info.ireg.num,
-        dfc->src);
-    fprintf(stderr, "chunk->alloc[dfc->var].type=%d\n",
-      chunk->alloc[cvar].type);
-    if (chunk->alloc[cvar].type == pal_IREG)
+    fprintf(stderr, "Trying commit %d to %d\n", 
+      dfc->var->slot->data.reg, dfc->src);
+    fprintf(stderr, "chunk->alloc[dfc->var].type=%d\n", dfc->var->type);
+    if (dfc->var->slot->type == gotype_REGISTER)
     {
       genx86_operand* reg = cnew(genx86_operand);
       genx86_operand* mem = cnew(genx86_operand);
       reg->type = gotype_REGISTER;
       reg->width = gowidth_DWORD;
-      reg->data.reg = chunk->alloc[cvar].info.ireg.num;
-      mem->type = dfc->src < 128 ? gotype_INDREGPLUSDISP8
-                                 : gotype_INDREGPLUSDISP32;
+      reg->data.reg = dfc->var->slot->data.reg;
+      mem->type = dfc->src*4 < 128 ? gotype_INDREGPLUSDISP8
+                                   : gotype_INDREGPLUSDISP32;
       mem->width = gowidth_DWORD;
       mem->data.regdisp.base = EBP;
       mem->data.regdisp.disp = dfc->src*4;
-      fprintf(stderr, "Commit %d to %d\n", chunk->alloc[cvar].info.ireg.num,
+      fprintf(stderr, "Commit %d to %d\n", dfc->var->slot->data.reg,
         dfc->src);
       genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, mem, reg, 0);
     }

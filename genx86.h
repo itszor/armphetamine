@@ -151,7 +151,7 @@ typedef struct {
 
 typedef struct {
   uint5 src;
-  uint5 var;
+  palloc_info* var;
   clist* loc;
 } genx86_delayedfetchcommit;
 

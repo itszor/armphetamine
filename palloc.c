@@ -6,6 +6,9 @@
 #include "x86asm.h"
 #include "genx86.h"
 
+static const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
+                                "ESP", "EBP", "ESI", "EDI"};
+
 void palloc_init(pheta_chunk* chunk)
 {
   uint5 i;
@@ -394,8 +397,6 @@ void palloc_deletespans(pheta_chunk* chunk)
 uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
                               uint5 startline, meminfo* mem)
 {
-  const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
-                           "ESP", "EBP", "ESI", "EDI"};
   const uint5 maxreg = 6;
   clist* scan = blk->base->next;
   uint5 line = startline;
@@ -586,16 +587,23 @@ uint5 palloc_free_ireg(pheta_chunk* chunk, pheta_basicblock* blk, uint5 reg)
   
   if (found == -1) return FALSE;
   
-  for (i=0; i<blk->live->length; i++)
+  for (i=0; i<chunk->active->length; i++)
   {
-    pqueueitem* item = blk->live->item[i];
+    pqueueitem* item = chunk->active->item[i];
     palloc_liverange* activerange = item->data;
-    if (chunk->alloc[activerange->reg].type==pal_IREG &&
-        chunk->alloc[activerange->reg].info.ireg.num==reg)
+    uint5 creg = palloc_close(chunk, activerange->reg);
+
+    if (chunk->alloc[creg].type==pal_IREG &&
+        chunk->alloc[creg].info.ireg.num==reg)
     {
-      chunk->alloc[activerange->reg].info.ireg.num = found;
+      chunk->alloc[creg].info.ireg.num = found;
+      chunk->alloc[activerange->reg].slot->data.reg = found;
+      fprintf(stderr, "Free ireg: Rewrote logical register %d\n", creg);
     }
   }
+
+  fprintf(stderr, "Freed ireg %s (moved to %s)\n", regname[reg], 
+    regname[found]);
   
   chunk->reguse[reg] = 0;
   chunk->reguse[found] = 1;
@@ -710,8 +718,6 @@ void palloc_refby(pheta_chunk* chunk)
 
 void palloc_print(pheta_chunk* chunk)
 {
-  const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
-                           "ESP", "EBP", "ESI", "EDI"};
   uint5 i;
   extern const char* armreg[];
   

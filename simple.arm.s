@@ -4,6 +4,6 @@
         .type    simple,function
 
 simple:
-	subs r0,r2,r4
-	add r6,r6,r6
-	sbcs r1,r3,r5
+	mov r0,#1024
+	ldr r1,[r0,#12]!
+	mov pc,r14
