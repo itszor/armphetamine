@@ -296,6 +296,9 @@ extern int pheta_mull(machineinfo* machine, instructionformat inst,
   
 extern int pheta_sdt(machineinfo* machine, instructionformat inst,
   void* chunk);
+
+extern int pheta_sdth(machineinfo* machine, instructionformat inst,
+  void* chunk);
   
 extern int pheta_bdt(machineinfo* machine, instructionformat inst,
   void* chunk);

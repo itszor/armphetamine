@@ -78,6 +78,23 @@ typedef union {
     uint5 cond     : 4;
   } sdt;
 
+  struct {
+    uint5 rm       : 4;
+    uint5 ident    : 1;
+    uint5 h        : 1;
+    uint5 s        : 1;
+    uint5 ident2   : 5;
+    uint5 rd       : 4;
+    uint5 rn       : 4;
+    uint5 l        : 1;
+    uint5 w        : 1;
+    uint5 ident3   : 1;
+    uint5 u        : 1;
+    uint5 p        : 1;
+    uint5 ident4   : 3;
+    uint5 cond     : 4;
+  } sdth;
+
   // Block data transfer
   struct {
     uint5 reglist  : 16;
@@ -193,7 +210,8 @@ typedef int (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
 
 // instruction command-function table
 struct insttab {
-	inst_fn dp, dp_imm, mul, mull, sdt, bdt, bra, swi, cdt, cdo, crt, sds, und;
+	inst_fn dp, dp_imm, mul, mull, sdt, sdth;
+  inst_fn bdt, bra, swi, cdt, cdo, crt, sds, und;
   inst_fn thumbl;
 };
 

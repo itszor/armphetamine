@@ -13,6 +13,7 @@ insttab diss = {
 	diss_mul,
   diss_mull,
 	diss_sdt,
+  diss_sdth,
 	diss_bdt,
 	diss_bra,
 	diss_swi,
@@ -31,6 +32,7 @@ insttab exec26 = {
 	exec_mul_26,
   exec_mull_26,
 	exec_sdt_26,
+  exec_sdth_26,
 	exec_bdt_26,
 	exec_bra_26,
 	exec_swi_26,
@@ -49,6 +51,7 @@ insttab exec32 = {
 	exec_mul_32,
   exec_mull_32,
 	exec_sdt_32,
+  exec_sdth_32,
 	exec_bdt_32,
 	exec_bra_32,
 	exec_swi_32,
@@ -67,6 +70,7 @@ insttab execthm = {
 	exec_mul_thm,
   exec_mull_thm,
 	exec_sdt_thm,
+  exec_sdth_thm,
 	exec_bdt_thm,
 	exec_bra_thm,
 	exec_swi_thm,
@@ -104,6 +108,7 @@ insttab phet4 = {
   pheta_mul,
   pheta_mull,
   pheta_sdt,
+  pheta_sdth,
   pheta_bdt,
   pheta_bra,
   pheta_swi,
@@ -123,20 +128,27 @@ int dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 	{
 		case 0:	// either data processing op, PSR tranfer or multiply
 		{
-			if (inst.mul.ident2<4 && inst.mul.ident==9)
+			if ((inst.mul.ident&9)==9)
 			{
-        switch (inst.mul.ident2)
+        if (inst.mul.ident==9)
         {
-          case 0:
-				  // it's a multiply
-				  return action->mul(machine, inst, data);
-          
-          case 1:
-          goto actually_dp;  // !!! is this necessary?
-          
-          case 2:
-          case 3:
-          return action->mull(machine, inst, data);
+          switch (inst.mul.ident2)
+          {
+            case 0:
+				    // it's a multiply
+				    return action->mul(machine, inst, data);
+
+            case 1:
+            goto actually_dp;  // !!! is this necessary?
+
+            case 2:
+            case 3:
+            return action->mull(machine, inst, data);
+          }
+        }
+        else
+        {
+          return action->sdth(machine, inst, data);
         }
 			}
 			else
@@ -149,10 +161,17 @@ int dispatch(machineinfo* machine, instructionformat inst, insttab* action,
 		
 		case 1: // single data swap/DP
 		{
-			if (inst.sds.ident3==2 && inst.sds.ident2==0 && inst.sds.ident==9)
+			if ((inst.sds.ident&9)==9)
 			{
-			  // it's a single data swap
-				return action->sds(machine, inst, data);
+        if ((inst.sds.ident&15)==9)  // not sure if that's enough
+        {
+			    // it's a single data swap
+				  return action->sds(machine, inst, data);
+        }
+        else
+        {
+          return action->sdth(machine, inst, data);
+        }
 			}
 			else
 			{

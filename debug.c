@@ -214,7 +214,7 @@ void debug_disassemble(machineinfo* machine, char* cmd)
     instructionformat inst;
     inst.instruction = word;
     fprintf(stderr, "%.8x : %.8x : ", start, word);
-    dispatch(machine, inst, &diss, 0);
+    dispatch(machine, inst, &diss, (void*)start);
     fprintf(stderr, "\n");
   }
 }
@@ -424,6 +424,7 @@ void debug_romload(machineinfo* machine, char* cmd)
   struct stat fileinfo;
   char filename[60];  // whee, buffer overflows ahead
   char* m;
+  uint3* rombase;
   FILE* f;
   uint5 addr, i;
   
@@ -444,6 +445,16 @@ void debug_romload(machineinfo* machine, char* cmd)
     return;
   }
   addr = debug_getnum(cmd);
+
+  if (addr>=0x10000000)
+  {
+    addr -= 0x10000000;
+    rombase = &((uint3*)machine->mem->rom1)[addr];
+  }
+  else
+  {
+    rombase = &((uint3*)machine->mem->rom0)[addr];
+  }
   
   m = malloc(fileinfo.st_size);
   f = fopen(filename, "r");
@@ -458,7 +469,7 @@ void debug_romload(machineinfo* machine, char* cmd)
   fprintf(stderr, "Base addr %p\n", addr);
 
   for (i=0; i<fileinfo.st_size; i++)
-    ((uint3*)machine->mem->rom0)[addr+i] = m[i];
+    rombase[i] = m[i];
   
   free(m);
   fprintf(stderr, "Loaded ROM '%s' to ROM0:%x\n", filename, addr);

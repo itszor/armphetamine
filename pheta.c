@@ -2144,6 +2144,12 @@ int pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   return 0;
 }
 
+int pheta_sdth(machineinfo* machine, instructionformat inst, void* chunk)
+{
+  fprintf(stderr, "sdth not implemented\n");
+  exit(1);
+}
+
 int pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 {
   uint5 basereg = pheta_lfetch(chunk, inst.bdt.rn);

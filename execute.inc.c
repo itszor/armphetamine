@@ -1024,6 +1024,14 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
   return 0;
 }
 
+int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
+  void* null)
+{
+  fprintf(stderr, "SDTH not implemented\n");
+  abort();
+  return 0;
+}
+
 static void savecurrent(machineinfo* machine, uint5 mode)
 {
   registerinfo* reg = machine->reg;
@@ -1503,8 +1511,18 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
       break;
       
       default:
-      fprintf(stderr, "Access to unknown coprocessor attempted\n");
-      abort();
+      {
+        char* cmd = strdup("disassemble 0xc0008000 0xc0008080\n");
+        char* cmd2 = strdup("virtual 0xc0008000\n");
+        fprintf(stderr, "Access to unknown coprocessor attempted (%d)\n",
+          inst.crt.cpn);
+        fprintf(stderr, "PC=%.8x\n", reg->r[15]);
+        debug_command(machine, cmd);
+        debug_command(machine, cmd2);
+        free(cmd);
+        free(cmd2);
+        abort();
+      }
       break;
     }
     INCPC;

@@ -231,8 +231,8 @@ meminfo* memory_initialise(uint5 bytes)
   mem->bank1 = cnewarray(uint5, BANK1RAM/4);
   mem->bank2 = cnewarray(uint5, BANK2RAM/4);
   mem->bank3 = cnewarray(uint5, BANK3RAM/4);
-  mem->rom0 = cnewarray(uint5, 16*1024*1024/4);
-  mem->rom1 = cnewarray(uint5, 4*1024*1024/4); // hello, I'm flash
+  mem->rom0 = cnewarray(uint5, 4*1024*1024/4);
+  mem->rom1 = cnewarray(uint5, 16*1024*1024/4); // hello, I'm flash
   mem->vram = cnewarray(uint5, VRAM/4);
   mem->writetag = 0;
   mem->currentmode = 0;
@@ -489,6 +489,11 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
   {
     case 0x00: // ROM bank 0
     tlb->read = readperm ? mem_rrom0 : mem_rfault;
+    tlb->write = writeperm ? mem_wnull : mem_wfault;
+    break;
+    
+    case 0x10: // ROM bank 1
+    tlb->read = readperm ? mem_rrom1 : mem_rfault;
     tlb->write = writeperm ? mem_wnull : mem_wfault;
     break;
 

@@ -15,6 +15,8 @@ extern int diss_mull(machineinfo* machine, instructionformat inst, void* null);
 
 extern int diss_sdt(machineinfo* machine, instructionformat inst, void* null);
 
+extern int diss_sdth(machineinfo* machine, instructionformat inst, void* null);
+
 extern int diss_bdt(machineinfo* machine, instructionformat inst, void* null);
 
 extern int diss_bra(machineinfo* machine, instructionformat inst, void* null);

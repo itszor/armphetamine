@@ -104,6 +104,8 @@ extern int exec_mull_26(machineinfo* machine, instructionformat inst,
                         void* null);
 extern int exec_sdt_26(machineinfo* machine, instructionformat inst,
                         void* null);
+extern int exec_sdth_26(machineinfo* machine, instructionformat inst,
+                        void* null);
 extern int exec_bdt_26(machineinfo* machine, instructionformat inst,
                         void* null);
 extern int exec_bra_26(machineinfo* machine, instructionformat inst,
@@ -133,6 +135,8 @@ extern int exec_mull_32(machineinfo* machine, instructionformat inst,
                         void* null);
 extern int exec_sdt_32(machineinfo* machine, instructionformat inst,
                         void* null);
+extern int exec_sdth_32(machineinfo* machine, instructionformat inst,
+                        void* null);
 extern int exec_bdt_32(machineinfo* machine, instructionformat inst,
                         void* null);
 extern int exec_bra_32(machineinfo* machine, instructionformat inst,
@@ -161,6 +165,8 @@ extern int exec_mul_thm(machineinfo* machine, instructionformat inst,
 extern int exec_mull_thm(machineinfo* machine, instructionformat inst,
                         void* null);
 extern int exec_sdt_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern int exec_sdth_thm(machineinfo* machine, instructionformat inst,
                         void* null);
 extern int exec_bdt_thm(machineinfo* machine, instructionformat inst,
                         void* null);

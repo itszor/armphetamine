@@ -181,6 +181,12 @@ int diss_sdt(machineinfo* machine, instructionformat inst, void* null)
   return 0;
 }
 
+int diss_sdth(machineinfo* machine, instructionformat inst, void* null)
+{
+  fprintf(stderr, "Halfword data transfer");
+  return 0;
+}
+
 int diss_bdt(machineinfo* machine, instructionformat inst, void* null)
 {
 	int reg=0, start=-1, runlength=0, first=1;
