@@ -104,6 +104,7 @@ typedef struct {
       uint5 imm;
       uint4 dest;
     } con;
+    void* ptr;
   } data;
   uint3 opcode;
 } pheta_instr;

@@ -1,7 +1,7 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -pipe -Wall -O6 -DQUICKWRITE -fomit-frame-pointer \
+CFLAGS	= -g -pipe -Wall -O0 -DQUICKWRITE \
 	  -DVERSION=\"0.2\" -DVIDCSUPPORT -DIOMDSUPPORT
 INCLUDE	= -I/usr/include -I/usr/local/include -I/usr/include/readline -I.
 

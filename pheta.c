@@ -738,7 +738,7 @@ void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno)
 {
   chunk->currentblock->lbuf[regno] = tempno;
   chunk->currentblock->dirtybuf[regno] = 1;
-/*  pheta_emit(chunk, ph_ASSOC, regno, tempno);*/
+  pheta_emit(chunk, ph_ASSOC, regno, tempno);
 }
 
 void pheta_lsync(pheta_chunk* chunk)
@@ -760,7 +760,7 @@ void pheta_state(pheta_chunk* chunk)
   uint5 i;
   list* alive = 0;
   
-  for (i=0; i<ph_NUMREG; i++)
+/*  for (i=0; i<ph_NUMREG; i++)
   {
     if (chunk->currentblock->lbuf[i] != -1 && chunk->currentblock->dirtybuf[i])
     {
@@ -770,7 +770,7 @@ void pheta_state(pheta_chunk* chunk)
       rpair->ph = i;
       rpair->arm = chunk->currentblock->lbuf[i];
     }
-  }
+  }*/
   pheta_emit(chunk, ph_STATE, alive);
 }
 

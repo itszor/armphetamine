@@ -19,6 +19,10 @@ static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
 
 static const char* txtflag[] = {"z", "c", "n", "v", "i"};
 
+static const char* armreg[] = { "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+  "r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc_full", "pc_addr", "pc_flag",
+  "cpsr_flag", "cpsr_all", "spsr", "clock" };
+
 void phetadism_chunk(pheta_chunk* chunk)
 {
   list* walk = chunk->blocks;
@@ -72,7 +76,7 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       {
         uint5 dest = instr->data.op.dest;
         uint5 reg = instr->data.op.src1;
-        printf("fetch     %%%d, r%d\n", dest, reg);
+        printf("fetch     %%%d, %s\n", dest, armreg[reg]);
       }
       break;
 
@@ -81,7 +85,7 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       {
         uint5 reg = instr->data.op.dest;
         uint5 src = instr->data.op.src1;
-        printf("%-10sr%d, %%%d\n", opname[opcode], reg, src);
+        printf("%-10s%s, %%%d\n", opname[opcode], armreg[reg], src);
       }
       break;
 
@@ -240,14 +244,14 @@ void phetadism_block(pheta_basicblock* blk, uint5 startline)
       case ph_STATE:
       {
         list* scan;
-        uint5 start = instr->data.imm, first = 1;
+        uint5 start = instr->data.ptr, first = 1;
         
         printf("%-10s(", opname[opcode]);
         
         for (scan=(list*)start; scan; scan=scan->prev)
         {
           pheta_rpair* rpair = scan->data;
-          printf(first ? "r%d:%%%d" : " r%d:%%%d", rpair->ph, rpair->arm);
+          printf(first ? "%%%d" : " %%%d", rpair->ph);
           first = 0;
         }
         printf(")\n");

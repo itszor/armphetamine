@@ -1395,7 +1395,15 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
           if (chunk->alloc[rpair->ph].type == pal_IREG)
           {
             dest.type = pal_RFILE;
-            dest.info.value = rpair->arm;
+            if (chunk->alloc[rpair->ph].info.ireg.arm_affiliation != -1)
+            {
+              dest.info.value = 
+                chunk->alloc[rpair->ph].info.ireg.arm_affiliation*4;
+            }
+            else
+            {
+              dest.info.value = -4;
+            }
             src.type = pal_IREG;
             src.info.ireg.num = chunk->alloc[rpair->ph].info.ireg.num;
             genx86_out(nat, ab_MOV, &dest, &src, &nul, map);

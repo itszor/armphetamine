@@ -29,6 +29,7 @@ struct palloc_info {
   union {
     struct {
       uint5 num;
+      uint5 arm_affiliation;
     } ireg;
     uint5 value;
     pqueue* extra;
