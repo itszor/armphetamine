@@ -652,6 +652,9 @@ uint5 genx86_equivalent(genx86_operand* a, genx86_operand* b)
   switch (a->type)
   {
     case gotype_PARTIAL:
+    fprintf(stderr, "WARNING: Comparing partial allocations for equivalence\n");
+    fprintf(stderr, "a->data.src=%d, b->data.src=%d\n",
+      a->data.src, b->data.src);
     if (a->data.src != b->data.src) return 0;
     break;
     
