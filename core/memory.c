@@ -437,9 +437,9 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
             if (!isuser) fltbase += 2;
 
-            fprintf(stderr, "fltbase=%d, subpage=%d, "
+/*            fprintf(stderr, "fltbase=%d, subpage=%d, "
               "S bit=%d, R bit=%d\n", fltbase, subpage,
-                (mem->mmucontrol >> 8)&1, (mem->mmucontrol >> 9)&1);
+                (mem->mmucontrol >> 8)&1, (mem->mmucontrol >> 9)&1);*/
 
             memory_physicalmap(tlb, physaddress,
               apfault[fltbase+0], apfault[fltbase+1]);

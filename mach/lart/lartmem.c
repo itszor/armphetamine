@@ -9,6 +9,7 @@
 #include "intctrl.h"
 #include "mexreg.h"
 #include "lartmem.h"
+#include "lartflash.h"
 
 const mem_readbank mem_rrom0 =
 {
@@ -159,6 +160,7 @@ void memory_subinitialise(meminfo* mem)
   mem->ostimer = ostimer_new();
   mem->intctrl = intctrl_new();
   mem->mex = mexreg_new();
+  mem->flashmode = READ_ARRAY;
 }
 
 void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
@@ -169,7 +171,7 @@ void memory_physicalmap(tlbentry* tlb, uint5 physaddress, uint3 readperm,
     case 0x00: // ROM bank 0
     case 0x08: // alt location
     tlb->read = readperm ? mem_rrom0 : mem_rfault;
-    tlb->write = writeperm ? mem_wnull : mem_wfault;
+    tlb->write = writeperm ? mem_wrom0 : mem_wfault;
     break;
     
     case 0x10: // ROM bank 1
@@ -286,26 +288,71 @@ BANKEDREADER(byte,3,uint3,0)
 
 uint5 memory_readrom0(meminfo* mem, uint5 physaddress)
 {
-  return mem->rom0[(physaddress & 0xffffff) >> 2];
+  switch (mem->flashmode)
+  {
+    case READ_ARRAY:
+    return mem->rom0[(physaddress & 0xffffff) >> 2];
+    break;
+
+    case READ_ID_CODES:
+    {
+      switch (FLASH_U2_TO_ADDR(physaddress))
+      {
+        case 0x00000000:
+        return DATA_TO_FLASH(0x00890089);  /* manufacturer code */
+        break;
+
+        case 0x00000001:
+        return DATA_TO_FLASH(0x88f388f3);  /* device code -- 16mbit_top */
+        break;
+
+        default:
+        fprintf(stderr, "Unknown flash ID code, aborting\n");
+        abort();
+      }
+    }
+    break;
+    
+    default:
+    fprintf(stderr, "Unknown flash mode, aborting\n");
+    abort();
+  }
 }
 
 uint5 memory_readhalfrom0(meminfo* mem, uint5 physaddress)
 {
-  return ((uint4*)mem->rom0)[(physaddress & 0xffffff) >> 1];
+  if (mem->flashmode==READ_ARRAY)
+    return ((uint4*)mem->rom0)[(physaddress & 0xffffff) >> 1];
+  else
+    abort();
 }
 
 uint5 memory_readbyterom0(meminfo* mem, uint5 physaddress)
 {
-  return ((uint3*)mem->rom0)[physaddress & 0xffffff];
+  fprintf(stderr, "Read flash byte at %.8x\n", physaddress);
+  if (mem->flashmode==READ_ARRAY)
+    return ((uint3*)mem->rom0)[physaddress & 0xffffff];
+  else
+    abort();
 }
 
-void memory_writerom0(meminfo* mem, uint5 physaddress, uint5 data)
+void memory_writerom0(meminfo* mem, uint5 addr, uint5 data)
 {
-  static uint5 mode = 0;
-  if (data==0x02018040)
+  if (addr==0x0 && data==DATA_TO_FLASH(READ_ID_CODES))
   {
-    fprintf(stderr, "FLASH: Read ID codes");
-    mode = 1;
+    fprintf(stderr, "FLASH: Read ID codes\n");
+    mem->flashmode = READ_ID_CODES;
+  }
+  else if (addr==0x0 && data==DATA_TO_FLASH(READ_ARRAY))
+  {
+    fprintf(stderr, "FLASH: Array read mode\n");
+    mem->flashmode = READ_ARRAY;
+  }
+  else
+  {
+    fprintf(stderr, "FLASH: Don't know what to do (addr: %.8x, data: %.8x)\n",
+      addr, data);
+    abort();
   }
 }
 

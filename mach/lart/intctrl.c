@@ -77,7 +77,9 @@ void intctrl_fire(machineinfo* machine)
   if (icr->icfp && !(reg->cpsr.flag.interrupt & 0x1) &&
     mem->currentmode!=pm_IRQ32 && mem->currentmode!=pm_FIQ32)
   {
+    #ifdef DEBUG_INT
     fprintf(stderr, "Firing FIQ!\n");
+    #endif
     processor_fiq(machine);
   /*  icr->icpr = 0;
     icr->icfp = 0;*/
@@ -85,7 +87,9 @@ void intctrl_fire(machineinfo* machine)
   else if (icr->icip && !(reg->cpsr.flag.interrupt & 0x2) &&
     mem->currentmode!=pm_FIQ32)
   {
+    #ifdef DEBUG_INT
     fprintf(stderr, "Firing IRQ!\n");
+    #endif
     processor_irq(machine);
    /* icr->icpr = 0;
     icr->icip = 0;*/

@@ -34,20 +34,26 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       case 0x04:
       case 0x08:
       case 0x0c:
+      #ifdef DEBUG_INT
       fprintf(stderr, "Write match register %d to %x (cnt=%x)\n", 
         (address&0x1f)/4, data, mem->ostimer->clock);
+      #endif
       mem->ostimer->osmr[(address & 0x1f)>>2] = data;
       break;
 
       case 0x10:
+      #ifdef DEBUG_INT
       fprintf(stderr, "Writing %d to clock\n", data);
+      #endif
       mem->ostimer->clock = data;
       break;
 
       case 0x14:
       /* clears bits set to one in data */
       mem->ostimer->ossr &= ~data;
+      #ifdef DEBUG_INT
       fprintf(stderr, "Stripping int bits\n");
+      #endif
       mem->intctrl->icip &= ~(data<<26);
       mem->intctrl->icfp &= ~(data<<26);
       mem->intctrl->icpr &= ~(data<<26);
@@ -64,8 +70,10 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
     break;
     
     case 0x5:  // interrupt controller
+    #ifdef DEBUG_INT
     fprintf(stderr, "Write interrupt controller @ %x, %.8x\n", address & 0xff,
       data);
+    #endif
     switch (address & 0xff)
     {
       case 0x00:
@@ -136,21 +144,29 @@ uint5 ostimer_read(meminfo* mem, uint5 address)
     break;
 
     case 0x5:  // interrupt controller
+    #ifdef DEBUG_INT
     fprintf(stderr, "Read interrupt controller @ %x, ", address & 0xff);
+    #endif
     switch (address & 0xff)
     {
       case 0x00:
+      #ifdef DEBUG_INT
       fprintf(stderr, "value=%x\n", mem->intctrl->icip);
+      #endif
       return mem->intctrl->icip;
       break;
 
       case 0x04:
+      #ifdef DEBUG_INT
       fprintf(stderr, "value=%x\n", mem->intctrl->icmr);
+      #endif
       return mem->intctrl->icmr;
       break;
 
       case 0x08:
+      #ifdef DEBUG_INT
       fprintf(stderr, "value=%x\n", mem->intctrl->iclr);
+      #endif
       return mem->intctrl->iclr;
       break;
 
@@ -205,8 +221,10 @@ void ostimer_clock(machineinfo* machine)
     if (clk==oti->osmr[i])
     {
       /* set corresponding bit in status register */
+      #ifdef DEBUG_INT
       fprintf(stderr, "clk matched %d at time %x\n", i, clk);
       fprintf(stderr, "OIER bit=%s\n", (1<<i) & oti->oier ? "true" : "false");
+      #endif
       oti->ossr |= (1<<i) & oti->oier;
     }
   }

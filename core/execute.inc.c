@@ -825,8 +825,8 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
     {
       reg->spsr[reg->spsr_current].value &= ~field;
       reg->spsr[reg->spsr_current].value |= val & field;
-      fprintf(stderr, "Set spsr[%d] to %.8x, field=%.8x\n", reg->spsr_current,
-        reg->spsr[reg->spsr_current].value, field);
+/*      fprintf(stderr, "Set spsr[%d] to %.8x, field=%.8x\n", reg->spsr_current,
+        reg->spsr[reg->spsr_current].value, field);*/
     }
     else
     {
@@ -1265,18 +1265,18 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 #ifdef ARM26BIT
     if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
     {
-      fprintf(stderr, "Hatted %s in 26-bit mode, forcing user "
-                      "bank transfer\n", inst.bdt.l ? "LDM" : "STM");
+/*      fprintf(stderr, "Hatted %s in 26-bit mode, forcing user "
+                      "bank transfer\n", inst.bdt.l ? "LDM" : "STM");*/
       processor_reg_savecurrent(machine, originalmode);
       processor_reg_restorenew(machine, pm_USR26);
     }
 #else
     if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
     {
-      fprintf(stderr, "Hatted %s in 32-bit mode, forcing user "
+   /*   fprintf(stderr, "Hatted %s in 32-bit mode, forcing user "
                       "bank transfer\n", inst.bdt.l ? "LDM" : "STM");
       fprintf(stderr, "PC %sincluded\n",
-        (inst.bdt.reglist & (1<<15)) ? "" : "not ");
+        (inst.bdt.reglist & (1<<15)) ? "" : "not ");*/
       processor_reg_savecurrent(machine, originalmode);
       processor_reg_restorenew(machine, pm_USR32);
     }
@@ -1391,12 +1391,12 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     if (inst.bdt.s && inst.bdt.l && (inst.bdt.reglist & (1<<15)))
     {
       psrinfo oldspsr = reg->spsr[reg->spsr_current];
-      fprintf(stderr, "Potential trouble spot (LDM)\n");
-      fprintf(stderr, "Address = %.8x\n", oldpc-8);
+     /* fprintf(stderr, "Potential trouble spot (LDM)\n");
+      fprintf(stderr, "Address = %.8x\n", oldpc-8);*/
 /*      machine->trace = 1;*/
     /*  reg->cpsr.flag.interrupt &= 1;*/
-      fprintf(stderr, "Causing mode switch to: %d\n", 
-        reg->spsr[reg->spsr_current].flag.mode);
+     /* fprintf(stderr, "Causing mode switch to: %d\n", 
+        reg->spsr[reg->spsr_current].flag.mode);*/
 
       processor_mode(machine, oldspsr.flag.mode);
       reg->cpsr = oldspsr;

@@ -111,6 +111,7 @@ struct meminfo {
   struct ostimer_registers* ostimer;
   struct intctrl_registers* intctrl;
   struct mex_registers* mex;
+  uint5 flashmode;
 #endif
 
   uint3 currentmode;
