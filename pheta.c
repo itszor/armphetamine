@@ -179,7 +179,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       if (!hash_lookup(leaders, i+1))
       {
         p = hash_insert(leaders, i+1);
-        p->data = pheta_newbasicblock(chunk, base+i*4+4);
+/*        p->data = pheta_newbasicblock(chunk, base+i*4+4);*/
       }
 
 //      fprintf(stderr, "prescan: dest=%d\n", dest);
@@ -187,28 +187,28 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       if (dest>=0 && dest<length && !hash_lookup(leaders, i))
       {
         p = hash_insert(leaders, dest);
-        p->data = pheta_newbasicblock(chunk, base+dest*4);
+/*        p->data = pheta_newbasicblock(chunk, base+dest*4);*/
       }
     }
   }
 
   p = hash_insert(leaders, 0);
   chunk->root = p->data = pheta_newbasicblock(chunk, base);
-  chunk->currentblock = 0;
+  chunk->currentblock = chunk->root;
   fprintf(stderr, "Chunk root=%p\n", chunk->root);
-  
+
   for (i=0; i<length; i++)
   {
     instructionformat inst;
     hashentry* blockstart;
-    
+
     chunk->virtualaddress = base+i*sizeof(uint5);
     inst.instruction = memory_readinstword(machine->mem, chunk->virtualaddress);
 
     if ((blockstart = hash_lookup(leaders, i)))
     {
       // chain adjacent blocks together
-      if (chunk->currentblock)
+ /*     if (chunk->currentblock)
       {
         pheta_basicblock* prev = chunk->currentblock;
         pheta_cyclecount(chunk);
@@ -219,7 +219,10 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
         if (prev->predicate==ph_AL)
           pheta_link(prev, ph_AL, chunk->currentblock, 0);
       }
-      else chunk->currentblock = chunk->root;
+      else chunk->currentblock = chunk->root;*/
+      if (!blockstart->data)
+        blockstart->data = pheta_newbasicblock(chunk, -1);
+      chunk->currentblock = blockstart->data;
     }
 
     // ew, this is pretty shaky...
@@ -1649,14 +1652,27 @@ void pheta_bra(machineinfo* machine, instructionformat inst, void* data)
   
   if (dest>=0 && dest<chunk->length)
   {
+    pheta_basicblock* prevblk = chunk->currentblock;
     hashentry* taken = hash_lookup(chunk->leaders, dest);
     hashentry* nottaken = hash_lookup(chunk->leaders, next);
+
+    if (!taken)
+      taken = hash_insert(chunk->leaders, dest);
+
+    if (!taken->data)
+      taken->data = pheta_newbasicblock(chunk, -1);
+    
+    if (!nottaken)
+      nottaken = hash_insert(chunk->leaders, next);
+
+    if (!nottaken->data)
+      nottaken->data = pheta_newbasicblock(chunk, -1);
 
 //  pheta_emit(chunk, ph_FEXPECT, ph_C|ph_V|ph_N|ph_Z);
 /*    fprintf(stderr, "linking %x to %x,%x with %d\n", chunk->currentblock,
       taken->data, nottaken->data, inst.bra.cond);*/
 //    blkpred = pheta_emit(chunk, ph_SETPRED, inst.bra.cond);
-    pheta_link(chunk->currentblock, inst.bra.cond, taken->data, nottaken->data);
+    pheta_link(prevblk, inst.bra.cond, taken->data, nottaken->data);
   }
   else  // going outside - ack!
   {
