@@ -169,13 +169,14 @@ uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
             srcspan->startline+srcspan->length, thisline);
           if (srcspan->startline+srcspan->length <= thisline)
           {
-            uint5 srctype = chunk->alloc[srcr[0]].type;
+            uint5 csrcreg = palloc_close(chunk, srcr[0]);
+            uint5 srctype = chunk->alloc[csrcreg].type;
             if (chunk->alloc[destr[0]].type == pal_UNSET &&
                 srctype!=pal_CONST && srctype!=pal_CONSTB)
             {
               fprintf(stderr, "Can alias %d to %d\n", destr[0], srcspan->reg);
               chunk->alloc[destr[0]].type = pal_ALIAS;
-              chunk->alloc[destr[0]].info.value = srcr[0];
+              chunk->alloc[destr[0]].info.value = csrcreg;
             }
           }
         }
