@@ -1,87 +1,98 @@
 allocate.o: allocate.c cnew.h machine.h defs.h processor.h registers.h \
- memory.h hash.h list.h allocate.h x86asm.h codegen.h block.h pseudo.h \
- decode.h analyse.h
+ memory.h keyboard.h mouse.h hash.h list.h allocate.h x86asm.h \
+ codegen.h block.h pseudo.h decode.h analyse.h
 analyse.o: analyse.c cnew.h machine.h defs.h processor.h registers.h \
- memory.h hash.h list.h block.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h analyse.h
+ memory.h keyboard.h mouse.h hash.h list.h block.h pseudo.h decode.h \
+ codegen.h allocate.h x86asm.h analyse.h
 asmalutab.o: asmalutab.c defs.h asmalu.h
 block.o: block.c defs.h machine.h processor.h registers.h memory.h \
- hash.h list.h cnew.h block.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h analyse.h execute.h x86dism.h nativesupport.h
+ keyboard.h mouse.h hash.h list.h cnew.h block.h pseudo.h decode.h \
+ codegen.h allocate.h x86asm.h analyse.h execute.h x86dism.h \
+ nativesupport.h
 cnew.o: cnew.c cnew.h
 codegen.o: codegen.c cnew.h defs.h machine.h processor.h registers.h \
- memory.h hash.h list.h codegen.h allocate.h x86asm.h pseudo.h \
- decode.h block.h analyse.h codegen_p.h pqueue.h
+ memory.h keyboard.h mouse.h hash.h list.h codegen.h allocate.h \
+ x86asm.h pseudo.h decode.h block.h analyse.h codegen_p.h pqueue.h
 decode.o: decode.c machine.h defs.h processor.h registers.h memory.h \
- hash.h list.h decode.h disassemble.h execute.h pseudo.h codegen.h \
- allocate.h x86asm.h pheta.h bset.h
+ keyboard.h mouse.h hash.h list.h decode.h disassemble.h execute.h \
+ pseudo.h codegen.h allocate.h x86asm.h pheta.h bset.h
 disassemble.o: disassemble.c defs.h machine.h processor.h registers.h \
- memory.h hash.h list.h decode.h
+ memory.h keyboard.h mouse.h hash.h list.h decode.h
 execute26.o: execute26.c execute.inc.c defs.h machine.h processor.h \
- registers.h memory.h hash.h list.h execute.h decode.h fakesys.h \
- asmalu.h
+ registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
+ decode.h fakesys.h asmalu.h
 execute32.o: execute32.c execute.inc.c defs.h machine.h processor.h \
- registers.h memory.h hash.h list.h execute.h decode.h fakesys.h
+ registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
+ decode.h fakesys.h
 fakesys.o: fakesys.c defs.h machine.h processor.h registers.h memory.h \
- hash.h list.h decode.h execute.h fakesys.h riscos.h
+ keyboard.h mouse.h hash.h list.h decode.h execute.h fakesys.h \
+ riscos.h
 flush.o: flush.c defs.h flush.h machine.h processor.h registers.h \
- memory.h hash.h list.h block.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h analyse.h
+ memory.h keyboard.h mouse.h hash.h list.h block.h pseudo.h decode.h \
+ codegen.h allocate.h x86asm.h analyse.h
 generators.o: generators.c defs.h codegen.h allocate.h x86asm.h hash.h \
- list.h registers.h processor.h machine.h memory.h generators.h \
- pseudo.h decode.h analyse.h block.h codegen_p.h nativesupport.h
+ list.h registers.h processor.h machine.h memory.h keyboard.h mouse.h \
+ generators.h pseudo.h decode.h analyse.h block.h codegen_p.h \
+ nativesupport.h
 hash.o: hash.c cnew.h hash.h defs.h list.h
-iomd.o: iomd.c defs.h iomd.h memory.h
+iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h
 list.o: list.c cnew.h list.h
 loadaout.o: loadaout.c loadaout.h
 machine.o: machine.c cnew.h machine.h defs.h processor.h registers.h \
- memory.h hash.h list.h block.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h analyse.h execute.h
+ memory.h keyboard.h mouse.h hash.h list.h block.h pseudo.h decode.h \
+ codegen.h allocate.h x86asm.h analyse.h execute.h
 main.o: main.c cnew.h defs.h machine.h processor.h registers.h \
- memory.h hash.h list.h decode.h loadaout.h block.h pseudo.h codegen.h \
- allocate.h x86asm.h analyse.h generators.h riscos.h execute.h \
- pqueue.h debug.h
-memory.o: memory.c defs.h cnew.h memory.h processor.h vidc20.h iomd.h
+ memory.h keyboard.h mouse.h hash.h list.h decode.h loadaout.h block.h \
+ pseudo.h codegen.h allocate.h x86asm.h analyse.h generators.h \
+ riscos.h execute.h pqueue.h debug.h
+memory.o: memory.c defs.h cnew.h memory.h keyboard.h mouse.h \
+ processor.h vidc20.h iomd.h
 nativesupport.o: nativesupport.c defs.h registers.h processor.h \
- memory.h nativesupport.h x86asm.h hash.h list.h machine.h execute.h \
- decode.h fakesys.h block.h pseudo.h codegen.h allocate.h analyse.h
+ memory.h keyboard.h mouse.h nativesupport.h x86asm.h hash.h list.h \
+ machine.h execute.h decode.h fakesys.h block.h pseudo.h codegen.h \
+ allocate.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
- registers.h memory.h hash.h bset.h cnew.h pqueue.h
+ registers.h memory.h keyboard.h mouse.h hash.h bset.h cnew.h pqueue.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
- processor.h registers.h memory.h hash.h bset.h phetadism.h
+ processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
+ phetadism.h
 pqueue.o: pqueue.c cnew.h pqueue.h defs.h
 processor.o: processor.c cnew.h registers.h defs.h processor.h \
- machine.h memory.h hash.h list.h decode.h
+ machine.h memory.h keyboard.h mouse.h hash.h list.h decode.h
 pseudo.o: pseudo.c defs.h machine.h processor.h registers.h memory.h \
- hash.h list.h pseudo.h decode.h codegen.h allocate.h x86asm.h cnew.h \
- execute.h block.h analyse.h
+ keyboard.h mouse.h hash.h list.h pseudo.h decode.h codegen.h \
+ allocate.h x86asm.h cnew.h execute.h block.h analyse.h
 pseudodism.o: pseudodism.c defs.h machine.h processor.h registers.h \
- memory.h hash.h list.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h pseudodism.h
+ memory.h keyboard.h mouse.h hash.h list.h pseudo.h decode.h codegen.h \
+ allocate.h x86asm.h pseudodism.h
 registers.o: registers.c cnew.h defs.h registers.h processor.h
-riscos.o: riscos.c defs.h cnew.h riscos.h memory.h registers.h \
- processor.h machine.h hash.h list.h execute.h decode.h
+riscos.o: riscos.c defs.h cnew.h riscos.h memory.h keyboard.h mouse.h \
+ registers.h processor.h machine.h hash.h list.h execute.h decode.h
 rtasm.o: rtasm.c defs.h cnew.h x86asm.h hash.h list.h registers.h \
  processor.h rtasm.h rtasm_fns.h
-vidc20.o: vidc20.c defs.h vidc20.h memory.h
+vidc20.o: vidc20.c defs.h vidc20.h memory.h keyboard.h mouse.h
 x86asm.o: x86asm.c cnew.h defs.h machine.h processor.h registers.h \
- memory.h hash.h list.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h
+ memory.h keyboard.h mouse.h hash.h list.h pseudo.h decode.h codegen.h \
+ allocate.h x86asm.h
 x86dism.o: x86dism.c x86asm.h defs.h hash.h list.h registers.h \
  processor.h x86dism.h
 rtasm.o: rtasm.c defs.h cnew.h x86asm.h hash.h list.h registers.h \
  processor.h rtasm.h rtasm_fns.h
 flush.o: flush.c defs.h flush.h machine.h processor.h registers.h \
- memory.h hash.h list.h block.h pseudo.h decode.h codegen.h allocate.h \
- x86asm.h analyse.h
+ memory.h keyboard.h mouse.h hash.h list.h block.h pseudo.h decode.h \
+ codegen.h allocate.h x86asm.h analyse.h
 pheta.o: pheta.c defs.h pheta.h list.h decode.h machine.h processor.h \
- registers.h memory.h hash.h bset.h cnew.h pqueue.h
+ registers.h memory.h keyboard.h mouse.h hash.h bset.h cnew.h pqueue.h
 phetadism.o: phetadism.c defs.h pheta.h list.h decode.h machine.h \
- processor.h registers.h memory.h hash.h bset.h phetadism.h
-vidc20.o: vidc20.c defs.h vidc20.h memory.h
-iomd.o: iomd.c defs.h iomd.h memory.h
+ processor.h registers.h memory.h keyboard.h mouse.h hash.h bset.h \
+ phetadism.h
+vidc20.o: vidc20.c defs.h vidc20.h memory.h keyboard.h mouse.h
+iomd.o: iomd.c defs.h iomd.h memory.h keyboard.h mouse.h
 debug.o: debug.c defs.h machine.h processor.h registers.h memory.h \
- hash.h list.h debug.h execute.h decode.h pheta.h bset.h phetadism.h \
- vidc20.h iomd.h
+ keyboard.h mouse.h hash.h list.h debug.h execute.h decode.h pheta.h \
+ bset.h phetadism.h vidc20.h iomd.h
 bset.o: bset.c defs.h bset.h cnew.h
 asmalutab.o: asmalutab.c defs.h asmalu.h
+fifo.o: fifo.c fifo.h defs.h cnew.h
+mouse.o: mouse.c mouse.h
+keyboard.o: keyboard.c keyboard.h defs.h
