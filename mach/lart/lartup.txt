@@ -1,6 +1,6 @@
 romload blob3        0x00000000
-romload zImage-linux-2.4.17-rmk3-lart  0x00020000
-romload ramdisk-lart-minimal-new-tty  0x00100000
+romload lart-kernel2  0x00020000
+romload lart-initrd  0x00100000
 # break 0xc0008000
 # trace on
 # break 0xc0015320

@@ -12,6 +12,7 @@ registerinfo* registers_new(void)
 	for (i=0; i<16; i++) reg->r[i] = 0;
   reg->pcmask = 0x0c000003;  // user mode bits
 
+  reg->cpsr.value = 0;
   reg->cpsr.flag.mode = pm_SVC32;
 
 //	fprintf(stderr, "Initialised register bank\n");

@@ -1194,87 +1194,6 @@ int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
   return 0;
 }
 
-static void savecurrent(machineinfo* machine, uint5 mode)
-{
-  registerinfo* reg = machine->reg;
-  uint5 i;
-
-  switch (mode)
-  {
-    case pm_USR26:
-    case pm_USR32:
-    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
-    break;
-    
-    case pm_FIQ26:
-    case pm_FIQ32:
-    for (i=8; i<=14; i++) reg->fiq[i-8] = reg->r[i];
-    break;
-    
-    case pm_IRQ26:
-    case pm_IRQ32:
-    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->irq[i-13] = reg->r[i];
-    break;
-    
-    case pm_SVC26:
-    case pm_SVC32:
-    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->svc[i-13] = reg->r[i];
-    break;
-    
-    case pm_ABT32:
-    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->abt[i-13] = reg->r[i];
-    break;
-    
-    case pm_UND32:
-    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->und[i-13] = reg->r[i];
-    break;
-  }
-}
-
-static void restorenew(machineinfo* machine, uint5 mode)
-{
-  registerinfo* reg = machine->reg;
-  uint5 i;
-  
-  switch (mode)
-  {
-    case pm_USR26:
-    case pm_USR32:
-    for (i=8; i<=14; i++) reg->r[i] = reg->usr[i-8];
-    break;
-    
-    case pm_FIQ26:
-    case pm_FIQ32:
-    for (i=8; i<=14; i++) reg->r[i] = reg->fiq[i-8];
-    break;
-    
-    case pm_IRQ26:
-    case pm_IRQ32:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->irq[i-13];
-    break;
-    
-    case pm_SVC26:
-    case pm_SVC32:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->svc[i-13];
-    break;
-    
-    case pm_ABT32:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->abt[i-13];
-    break;
-    
-    case pm_UND32:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->und[i-13];
-    break;
-  }
-}
 
 // macros relating to block data transfer
 // we're living in a flat address space for now - no overlap testing necessary
@@ -1312,8 +1231,8 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     {
       fprintf(stderr, "Hatted %s in 26-bit mode, forcing user "
                       "bank transfer\n", inst.bdt.l ? "LDM" : "STM");
-      savecurrent(machine, originalmode);
-      restorenew(machine, pm_USR26);
+      processor_reg_savecurrent(machine, originalmode);
+      processor_reg_restorenew(machine, pm_USR26);
     }
 #else
     if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
@@ -1322,8 +1241,8 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
                       "bank transfer\n", inst.bdt.l ? "LDM" : "STM");
       fprintf(stderr, "PC %sincluded\n",
         (inst.bdt.reglist & (1<<15)) ? "" : "not ");
-      savecurrent(machine, originalmode);
-      restorenew(machine, pm_USR32);
+      processor_reg_savecurrent(machine, originalmode);
+      processor_reg_restorenew(machine, pm_USR32);
     }
 #endif
 
@@ -1428,8 +1347,8 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     {
       // maybe this can corrupt registers, it's too complicated for me to
       // work out right now?
-      savecurrent(machine, pm_USR32);
-      restorenew(machine, originalmode);
+      processor_reg_savecurrent(machine, pm_USR32);
+      processor_reg_restorenew(machine, originalmode);
     }
 //#endif
 
@@ -1661,12 +1580,16 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 5: // flush TLB
                 {
                   fprintf(stderr, "> Flush TLB\n");
+                  memory_invalidatetlb(&mem->insttlb);
+                  memory_invalidatetlb(&mem->datatlb);
                 }
                 break;
                 
                 case 6: // purge TLB
                 {
                   fprintf(stderr, "> Purge TLB\n");
+                  memory_invalidatetlb(&mem->insttlb);
+                  memory_invalidatetlb(&mem->datatlb);
                 }
                 break;
                 
@@ -1680,6 +1603,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 {
                   fprintf(stderr, "> TLB operation (SA)\n");
 /*                  machine->trace = 1;*/
+                  memory_invalidatetlb(&mem->insttlb);
+                  memory_invalidatetlb(&mem->datatlb);
                 }
                 break;
                 

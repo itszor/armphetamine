@@ -23,6 +23,101 @@ const char* modename_st[] =
   "UND32", "XXX28", "XXX29", "XXX30", "XXX31"
 };
 
+void processor_reg_savecurrent(machineinfo* machine, uint5 mode)
+{
+  uint5 i;
+  registerinfo* reg = machine->reg;
+  
+  switch (mode)
+  {
+    case pm_USR32:
+    case pm_USR26:
+    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
+    break;
+
+    case pm_FIQ32:
+    case pm_FIQ26:
+    for (i=8; i<=14; i++) reg->fiq[i-8] = reg->r[i];
+    break;
+
+    case pm_IRQ32:
+    case pm_IRQ26:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->irq[i-13] = reg->r[i];
+    break;
+
+    case pm_SVC32:
+    case pm_SVC26:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->svc[i-13] = reg->r[i];
+    break;
+
+    case pm_ABT32:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->abt[i-13] = reg->r[i];
+    break;
+
+    case pm_UND32:
+    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
+    for (i=13; i<=14; i++) reg->und[i-13] = reg->r[i];
+    break;
+  }
+}
+
+void processor_reg_restorenew(machineinfo* machine, uint5 mode)
+{
+  uint5 i;
+  registerinfo* reg = machine->reg;
+
+  switch (mode)
+  {
+    case pm_USR32:
+    case pm_USR26:
+    for (i=8; i<=14; i++) reg->r[i] = reg->usr[i-8];
+    // ignore bits 0,1,26,27 on LDM {...pc...}^
+    reg->pcmask = 0x0c000003;
+    reg->spsr_current = 0;
+    break;
+  
+    case pm_FIQ32:
+    case pm_FIQ26:
+    for (i=8; i<=14; i++) reg->r[i] = reg->fiq[i-8];
+    reg->pcmask = 0x0;
+    reg->spsr_current = 1;
+    break;
+  
+    case pm_IRQ32:
+    case pm_IRQ26:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->irq[i-13];
+    reg->pcmask = 0x0;
+    reg->spsr_current = 2;
+    break;
+
+    case pm_SVC32:
+    case pm_SVC26:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->svc[i-13];
+    reg->pcmask = 0x0;
+    reg->spsr_current = 3;
+    break;
+
+    case pm_ABT32:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->abt[i-13];
+    reg->pcmask = 0x0;
+    reg->spsr_current = 4;
+    break;
+
+    case pm_UND32:
+    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
+    for (i=13; i<=14; i++) reg->r[i] = reg->und[i-13];
+    reg->pcmask = 0x0;
+    reg->spsr_current = 5;
+    break;
+  }
+}
+
 // Switch the current processor mode
 void processor_mode(machineinfo* machine, uint5 newmode)
 {
@@ -75,88 +170,8 @@ void processor_mode(machineinfo* machine, uint5 newmode)
     /*if (newmode != omode)*/ reg->spsr[newmode&15] = reg->cpsr;
   }
 
-  switch (omode)
-  {
-    case pm_USR32:
-    case pm_USR26:
-    for (i=8; i<=14; i++) reg->usr[i-8] = reg->r[i];
-    break;
-
-    case pm_FIQ32:
-    case pm_FIQ26:
-    for (i=8; i<=14; i++) reg->fiq[i-8] = reg->r[i];
-    break;
-
-    case pm_IRQ32:
-    case pm_IRQ26:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->irq[i-13] = reg->r[i];
-    break;
-
-    case pm_SVC32:
-    case pm_SVC26:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->svc[i-13] = reg->r[i];
-    break;
-
-    case pm_ABT32:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->abt[i-13] = reg->r[i];
-    break;
-
-    case pm_UND32:
-    for (i=8; i<=12; i++) reg->usr[i-8] = reg->r[i];
-    for (i=13; i<=14; i++) reg->und[i-13] = reg->r[i];
-    break;
-  }
-
-  switch (newmode)
-  {
-    case pm_USR32:
-    case pm_USR26:
-    for (i=8; i<=14; i++) reg->r[i] = reg->usr[i-8];
-    // ignore bits 0,1,26,27 on LDM {...pc...}^
-    reg->pcmask = 0x0c000003;
-    reg->spsr_current = 0;
-    break;
-  
-    case pm_FIQ32:
-    case pm_FIQ26:
-    for (i=8; i<=14; i++) reg->r[i] = reg->fiq[i-8];
-    reg->pcmask = 0x0;
-    reg->spsr_current = 1;
-    break;
-  
-    case pm_IRQ32:
-    case pm_IRQ26:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->irq[i-13];
-    reg->pcmask = 0x0;
-    reg->spsr_current = 2;
-    break;
-
-    case pm_SVC32:
-    case pm_SVC26:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->svc[i-13];
-    reg->pcmask = 0x0;
-    reg->spsr_current = 3;
-    break;
-
-    case pm_ABT32:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->abt[i-13];
-    reg->pcmask = 0x0;
-    reg->spsr_current = 4;
-    break;
-
-    case pm_UND32:
-    for (i=8; i<=12; i++) reg->r[i] = reg->usr[i-8];
-    for (i=13; i<=14; i++) reg->r[i] = reg->und[i-13];
-    reg->pcmask = 0x0;
-    reg->spsr_current = 5;
-    break;
-  }
+  processor_reg_savecurrent(machine, omode);
+  processor_reg_restorenew(machine, newmode);
 
   reg->cpsr.flag.mode = newmode;
   // keep a copy of current mode for use by memory subsystem

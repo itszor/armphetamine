@@ -575,7 +575,7 @@ void debug_virtual(machineinfo* machine, char* cmd)
   addr = debug_getnum(cmd);
   
   fprintf(stderr, "Virtual address: %.8x  Physical address: %.8x\n", addr,
-    memory_virtualtophysical(machine->mem, addr, &nulltlb));
+    memory_virtualtophysical(machine->mem, addr, &nulltlb, 1));
 }
 
 void debug_phetatrans(machineinfo* machine, char* cmd)
