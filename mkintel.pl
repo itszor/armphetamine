@@ -93,11 +93,11 @@ foreach (@inteldat)
         @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_m16n32";
       }
-      elsif (m/^DR0-DR7$/) {
+      elsif (m/^DR$/) {
         @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_dbg";
       }
-      elsif (m/^CR[0234]$/) {
+      elsif (m/^CR$/) {
         @args[$narg++] = "rtasm_mtype mem";
         $fnname .= "_cr" . substr($_,2,1);
       }
@@ -220,6 +220,9 @@ foreach (@inteldat)
                   "\trtasm_putbyte(nat, (imm$immno>>16) \& 0xff);\n" .
                   "\trtasm_putbyte(nat, imm$immno>>24);\n";
         $immno = bump($immno);
+      }
+      elsif (m/cb/) {
+        $immed .= "\trtasm_putbyte(nat, offset);\n";
       }
       elsif (m/cw/) {
         $immed .= "\trtasm_putbyte(nat, offset \& 0xff);\n" .

@@ -17,6 +17,7 @@
 #include "execute.h"
 #include "pqueue.h"
 #include "debug.h"
+#include "genx86.h"
 
 #ifdef VIRTUALFRAMEBUFFER
 #include "SDL.h"
@@ -131,6 +132,8 @@ int main(void)
   fprintf(stderr, "Initialising VIDC20\n");
   vidc20_init(mem);
 #endif
+
+  genx86_test();
 
 //  fprintf(stderr, "\nInitialising RISC OS API emulation...\n");
   riscosstate = riscos_initialise();

@@ -397,6 +397,7 @@ typedef struct {
 } nativeblockinfo;
 
 extern nativeblockinfo* x86asm_newnative(void);
+extern void x86asm_deletenative(nativeblockinfo* nat);
 extern void x86asm_out(nativeblockinfo* nat, ...);
 extern void x86asm_swi(registerinfo* reg);
 

@@ -18,6 +18,12 @@ nativeblockinfo* x86asm_newnative(void)
   return nat;
 }
 
+void x86asm_deletenative(nativeblockinfo* nat)
+{
+  free(nat->base);
+  free(nat);
+}
+
 // assemble an x86 instruction from a series of bit-blocks
 void x86asm_out(nativeblockinfo* nat, ...)
 {

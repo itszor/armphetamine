@@ -18,6 +18,16 @@ void rtasm_putbyte(nativeblockinfo* nat, uint3 byte)
     nat->base = realloc(nat->base, nat->size *= 2);
 }
 
+void rtasm_opsize16(nativeblockinfo* nat)
+{
+  rtasm_putbyte(nat, 0x66);
+}
+
+void rtasm_offsize16(nativeblockinfo* nat)
+{
+  rtasm_putbyte(nat, 0x67);
+}
+
 void rtasm_mem(nativeblockinfo* nat, rtasm_mtype* mem)
 {
   switch (mem->mod)
@@ -26,7 +36,7 @@ void rtasm_mem(nativeblockinfo* nat, rtasm_mtype* mem)
     {
       if (mem->rm == USESIB)
       {
-        rtasm_putbyte(nat, mem->scale | (mem->index<<2) | (mem->base<<5));
+        rtasm_putbyte(nat, (mem->scale<<6) | (mem->index<<3) | mem->base);
       }
       else if (mem->rm == USEDISP)
       {
@@ -43,7 +53,7 @@ void rtasm_mem(nativeblockinfo* nat, rtasm_mtype* mem)
     {
       if (mem->rm == USESIB)
       {
-        rtasm_putbyte(nat, mem->scale | (mem->index<<2) | (mem->base<<5));
+        rtasm_putbyte(nat, (mem->scale<<6) | (mem->index<<3) | mem->base);
       }
       rtasm_putbyte(nat, mem->disp);
     }
@@ -53,7 +63,7 @@ void rtasm_mem(nativeblockinfo* nat, rtasm_mtype* mem)
     {
       if (mem->rm == USESIB)
       {
-        rtasm_putbyte(nat, mem->scale | (mem->index<<2) | (mem->base<<5));
+        rtasm_putbyte(nat, (mem->scale<<6) | (mem->index<<3) | mem->base);
       }
       rtasm_putbyte(nat, mem->disp & 0xff);
       rtasm_putbyte(nat, (mem->disp>>8) & 0xff);

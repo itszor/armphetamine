@@ -3,4 +3,6 @@
 
 #include "defs.h"
 
+extern void genx86_test(void);
+
 #endif

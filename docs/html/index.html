@@ -10,6 +10,12 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <h1><a name="news">News</a></h1>
 
+<h3>23 March 2001</h3>
+
+<p>The run-time assembler has undergone some serious fixing, and now appears to work (at least for the handful of instructions I've tested). Yippee.
+
+<p>Also done much fixing of the MMU &amp; the processor-mode switching code. RISC OS 3.70 boots as far as poking an I/O control byte (at <tt>0x3200000</tt> in the physical address map) in IOMD with some sequence of numbers (0xc3, 0xc2, 0xc0, 0xc2, 0xc3, 0xc3, 0xc2...) in a seemingly infinite loop. (Timers 0/1 don't cause interrupts yet though, maybe that'll help). The only information I have to hand says something about open drains for that address, which despite being something like the smell in the lab of my 'day job', goes right over my head. I'll have to start looking for a RISC PC tech manual, which could be quite hard to find now I think. And I have no money... <tt>:-/</tt>
+
 <h3>16 March 2001</h3>
 
 <p>I've been working on the interpretive core and hardware support, since finding that some lovely person has uploaded a RISC OS 3.70 ROM image 'somewhere on the internet' since last time I looked. Turns out the copy I ripped out of my own Risc PC back home <i>was</i> corrupted somehow (probably my broken level 2 cache at work again), and it wasn't just my paranoia (I <b>knew</b> that loop couldn't have terminated as it was in my copy!).
@@ -192,7 +198,8 @@ doesn't do very much when you run it at the moment...
 <h1><a name="feedback">Feedback</a></h1>
 
 <p>You can get in contact with me about ARMphetamine at <a
-href="mailto:jules@dynarec.com">jules@dynarec.com</a>.
+href="mailto:jules@dynarec.com">jules@dynarec.com</a>. (<a
+href="mailto:brown@cs.bris.ac.uk">brown@cs.bris.ac.uk</a> might get a faster reply).
 
 <p>You can find more information about dynamic recompilation at <a
 href="http://www.dynarec.com/">dynarec.com</a>. Thanks to Neil Bradley for the web space!
