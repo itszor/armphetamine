@@ -11,6 +11,7 @@
 #include "pseudo.h"
 #include "phetadism.h"
 #include "relocate.h"
+#include "cnew.h"
 
 static const genx86_variant genx86_tab[] =
 {
@@ -1764,16 +1765,10 @@ void genx86_asm(nativeblockinfo* nat, genx86_op* inst)
 #undef COMPOUND3
 #undef ERR
 
-#define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
-                           ((S1)*pal_NUMTYPES) + (S2))
-
-#define ERR { fprintf(stderr, "Specialisation error at %d. " \
-  "Opcode=%s, pattern=%s:%s:%s.\n", \
-  __LINE__, abname[opcode], allocname[dest->type], allocname[src1->type], \
-  allocname[src2->type]); abort(); }
-
 void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
 {
+  if (!dest) return;
+
   switch (src->type)
   {
     case pal_UNSET:
@@ -1815,37 +1810,63 @@ void genx86_translatealloc(genx86_operand* dest, palloc_info* src)
     }
     break;
     
+    case pal_ALIAS:
+    {
+      // *** ignore for now ***
+      dest->type = gotype_EMPTY;
+//      genx86_translatealloc(chunk, dest, &chunk->alloc[src->info.value]);
+    }
+    break;
+    
     default:
-    fprintf(stderr, "Don't know how to handle that\n");
+    fprintf(stderr, "Don't know how to handle that (src type=%d)\n", src->type);
     exit(1);
     break;
   }
 }
 
-void genx86_produce(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
+void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
   palloc_info* src1, palloc_info* src2)
 {
-  genx86_operand a, b, c;
-  genx86_op x;
+  genx86_operand *a=0, *b=0, *c=0;
+  genx86_op* x = cnew(genx86_op);
+  clist* newinst;
+
+  if (!dest->slot) dest->slot = cnew(genx86_operand);
+  if (!src1->slot) src1->slot = cnew(genx86_operand);
+  if (!src2->slot) src2->slot = cnew(genx86_operand);
+  if (dest->type != pal_UNSET) a = dest->slot;
+  if (src1->type != pal_UNSET) b = src1->slot;
+  if (src2->type != pal_UNSET) c = src2->slot;
   
-  genx86_translatealloc(&a, dest);
-  genx86_translatealloc(&b, src1);
-  genx86_translatealloc(&c, src2);
+  genx86_translatealloc(a, dest);
+  genx86_translatealloc(b, src1);
+  genx86_translatealloc(c, src2);
   
-  x.op[0] = &a;
-  x.op[1] = &b;
-  x.op[2] = &c;
-  x.operator = opcode;
+  x->op[0] = a;
+  x->op[1] = b;
+  x->op[2] = c;
+  x->operator = opcode;
   
-  genx86_asm(nat, &x);
+  newinst = clist_append(buffer);
+  newinst->data = x;
 }
 
+#define COMPOUND(D,S1,S2) (((D)*pal_NUMTYPES*pal_NUMTYPES) + \
+                           ((S1)*pal_NUMTYPES) + (S2))
+
+#define ERR { fprintf(stderr, "Specialisation error at %d. " \
+  "Opcode=%s, pattern=%s:%s:%s.\n", \
+  __LINE__, abname[opcode], allocname[dest->type], allocname[src1->type], \
+  allocname[src2->type]); abort(); }
+
+/*
 void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                 palloc_info* src1, palloc_info* src2, list* map)
 {
-/*  dest = genx86_closesplit(dest, line);
-  src1 = genx86_closesplit(src1, line);
-  src2 = genx86_closesplit(src2, line);*/
+//  dest = genx86_closesplit(dest, line);
+//  src1 = genx86_closesplit(src1, line);
+//  src2 = genx86_closesplit(src2, line);
   
   switch (COMPOUND(dest->type, src1->type, src2->type))
   {
@@ -2201,13 +2222,13 @@ void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
     nat->beenset |= genx86_tab[opcode].flagset;
   }
 }
+*/
 
 #undef COMPOUND
 #undef ERR
 
 // Won't move something into itself, simplifies zero-loads
-void genx86_move(nativeblockinfo* nat, palloc_info* dest, palloc_info* src,
-                 list* map)
+void genx86_move(clist* buffer, palloc_info* dest, palloc_info* src)
 {
   palloc_info nul;
   nul.type = pal_UNSET;
@@ -2232,13 +2253,14 @@ void genx86_move(nativeblockinfo* nat, palloc_info* dest, palloc_info* src,
   {
     if (src->info.value==0)
     {
-      genx86_out(nat, ab_XOR, dest, dest, &nul, map);
+      genx86_append(buffer, ab_XOR, dest, dest, &nul);
       return;
     }
   }
-  genx86_out(nat, ab_MOV, dest, src, &nul, map);
+  genx86_append(buffer, ab_MOV, dest, src, &nul);
 }
 
+/*
 void genx86_preserve(nativeblockinfo* nat, pheta_chunk* chunk, list* map)
 {
   list* scan;
@@ -2264,24 +2286,56 @@ void genx86_preserve(nativeblockinfo* nat, pheta_chunk* chunk, list* map)
     }
   }
 }
+*/
+
+genx86_buffer* genx86_newbuffer()
+{
+  genx86_buffer* buf = cnew(genx86_buffer);
+  
+  buf->buffer = clist_new();
+  buf->fetch = buf->commit = 0;
+  buf->expecting = buf->beenset = 0;
+  
+  return buf;
+}
 
 nativeblockinfo* genx86_translate(pheta_chunk* chunk)
 {
   nativeblockinfo* nat = rtasm_new();
+  genx86_buffer* buf = genx86_newbuffer();
   uint5 startline = 0;
   
-  genx86_translate_inner(nat, chunk, chunk->root, &startline);
+//  genx86_translate_inner(buf, chunk, chunk->root, &startline);
   
-  relocate_fix(&nat->reloc, nat->base);
+//  relocate_fix(&nat->reloc, nat->base);
   
   return nat;
 }
 
-uint5 genx86_translate_inner(nativeblockinfo* nat,
-  pheta_chunk* chunk, pheta_basicblock* blk, uint5* startline)
+// insert code to recover register state after exception
+void genx86_recover(genx86_buffer* buf, pheta_chunk* chunk)
 {
-  uint5 i, startpos = nat->length;
-  sint5 truebranch = -1, falsebranch = -1;
+  uint5 i;
+  for (i=0; i<chunk->active->length; i++)
+  {
+    palloc_liverange* range = ((palloc_liverange*)chunk->active->item[i]->data);
+    genx86_delayedfetchcommit* dfc;
+    if (chunk->alloc[range->reg].arm_affiliation != -1)
+    {
+      list_add(&buf->commit);
+      buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
+      dfc->var = range->reg;
+      dfc->reg = chunk->alloc[range->reg].arm_affiliation;
+      dfc->loc = buf->buffer->prev;
+    }
+  }
+}
+
+uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
+  pheta_instr* instr)
+{
+  clist* buffer = buf->buffer;
+  uint5 i;
   palloc_info nul, one, off;
   list* map = 0;
   clist* walk;
@@ -2296,570 +2350,515 @@ uint5 genx86_translate_inner(nativeblockinfo* nat,
 
   nul.type = pal_UNSET;
   
-  for (walk=blk->base->next, i=0; walk->data; walk=walk->next, i++)
+  switch (instr->opcode)
   {
-    pheta_instr* instr = walk->data;
-    uint5 opcode = instr->opcode;
-    
-    switch (opcode)
+    case ph_FETCH:
     {
-      case ph_FETCH:
+      genx86_delayedfetchcommit* dfc;
+      list_add(&buf->fetch);
+      buf->fetch->data = dfc = cnew(genx86_delayedfetchcommit);
+      dfc->var = instr->data.op.dest;
+      dfc->reg = instr->data.op.src1;
+      dfc->loc = buf->buffer->prev;
+/*
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      uint5 armsrc = instr->data.op.src1;
+      switch (dest->type)
       {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        uint5 armsrc = instr->data.op.src1;
-        switch (dest->type)
+        case pal_IREG:
         {
-          case pal_IREG:
-          {
-            palloc_info psrc;
-            psrc.type = pal_RFILE;
-            psrc.info.value = armsrc*4;
-            genx86_out(nat, ab_MOV, dest, &psrc, &nul, map);
-          }
-          break;
-          
-          case pal_RFILE:
-          {
-            dest->info.value = armsrc*4;
-          }
-          break;
-          
-          default:
-          break;
+          palloc_info psrc;
+          psrc.type = pal_RFILE;
+          psrc.info.value = armsrc*4;
+          genx86_append(buffer, ab_MOV, dest, &psrc, &nul);
         }
-      }
-      break;
-      
-      case ph_COMMIT:
-      {
-        uint5 armdest = instr->data.op.dest;
-        palloc_info* src = &chunk->alloc[instr->data.op.src1];
-        switch (src->type)
-        {
-          case pal_IREG:
-          case pal_CONSTB:
-          case pal_CONST:
-          {
-            palloc_info pdest;
-            pdest.type = pal_RFILE;
-            pdest.info.value = armdest*4;
-            genx86_out(nat, ab_MOV, &pdest, src, &nul, map);
-          }
-          break;
-          
-          default:
-          break;
-        }
-      }
-      break;
-      
-      case ph_LSL:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_SHL, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_LSR:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_SHR, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_ASR:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_SAR, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_ROR:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_ROR, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_ROL:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_ROL, dest, src2, &nul, map);
-      }
-      break;
+        break;
 
-      case ph_AND:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_AND, dest, src2, &nul, map);
-      }
-      break;
+        case pal_RFILE:
+        {
+          dest->info.value = armsrc*4;
+        }
+        break;
 
-      case ph_OR:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_OR, dest, src2, &nul, map);
+        default:
+        break;
       }
-      break;
-
-      case ph_EOR:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_XOR, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_ADD:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        if (dest->type==pal_IREG && src1->type==pal_IREG && 
-            src2->type==pal_IREG && nat->expecting==0)
-        {
-          genx86_out(nat, ab_LEA, dest, src1, src2, map);
-        }
-        else
-        {
-          genx86_move(nat, dest, src1, map);
-          genx86_out(nat, ab_ADD, dest, src2, &nul, map);
-        }
-      }
-      break;
-      
-      case ph_ADC:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_ADC, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_SUB:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_SUB, dest, src2, &nul, map);
-      }
-      break;
-
-      case ph_SBC:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_move(nat, dest, src1, map);
-        genx86_out(nat, ab_SBB, dest, src2, &nul, map);
-      }
-      break;
-      
-      case ph_MUL:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        
-        if ((src2->type==pal_CONST || src2->type==pal_CONSTB) && 
-            dest->type==pal_IREG)
-        {
-          genx86_out(nat, ab_IMUL, dest, src1, src2, map);
-        }
-        else
-        {
-          genx86_move(nat, dest, src1, map);
-          genx86_out(nat, ab_IMUL, dest, src2, &nul, map);
-        }
-      }
-      break;
-              
-      case ph_RRX:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src = &chunk->alloc[instr->data.op.src1];
-        palloc_info one;
-        one.type = pal_CONSTB;
-        one.info.value = 1;
-        genx86_move(nat, dest, src, map);
-        genx86_out(nat, ab_RCR, dest, &one, &nul, map);
-      }
-      break;
-      
-      case ph_RLX:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src = &chunk->alloc[instr->data.op.src1];
-        palloc_info one;
-        one.type = pal_CONSTB;
-        one.info.value = 1;
-        genx86_move(nat, dest, src, map);
-        genx86_out(nat, ab_RCL, dest, &one, &nul, map);
-      }
-      break;
-      
-      case ph_MOV:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src = &chunk->alloc[instr->data.op.src1];
-        genx86_move(nat, dest, src, map);
-      }
-      break;
-      
-      case ph_NOT:
-      {
-        palloc_info* dest = &chunk->alloc[instr->data.op.dest];
-        palloc_info* src = &chunk->alloc[instr->data.op.src1];
-        genx86_move(nat, dest, src, map);
-        genx86_out(nat, ab_NOT, dest, &nul, &nul, map);
-      }
-      break;
-      
-      case ph_TEQ:  // nasty
-      {
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_out(nat, ab_PUSH, src1, &nul, &nul, map);
-        genx86_out(nat, ab_XOR, src1, src2, &nul, map);
-        genx86_out(nat, ab_POP, src1, &nul, &nul, map);
-      }
-      break;
-      
-      case ph_TST:
-      {
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_out(nat, ab_TEST, src1, src2, &nul, map);
-      }
-      break;
-      
-      case ph_CMP:
-      {
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_out(nat, ab_CMP, src1, src2, &nul, map);
-      }
-      break;
-      
-      case ph_CMN:  // also nasty
-      {
-        palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
-        palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
-        genx86_out(nat, ab_PUSH, src1, &nul, &nul, map);
-        genx86_out(nat, ab_ADD, src1, src2, &nul, map);
-        genx86_out(nat, ab_POP, src1, &nul, &nul, map);
-      }
-      break;
-      
-      case ph_FEXPECT:
-      case ph_NFEXPECT:
-      {
-        uint5 expmask = instr->data.flag.need;
-        nat->expecting |= expmask;
-        nat->beenset = 0;
-      }
-      break;
-      
-      case ph_FCOMMIT:
-      {
-        uint5 needmask = instr->data.flag.need;
-        uint5 pred = instr->data.flag.pred;
-        palloc_info off;
-        off.type = pal_RFILE;
-        if (needmask & ph_C)
-        {
-          off.info.value = offsetof(registerinfo, cflag);
-          if (nat->beenset & ph_IC)
-            genx86_out(nat, ab_SETAE, &off, &nul, &nul, map);
-          else if (nat->beenset & ph_C)
-            genx86_out(nat, ab_SETB, &off, &nul, &nul, map);
-          else
-            assert(!"Carry flag has not been set");
-        }
-        if (needmask & ph_V)
-        {
-          off.info.value = offsetof(registerinfo, vflag);
-          genx86_out(nat, ab_SETO, &off, &nul, &nul, map);
-        }
-        if (needmask & ph_N)
-        {
-          off.info.value = offsetof(registerinfo, nflag);
-          genx86_out(nat, ab_SETS, &off, &nul, &nul, map);
-        }
-        if (needmask & ph_Z)
-        {
-          off.info.value = offsetof(registerinfo, zflag);
-          genx86_out(nat, ab_SETE, &off, &nul, &nul, map);
-        }
-        if (pred)
-        {
-          uint5 j;
-          for (j=0; j<14; j++)
-          {
-            if (pred & (1<<j))
-            {
-              off.info.value = offsetof(registerinfo, predbuf[j]);
-              genx86_out(nat, predset[j], &off, &nul, &nul, map);
-            }
-          }
-        }
-        nat->expecting = 0;
-      }
-      break;
-      
-      case ph_NFCOMMIT:
-      {
-        uint5 pred = instr->data.flag.pred;
-        
-        off.type = pal_RFILE;
-        if (pred)
-        {
-          uint5 j;
-          for (j=0; j<14; j++)
-          {
-            if (pred & (1<<j))
-            {
-              off.info.value = offsetof(registerinfo, npredbuf[j]);
-              genx86_out(nat, predset[j], &off, &nul, &nul, map);
-            }
-          }
-        }
-      }
-      break;
-      
-      case ph_FENSURE:
-      {
-        uint5 mask = instr->data.flag.need;
-        palloc_info off;
-        if (mask)
-        {
-          if (mask==ph_C || mask==ph_IC)
-          {
-            palloc_info zero;
-            off.type = pal_RFILE;
-            off.info.value = offsetof(registerinfo, cflag);
-            zero.type = pal_CONSTB;
-            zero.info.value = 0;
-            genx86_out(nat, ab_BT, &off, &zero, &nul, map);
-            if (mask==ph_IC)
-            {
-              assert(!"I wasn't expecting you to ensure inverse C!");
-//              genx86_out(nat, ab_CMC, &off, &nul, &nul, map);
-            }
-          }
-          else
-          {
-            assert(!"Complicated flag restore pattern here");
-          }
-        }
-      }
-      break;
-      
-      case ph_NFENSURE:
-      {
-        assert(!"nfensure was a bad idea");
-      }
-      break;
-      
-      case ph_LDW:
-      {
-        palloc_info rel;
-        rel.type = pal_CONST;
-        rel.info.value = 0;
-        /*  memory structure base
-         *  address
-         */
-        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
-        rel.type = pal_CONSTB;
-        rel.info.value = 6;
-        genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
-        genx86_preserve(nat, chunk, map);
-        rel.type = pal_CONST;
-        rel.info.value = 0;
-        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
-        genx86_out(nat, ab_RET, &nul, &nul, &nul, map);
-      }
-      break;
-      
-      case ph_LDB:
-      {
-        palloc_info rel;
-        rel.type = pal_CONST;
-        rel.info.value = 0;
-        /*  memory structure base
-         *  address
-         */
-        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
-        rel.type = pal_CONSTB;
-        rel.info.value = 6;
-        genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
-        genx86_preserve(nat, chunk, map);
-        rel.type = pal_CONST;
-        rel.info.value = 0;
-        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
-        genx86_out(nat, ab_RET, &nul, &nul, &nul, map);
-      }
-      break;
-      
-      case ph_STW:
-      case ph_STB:
-      {
-        palloc_info rel;
-        rel.type = pal_CONST;
-        rel.info.value = 0;
-        /*  memory structure base
-         *  address
-         */
-        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
-        rel.type = pal_CONSTB;
-        rel.info.value = 6;
-        genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
-        genx86_preserve(nat, chunk, map);
-        rel.type = pal_CONST;
-        rel.info.value = 0;
-        genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
-        genx86_out(nat, ab_RET, &nul, &nul, &nul, map);
-      }
-      break;
-      
-      case ph_SWI:
-      rtasm_nop(nat);
-      break;
-      
-      case ph_UNDEF:
-      rtasm_nop(nat);
-      break;
-
-      case ph_STATE:
-      {
-        uint5 start = instr->data.imm;
-        map = (list*)start;
-      }
-      break;
-      
-      case ph_SYNC:
-      // sync needs to store all allocated registers back to memory, but that
-      // information isn't available here... damn.
-      break;
-      
-      // !!! this will actually have to do other stuff instead, esp. in
-      // 26-bit mode.
-      case ph_CAJMP:
-      {
-        palloc_info dest, c8;
-        dest.type = pal_RFILE;
-        dest.info.value = 15*4;
-        c8.type = pal_CONSTB;
-        c8.info.value = 8;
-        genx86_out(nat, ab_ADD, &dest, &c8, &nul, map);
-        genx86_out(nat, ab_RET, &nul, &nul, &nul, map);
-      }
-      break;
-      // !!! things missing
+*/
     }
-  }  // for (...)
+    break;
 
-  phetadism_block(blk, *startline);
-  x86dism_partblock(nat, startpos, nat->length);
+    case ph_COMMIT:
+    {
+      genx86_delayedfetchcommit* dfc;
+      list_add(&buf->commit);
+      buf->commit->data = dfc = cnew(genx86_delayedfetchcommit);
+      dfc->reg = instr->data.op.dest;
+      dfc->var = instr->data.op.src1;
+      dfc->loc = buf->buffer->prev;
+/*
+      uint5 armdest = instr->data.op.dest;
+      palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      switch (src->type)
+      {
+        case pal_IREG:
+        case pal_CONSTB:
+        case pal_CONST:
+        {
+          palloc_info pdest;
+          pdest.type = pal_RFILE;
+          pdest.info.value = armdest*4;
+          genx86_append(buffer, ab_MOV, &pdest, src, &nul);
+        }
+        break;
 
-  blk->marker = 1;
-  blk->natoffset = startpos;
+        default:
+        break;
+      }
+*/
+    }
+    break;
+    
+    case ph_ASSOC:
+    {
+      chunk->alloc[instr->data.op.dest].arm_affiliation = instr->data.op.src1;
+    }
+    break;
 
-  (*startline) += blk->length;
+    case ph_LSL:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_SHL, dest, src2, &nul);
+    }
+    break;
 
-  // true & false blocks, neither generated yet
-  if (blk->trueblk && !blk->trueblk->marker &&
-      blk->falseblk && !blk->falseblk->marker)
-  {
-    one.type = pal_CONSTB;
-    one.info.value = 1;
-    off.type = pal_RFILE;
-    off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
-    genx86_out(nat, ab_TEST, &off, &one, &nul, map);
-    off.type = pal_CONST;
-    off.info.value = -(nat->length+6);
-    genx86_out(nat, ab_JE, &off, &nul, &nul, map);
-    patchfalseblk = nat->length-4;
+    case ph_LSR:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_SHR, dest, src2, &nul);
+    }
+    break;
+
+    case ph_ASR:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_SAR, dest, src2, &nul);
+    }
+    break;
+
+    case ph_ROR:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_ROR, dest, src2, &nul);
+    }
+    break;
+
+    case ph_ROL:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_ROL, dest, src2, &nul);
+    }
+    break;
+
+    case ph_AND:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_AND, dest, src2, &nul);
+    }
+    break;
+
+    case ph_OR:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_OR, dest, src2, &nul);
+    }
+    break;
+
+    case ph_EOR:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_XOR, dest, src2, &nul);
+    }
+    break;
+
+    case ph_ADD:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      if (dest->type==pal_IREG && src1->type==pal_IREG && 
+          src2->type==pal_IREG && buf->expecting==0)
+      {
+        genx86_append(buffer, ab_LEA, dest, src1, src2);
+      }
+      else
+      {
+        genx86_move(buffer, dest, src1);
+        genx86_append(buffer, ab_ADD, dest, src2, &nul);
+      }
+    }
+    break;
+
+    case ph_ADC:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_ADC, dest, src2, &nul);
+    }
+    break;
+
+    case ph_SUB:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_SUB, dest, src2, &nul);
+    }
+    break;
+
+    case ph_SBC:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_move(buffer, dest, src1);
+      genx86_append(buffer, ab_SBB, dest, src2, &nul);
+    }
+    break;
+
+    case ph_MUL:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+
+      if ((src2->type==pal_CONST || src2->type==pal_CONSTB) && 
+          dest->type==pal_IREG)
+      {
+        genx86_append(buffer, ab_IMUL, dest, src1, src2);
+      }
+      else
+      {
+        genx86_move(buffer, dest, src1);
+        genx86_append(buffer, ab_IMUL, dest, src2, &nul);
+      }
+    }
+    break;
+
+    case ph_RRX:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      palloc_info one;
+      one.type = pal_CONSTB;
+      one.info.value = 1;
+      genx86_move(buffer, dest, src);
+      genx86_append(buffer, ab_RCR, dest, &one, &nul);
+    }
+    break;
+
+    case ph_RLX:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      palloc_info one;
+      one.type = pal_CONSTB;
+      one.info.value = 1;
+      genx86_move(buffer, dest, src);
+      genx86_append(buffer, ab_RCL, dest, &one, &nul);
+    }
+    break;
+
+    case ph_MOV:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      genx86_move(buffer, dest, src);
+    }
+    break;
+
+    case ph_NOT:
+    {
+      palloc_info* dest = &chunk->alloc[instr->data.op.dest];
+      palloc_info* src = &chunk->alloc[instr->data.op.src1];
+      genx86_move(buffer, dest, src);
+      genx86_append(buffer, ab_NOT, dest, &nul, &nul);
+    }
+    break;
+
+    case ph_TEQ:  // nasty
+    {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_append(buffer, ab_PUSH, src1, &nul, &nul);
+      genx86_append(buffer, ab_XOR, src1, src2, &nul);
+      genx86_append(buffer, ab_POP, src1, &nul, &nul);
+    }
+    break;
+
+    case ph_TST:
+    {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_append(buffer, ab_TEST, src1, src2, &nul);
+    }
+    break;
+
+    case ph_CMP:
+    {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_append(buffer, ab_CMP, src1, src2, &nul);
+    }
+    break;
+
+    case ph_CMN:  // also nasty
+    {
+      palloc_info* src1 = &chunk->alloc[instr->data.op.src1];
+      palloc_info* src2 = &chunk->alloc[instr->data.op.src2];
+      genx86_append(buffer, ab_PUSH, src1, &nul, &nul);
+      genx86_append(buffer, ab_ADD, src1, src2, &nul);
+      genx86_append(buffer, ab_POP, src1, &nul, &nul);
+    }
+    break;
+
+    case ph_FEXPECT:
+    case ph_NFEXPECT:
+    {
+      uint5 expmask = instr->data.flag.need;
+      buf->expecting |= expmask;
+      buf->beenset = 0;
+    }
+    break;
+
+    case ph_FCOMMIT:
+    {
+      uint5 needmask = instr->data.flag.need;
+      uint5 pred = instr->data.flag.pred;
+      palloc_info off;
+      off.type = pal_RFILE;
+      if (needmask & ph_C)
+      {
+        off.info.value = offsetof(registerinfo, cflag);
+        if (buf->beenset & ph_IC)
+          genx86_append(buffer, ab_SETAE, &off, &nul, &nul);
+        else if (buf->beenset & ph_C)
+          genx86_append(buffer, ab_SETB, &off, &nul, &nul);
+        else
+          assert(!"Carry flag has not been set");
+      }
+      if (needmask & ph_V)
+      {
+        off.info.value = offsetof(registerinfo, vflag);
+        genx86_append(buffer, ab_SETO, &off, &nul, &nul);
+      }
+      if (needmask & ph_N)
+      {
+        off.info.value = offsetof(registerinfo, nflag);
+        genx86_append(buffer, ab_SETS, &off, &nul, &nul);
+      }
+      if (needmask & ph_Z)
+      {
+        off.info.value = offsetof(registerinfo, zflag);
+        genx86_append(buffer, ab_SETE, &off, &nul, &nul);
+      }
+      if (pred)
+      {
+        uint5 j;
+        for (j=0; j<14; j++)
+        {
+          if (pred & (1<<j))
+          {
+            off.info.value = offsetof(registerinfo, predbuf[j]);
+            genx86_append(buffer, predset[j], &off, &nul, &nul);
+          }
+        }
+      }
+      buf->expecting = 0;
+    }
+    break;
+
+    case ph_NFCOMMIT:
+    {
+      uint5 pred = instr->data.flag.pred;
+
+      off.type = pal_RFILE;
+      if (pred)
+      {
+        uint5 j;
+        for (j=0; j<14; j++)
+        {
+          if (pred & (1<<j))
+          {
+            off.info.value = offsetof(registerinfo, npredbuf[j]);
+            genx86_append(buffer, predset[j], &off, &nul, &nul);
+          }
+        }
+      }
+    }
+    break;
+
+    case ph_FENSURE:
+    {
+      uint5 mask = instr->data.flag.need;
+      palloc_info off;
+      if (mask)
+      {
+        if (mask==ph_C || mask==ph_IC)
+        {
+          palloc_info zero;
+          off.type = pal_RFILE;
+          off.info.value = offsetof(registerinfo, cflag);
+          zero.type = pal_CONSTB;
+          zero.info.value = 0;
+          genx86_append(buffer, ab_BT, &off, &zero, &nul);
+          if (mask==ph_IC)
+          {
+            assert(!"I wasn't expecting you to ensure inverse C!");
+//              genx86_out(nat, ab_CMC, &off, &nul, &nul, map);
+          }
+        }
+        else
+        {
+          assert(!"Complicated flag restore pattern here");
+        }
+      }
+    }
+    break;
+
+    case ph_NFENSURE:
+    {
+      assert(!"nfensure was a bad idea");
+    }
+    break;
+
+    case ph_LDW:
+    {
+      palloc_info rel;
+      rel.type = pal_CONST;
+      rel.info.value = 0;
+      /*  memory structure base
+       *  address
+       */
+      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      rel.type = pal_CONSTB;
+      rel.info.value = 6;
+      genx86_append(buffer, ab_JECXZ, &rel, &nul, &nul);
+      genx86_recover(buf, chunk);
+      rel.type = pal_CONST;
+      rel.info.value = 0;
+      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+    }
+    break;
+
+    case ph_LDB:
+    {
+      palloc_info rel;
+      rel.type = pal_CONST;
+      rel.info.value = 0;
+      /*  memory structure base
+       *  address
+       */
+      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      rel.type = pal_CONSTB;
+      rel.info.value = 6;
+      genx86_append(buffer, ab_JECXZ, &rel, &nul, &nul);
+      genx86_recover(buf, chunk);
+      rel.type = pal_CONST;
+      rel.info.value = 0;
+      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+    }
+    break;
+
+    case ph_STW:
+    case ph_STB:
+    {
+      palloc_info rel;
+      rel.type = pal_CONST;
+      rel.info.value = 0;
+      /*  memory structure base
+       *  address
+       */
+      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      rel.type = pal_CONSTB;
+      rel.info.value = 6;
+      genx86_append(buffer, ab_JECXZ, &rel, &nul, &nul);
+      genx86_recover(buf, chunk);
+      rel.type = pal_CONST;
+      rel.info.value = 0;
+      genx86_append(buffer, ab_CALL, &rel, &nul, &nul);
+      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+    }
+    break;
+
+    case ph_SWI:
+//      rtasm_nop(nat);
+    break;
+
+    case ph_UNDEF:
+//      rtasm_nop(nat);
+    break;
+
+    case ph_STATE:
+    {
+/*
+      uint5 start = instr->data.imm;
+      map = (list*)start;
+*/
+    }
+    break;
+
+    case ph_SYNC:
+    {
+      genx86_recover(buf, chunk);
+    }
+    break;
+
+    // !!! this will actually have to do other stuff instead, esp. in
+    // 26-bit mode.
+    case ph_CAJMP:
+    {
+      palloc_info dest, c8;
+      dest.type = pal_RFILE;
+      dest.info.value = 15*4;
+      c8.type = pal_CONSTB;
+      c8.info.value = 8;
+      genx86_append(buffer, ab_ADD, &dest, &c8, &nul);
+      genx86_append(buffer, ab_RET, &nul, &nul, &nul);
+    }
+    break;
+    // !!! things missing
   }
   
-  // generated true block, non-generated false block
-  if (blk->trueblk && blk->trueblk->marker &&
-      blk->falseblk && !blk->falseblk->marker)
-  {
-    one.type = pal_CONSTB;
-    one.info.value = 1;
-    off.type = pal_RFILE;
-    off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
-    genx86_out(nat, ab_TEST, &off, &one, &nul, map);
-    off.type = pal_CONST;
-    off.info.value = blk->trueblk->natoffset-nat->length-6;
-    genx86_out(nat, ab_JNE, &off, &nul, &nul, map);
-  }
-  
-  // generated true & false blocks
-  if (blk->trueblk && blk->trueblk->marker &&
-      blk->falseblk && blk->falseblk->marker)
-  {
-    one.type = pal_CONSTB;
-    one.info.value = 1;
-    off.type = pal_RFILE;
-    off.info.value = offsetof(registerinfo, predbuf[blk->predicate]);
-    genx86_out(nat, ab_TEST, &off, &one, &nul, map);
-    off.type = pal_CONST;
-    off.info.value = blk->trueblk->natoffset-nat->length-6;
-    genx86_out(nat, ab_JNE, &off, &nul, &nul, map);
-    off.info.value = blk->falseblk->natoffset-nat->length-6;
-    genx86_out(nat, ab_JMP, &off, &nul, &nul, map);
-  }
-  
-  if (blk->trueblk && blk->trueblk->marker &&
-      !blk->falseblk)
-  {
-    off.type = pal_CONST;
-    off.info.value = blk->trueblk->natoffset-nat->length-6;
-    genx86_out(nat, ab_JMP, &off, &nul, &nul, map);
-  }
-
-  if (blk->trueblk && !blk->trueblk->marker)
-    truebranch = genx86_translate_inner(nat, chunk, blk->trueblk, startline);
-
-  if (blk->falseblk && !blk->falseblk->marker)
-    falsebranch = genx86_translate_inner(nat, chunk, blk->falseblk, startline);
-
-  if (patchfalseblk != -1)
-  {
-    if (falsebranch==-1) falsebranch = blk->falseblk->natoffset;
-    fprintf(stderr, "Adding relocation offset %x value %x\n", patchfalseblk,
-      falsebranch);
-    relocate_add(&nat->reloc, falsebranch, patchfalseblk, relsize_WORD, 
-      reloc_RELATIVE);
-  }
-
-  return startpos;
+  return 0;
 }
+
+

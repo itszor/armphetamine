@@ -4,6 +4,7 @@
 #include "defs.h"
 #include "hash.h"
 #include "registers.h"
+#include "clist.h"
 
 // Instruction encodings ((number of bits, value) pairs)
 #define ADClrr   8,0x11,3,rm,3,reg,2,0x3
@@ -394,8 +395,6 @@ typedef struct {
   uint3* base;
   uint5 length;
   uint5 size;
-  uint3 expecting;
-  uint3 beenset;
   list* reloc;
 } nativeblockinfo;
 

@@ -110,8 +110,11 @@ typedef struct {
   uint3 opcode;
 } pheta_instr;
 
+struct genx86_buffer;
+
 typedef struct pheta_basicblock_t {
   clist* base;
+  struct genx86_buffer* gxbuffer;
   uint5 length;
   uint5 size;
   uint5 cycles;
@@ -157,7 +160,7 @@ typedef struct {
   pheta_basicblock* currentblock;
   struct palloc_info* alloc;
   struct palloc_liverange** reversetable;
-  uint3 reguse[8];
+  uint3 reguse[ph_IREG];
   uint5 regno;
   uint5* rename;
   pqueue* active;

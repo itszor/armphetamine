@@ -2,13 +2,13 @@
 #include "cnew.h"
 #include "x86asm.h"
 #include "rtasm.h"
+#include "clist.h"
 
 nativeblockinfo* rtasm_new(void)
 {
   nativeblockinfo* nat = cnew(nativeblockinfo);
   nat->base = cnewarray(char, nat->size=2048);
   nat->length = 0;
-  nat->expecting = 0;
   nat->reloc = 0;
   
   return nat;

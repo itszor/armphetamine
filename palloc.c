@@ -4,6 +4,7 @@
 #include "cnew.h"
 #include "hash.h"
 #include "x86asm.h"
+#include "genx86.h"
 
 void palloc_init(pheta_chunk* chunk)
 {
@@ -13,6 +14,7 @@ void palloc_init(pheta_chunk* chunk)
   for (i=0; i<chunk->tempno; i++)
   {
     chunk->alloc[i].type = pal_UNSET;
+    chunk->alloc[i].slot = 0;
   }
 /*  chunk->alloc[i].referenced_by = hash_new(8);*/
 }
@@ -392,169 +394,131 @@ uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
                            "ESP", "EBP", "ESI", "EDI"};
   const uint5 maxreg = 6;
-  clist* scan;
+  clist* scan = blk->base->next;
   uint5 line = startline;
-  pqueueitem* rstart;
-  palloc_liverange* range;
-  
-  if ((rstart = pqueue_extract(blk->live)))
+  pqueueitem* rangeitem;
+    
+  while ((rangeitem = pqueue_extract(blk->live)))
   {
-    range = (palloc_liverange*) rstart->data;
-  }
-  else range = 0;
+    pqueueitem *activateitem, *delitem;
+    palloc_liverange* range = rangeitem->data;
+    uint5 rangestart = range->startline;
 
-  for (scan=blk->base->next; scan->data; scan=scan->next, line++)
+    // careful here...
+    free(rangeitem);
+
+    // generate code to the start of this range
+    for (; line<rangestart && scan->data; scan=scan->next, line++)
+    {
+      pheta_instr* instr = scan->data;
+
+      fprintf(stderr, "Generating inst %d\n", line);
+      genx86_translate_opcode(blk->gxbuffer, chunk, instr);
+    }
+
+    if (chunk->alloc[range->reg].type==pal_UNSET)
+    {
+      fprintf(stderr, "Inserting range for reg %d spanning [%d...%d]\n", 
+        range->reg, rangestart, rangestart+range->length);
+
+      activateitem = pqueue_insert(chunk->active, rangestart+range->length);
+      activateitem->data = range;
+
+      // expire old intervals before allocating new ones
+      while ((delitem = pqueue_head(chunk->active)))
+      {
+        palloc_liverange* delrange = (palloc_liverange*) delitem->data;
+        if (delrange->startline+delrange->length < rangestart)
+        {
+          if (chunk->alloc[delrange->reg].type == pal_IREG &&
+              chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num]==1)
+          {
+            int s;
+            fprintf(stderr, "Expiring register %d\n", delrange->reg);
+            chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num] = 0;
+            for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
+            fprintf(stderr, "\n");
+            chunk->regno--;
+          }
+          delitem = pqueue_extract(chunk->active);
+          free(delitem->data);
+          free(delitem);
+        }
+        else break;
+      }
+
+      if (chunk->regno<maxreg)
+      {
+        uint5 s;
+        sint5 ireg = -1;
+        for (s=0; ireg==-1 && s<8; s++)
+        {
+          if (chunk->reguse[s]==0)
+          {
+            chunk->reguse[s] = 1;
+            ireg = s;
+            chunk->regno++;
+          }
+        }
+        assert(ireg != -1);
+        fprintf(stderr, "Allocating reg %d as ireg %s\n", range->reg, 
+          regname[ireg]);
+        for (s=0; s<ph_IREG; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
+        fprintf(stderr, "\n");
+        chunk->alloc[range->reg].type = pal_IREG;
+        chunk->alloc[range->reg].info.ireg.num = ireg;
+      }
+      else  // have to spill a register
+      {
+        palloc_liverange* delrange;
+        uint5 j;
+        sint5 f = -1;
+        uint5 end = range->startline + range->length;
+
+        // find furthest end-point (linear search makes priority queue utterly
+        // useless here, but I think I need the wrong end at this point...)
+        for (j=0; j<chunk->active->length; j++)
+        {
+          palloc_liverange* seek =
+            ((palloc_liverange*)chunk->active->item[j]->data);
+          uint5 test = seek->startline + seek->length;
+
+          if (chunk->alloc[seek->reg].type==pal_IREG &&
+              (test>end || f==-1)) f=j;
+
+          fprintf(stderr, "Active %d: reg %d\n", j, seek->reg);
+        }
+
+        assert(f!=-1);
+
+        delitem = chunk->active->item[f];
+        assert(delitem);
+
+        delrange = (palloc_liverange*) delitem->data;
+
+        fprintf(stderr, "Spilling register %d from ireg %s\n",
+          delrange->reg, regname[chunk->alloc[delrange->reg].info.ireg.num]);
+        fprintf(stderr, "Allocating %s to %d\n", 
+          regname[chunk->alloc[delrange->reg].info.ireg.num], range->reg);
+
+        chunk->alloc[range->reg].type = pal_IREG;
+        chunk->alloc[range->reg].info.ireg.num = 
+          chunk->alloc[delrange->reg].info.ireg.num;
+
+        /* this breaks sometimes for complicated code, unfortunately. */
+        chunk->alloc[delrange->reg].type = pal_RFILE;
+        chunk->alloc[delrange->reg].info.value = delrange->reg;
+      }
+    }
+  }
+
+  // generate remaining code
+  for (; scan->data; scan=scan->next, line++)
   {
     pheta_instr* instr = scan->data;
 
-    switch (instr->opcode)
-    {
-      case ph_ASSOC:
-      {
-        uint5 dest = instr->data.op.dest;
-        uint5 src1 = instr->data.op.src1;
-        if (chunk->alloc[src1].type==pal_IREG)
-        {
-          chunk->alloc[src1].info.ireg.arm_affiliation = dest;
-        }
-        else
-        {
-          fprintf(stderr, "Warning: association failed\n");
-        }
-      }
-      break;
-    
-      case ph_STATE:
-      {
-        uint5 j;
-        list* live = 0;
-        /* fossilise state here */
-        for (j=0; j<chunk->active->length; j++)
-        {
-          pheta_rpair* rpair;
-          palloc_liverange* seek =
-            ((palloc_liverange*)chunk->active->item[j]->data);
-          list_add(&live);
-          rpair = live->data = cnew(pheta_rpair);
-          fprintf(stderr, "Adding state variable %d at %d, "
-            "range->startline=%d\n", seek->reg, line, range->startline);
-          rpair->ph = seek->reg;
-        }
-        instr->data.ptr = live;
-      }
-      break;
-      
-      default:
-      break;
-    }
-
-/*  fprintf(stderr, "line=%d range->startline=%d\n", line, range->startline);*/
-    
-    while (range && line == range->startline)
-    {
-      pqueueitem* activate, *del;
-      uint5 lineno = range->startline;
-
-      if (chunk->alloc[range->reg].type==pal_UNSET)
-      {
-        fprintf(stderr, "Inserting range for reg %d at %d\n", range->reg, 
-          lineno+range->length);
-
-        activate = pqueue_insert(chunk->active, lineno+range->length);
-        activate->data = range;
-
-        // expire old intervals before allocating new ones
-        while ((del = pqueue_head(chunk->active)))
-        {
-          palloc_liverange* delrange = (palloc_liverange*) del->data;
-          if (delrange->startline+delrange->length < lineno)
-          {
-            if (chunk->alloc[delrange->reg].type == pal_IREG &&
-                chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num]==1)
-            {
-              int s;
-              fprintf(stderr, "Expiring register %d\n", delrange->reg);
-              chunk->reguse[chunk->alloc[delrange->reg].info.ireg.num] = 0;
-              for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
-              fprintf(stderr, "\n");
-              chunk->regno--;
-            }
-            del = pqueue_extract(chunk->active);
-            free(del->data);
-            free(del);
-          }
-          else break;
-        }
-
-        if (chunk->regno<maxreg)
-        {
-          uint5 s;
-          sint5 ireg = -1;
-          for (s=0; ireg==-1 && s<8; s++)
-          {
-            if (chunk->reguse[s]==0)
-            {
-              chunk->reguse[s] = 1;
-              ireg = s;
-              chunk->regno++;
-            }
-          }
-          assert(ireg != -1);
-          fprintf(stderr, "Allocating reg %d as ireg %s\n", range->reg, 
-            regname[ireg]);
-          for (s=0; s<8; s++) fprintf(stderr, "%d ", chunk->reguse[s]);
-          fprintf(stderr, "\n");
-          chunk->alloc[range->reg].type = pal_IREG;
-          chunk->alloc[range->reg].info.ireg.num = ireg;
-          chunk->alloc[range->reg].info.ireg.arm_affiliation = -1;
-        }
-        else  // have to spill a register
-        {
-          palloc_liverange* delrange;
-          uint5 j;
-          sint5 f = -1;
-          uint5 end = range->startline + range->length;
-
-          // find furthest end-point (linear search makes priority queue utterly
-          // useless here, but I think I need the wrong end at this point...)
-          for (j=0; j<chunk->active->length; j++)
-          {
-            palloc_liverange* seek =
-              ((palloc_liverange*)chunk->active->item[j]->data);
-            uint5 test = seek->startline + seek->length;
-
-            if (chunk->alloc[seek->reg].type==pal_IREG &&
-                (test>end || f==-1)) f=j;
-
-            fprintf(stderr, "Active %d: reg %d\n", j, seek->reg);
-          }
-
-          assert(f!=-1);
-
-          del = chunk->active->item[f];
-          assert(del);
-
-          delrange = (palloc_liverange*) del->data;
-
-          fprintf(stderr, "Spilling register %d from ireg %s\n",
-            delrange->reg, regname[chunk->alloc[delrange->reg].info.ireg.num]);
-          fprintf(stderr, "Allocating %s to %d\n", 
-            regname[chunk->alloc[delrange->reg].info.ireg.num], range->reg);
-
-          chunk->alloc[range->reg].type = pal_IREG;
-          chunk->alloc[range->reg].info.ireg.num = 
-            chunk->alloc[delrange->reg].info.ireg.num;
-
-          /* this breaks sometimes for complicated code, unfortunately. */
-          chunk->alloc[delrange->reg].type = pal_RFILE;
-          chunk->alloc[delrange->reg].info.value = delrange->reg;
-        }
-      }
-      rstart = pqueue_extract(blk->live);
-      if (!rstart) break;
-      range = (palloc_liverange*) rstart->data;
-      free(rstart);
-    }
+    fprintf(stderr, "Generating inst %d\n", line);
+    genx86_translate_opcode(blk->gxbuffer, chunk, instr);
   }
 
   blk->marker = 1;
@@ -739,8 +703,8 @@ void palloc_print(pheta_chunk* chunk)
       case pal_IREG:
       {
         fprintf(stderr, "%3d: x86 register %s (ARM: %s)\n", i, 
-          regname[a->info.ireg.num], a->info.ireg.arm_affiliation==-1 ? "none" :
-          armreg[a->info.ireg.arm_affiliation]);
+          regname[a->info.ireg.num], a->arm_affiliation==-1 ? "none" :
+          armreg[a->arm_affiliation]);
       }
       break;
       

@@ -62,6 +62,7 @@ pheta_basicblock* pheta_newbasicblock(pheta_chunk* c, uint5 startaddr)
   list_add(&c->blocks);
   c->blocks->data = b = cnew(pheta_basicblock);
   b->base = clist_new();
+  b->gxbuffer = genx86_newbuffer();
   b->length = 0;
   b->predicate = 255;
   b->trueblk = 0;

@@ -99,7 +99,7 @@ typedef enum {
   gotype_NUMTYPES
 } genx86_operand_type;
 
-typedef struct {
+struct genx86_operand {
   genx86_operand_type type;
   genx86_operand_width width;
   union {
@@ -122,13 +122,17 @@ typedef struct {
       uint3 scale;
     } regscaledisp;
   } data;
-} genx86_operand;
+};
 
+typedef struct genx86_operand genx86_operand;
+
+/*
 typedef struct {
   genx86_operand* start;
   genx86_operand* end;
   uint5 reg;
 } genx86_registerlifetime;
+*/
 
 /*
 +++ Each op points to an entry in a table corresponding to each virtual register. List-form code might be generated at an earlyish stage of compilation, say after the source-dest aliasing phase. Then, register non-orthogonalities can be used to guide allocation decisions, especially function calling conventions etc.
@@ -140,6 +144,22 @@ typedef struct {
   genx86_ab86 operator;
   genx86_operand *op[3];
 } genx86_op;
+
+typedef struct {
+  uint5 var;
+  uint5 reg;
+  clist* loc;
+} genx86_delayedfetchcommit;
+
+struct genx86_buffer {
+  clist* buffer;
+  list* fetch;
+  list* commit;
+  uint3 expecting;
+  uint3 beenset;
+};
+
+typedef struct genx86_buffer genx86_buffer;
 
 typedef void (*genx86_r32_rm32)(nativeblockinfo*, uint3, rtasm_mtype);
 typedef void (*genx86_rm32_r32)(nativeblockinfo*, rtasm_mtype, uint3);
@@ -173,10 +193,13 @@ typedef struct {
 } genx86_variant;
 
 extern void genx86_test(void);
+extern void genx86_append(clist* buffer, uint5 opcode, palloc_info* dest,
+  palloc_info* src1, palloc_info* src2);
+extern void genx86_move(clist* buffer, palloc_info* dest, palloc_info* src);
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                        palloc_info* src1, palloc_info* src2, list* x);
 extern nativeblockinfo* genx86_translate(pheta_chunk* chunk);
-extern uint5 genx86_translate_inner(nativeblockinfo* nat,
-  pheta_chunk* chunk, pheta_basicblock* blk, uint5* startline);
+extern uint5 genx86_translate_opcode(genx86_buffer* buf,
+  pheta_chunk* chunk, pheta_instr* instr);
 
 #endif

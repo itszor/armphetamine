@@ -24,16 +24,19 @@ struct palloc_liverange {
   uint5 reg;
 };
 
+struct genx86_operand;
+
 struct palloc_info {
   palloc_type type;
   union {
     struct {
       uint5 num;
-      sint5 arm_affiliation;
     } ireg;
     uint5 value;
     pqueue* extra;
   } info;
+  struct genx86_operand* slot;
+  sint5 arm_affiliation;
 /*  hashtable* referenced_by;
   palloc_liverange edge;*/
 };
