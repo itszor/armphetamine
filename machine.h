@@ -20,6 +20,7 @@ struct machineinfo {
   hashtable* breakpoints;
   struct profile_state* pstate;
   int trace;
+  int detracecounter;
   struct insttab* exectab;
   sint5 cycle;
 };

@@ -25,6 +25,7 @@ machineinfo* machine_create(uint5 memory)
 	machine->translaterules = 0;*/
   machine->breakpoints = hash_new(16);
   machine->trace = 0;
+  machine->detracecounter = 0;
   machine->pstate = profile_initialise();
     
 	return machine;
@@ -76,6 +77,10 @@ void machine_start(machineinfo* machine, uint5 cont)
       fprintf(stderr, "%.8x : %.8x : ", instaddr, inst.instruction);
       dispatch(machine, inst, &diss, (void*)instaddr);
       fprintf(stderr, "\n");
+      if (machine->detracecounter)
+      {
+        if (!--machine->detracecounter) machine->trace = 0;
+      }
     }
     
     if (hash_lookup(machine->breakpoints, instaddr) && !cont)

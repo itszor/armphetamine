@@ -59,9 +59,20 @@ int diss_dp(machineinfo* machine, instructionformat inst, void* null)
 		if (temp & 16) // shift by register
 		{
 			if (ignoreop1[inst.dp.opcode])
-				fprintf(stderr, "%s%s%s r%d,r%d,%s r%d", txtops[inst.dp.opcode],
-					txtcc[inst.generic.cond], inst.dp.s && !omitsflag[inst.dp.opcode]
-					? "s" : "", unopreg, rm, txtshft[shifttype], amount);
+      {
+        if (inst.dp.rn==15)
+        {
+				  fprintf(stderr, "%s%s%sp r%d,r%d,%s r%d", txtops[inst.dp.opcode],
+					  txtcc[inst.generic.cond], inst.dp.s && !omitsflag[inst.dp.opcode]
+					  ? "s" : "", unopreg, rm, txtshft[shifttype], amount);
+        }
+        else
+        {
+				  fprintf(stderr, "%s%s%s r%d,r%d,%s r%d", txtops[inst.dp.opcode],
+					  txtcc[inst.generic.cond], inst.dp.s && !omitsflag[inst.dp.opcode]
+					  ? "s" : "", unopreg, rm, txtshft[shifttype], amount);
+        }
+      }
 			else
 				fprintf(stderr, "%s%s%s r%d,r%d,r%d,%s r%d", txtops[inst.dp.opcode],
 					txtcc[inst.generic.cond], inst.dp.s && !omitsflag[inst.dp.opcode]

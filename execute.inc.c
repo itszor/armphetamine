@@ -467,13 +467,14 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       if (inst.dp.s)
       {
         rd = op1 & op2;
-        if (rd==15)  // tstp? is there even a tstp?
+        if (inst.dp.rd==15)  // tstp? is there even a tstp?
         {
           #ifdef ARM26BIT
           reg->r[15] &= ~reg->pcmask;
           reg->r[15] |= rd & reg->pcmask;
           #else
-          if (mem->currentmode) reg->cpsr = reg->spsr[reg->spsr_current];
+          if (mem->currentmode!=pm_USR32)
+            reg->cpsr = reg->spsr[reg->spsr_current];
           #endif
         }
       }
@@ -487,13 +488,14 @@ int EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
       if (inst.dp.s)
       {
         rd = op1 ^ op2;
-        if (rd==15)  // teqp
+        if (inst.dp.rd==15)  // teqp
         {
           #ifdef ARM26BIT
           reg->r[15] &= ~reg->pcmask;
           reg->r[15] |= rd & reg->pcmask;
           #else
-          if (mem->currentmode) reg->cpsr = reg->spsr[reg->spsr_current];
+          if (mem->currentmode!=pm_USR32)
+            reg->cpsr = reg->spsr[reg->spsr_current];
           #endif
         }
       }
@@ -573,6 +575,7 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   void* null)
 {
   registerinfo* reg = machine->reg;
+  meminfo* mem = machine->mem;
   uint5 op1 = GET(inst.dp.rn);
   uint5 op2, temp = inst.dp.operand2;
   uint5 rd = 0, amount = (temp>>8)*2;
@@ -580,6 +583,9 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   const uint5 affectrd = 0xf0ff;
 
   IGNORE(null);
+#ifdef ARM26BIT
+  IGNORE(mem);
+#endif
 
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
 
@@ -654,7 +660,19 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     case dp_TST:
     {
       if (inst.dp.s)
+      {
         rd = op1 & op2;
+        if (inst.dp.rd==15)
+        {
+          #ifdef ARM26BIT
+          reg->r[15] &= ~reg->pcmask;
+          reg->r[15] |= rd & reg->pcmask;
+          #else
+          if (mem->currentmode!=pm_USR32)
+            reg->cpsr = reg->spsr[reg->spsr_current];
+          #endif
+        }
+      }
       else
         EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
@@ -663,7 +681,19 @@ int EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
     case dp_TEQ:
     {
       if (inst.dp.s)
+      {
         rd = op1 ^ op2;
+        if (inst.dp.rd==15)
+        {
+          #ifdef ARM26BIT
+          reg->r[15] &= ~reg->pcmask;
+          reg->r[15] |= rd & reg->pcmask;
+          #else
+          if (mem->currentmode!=pm_USR32)
+            reg->cpsr = reg->spsr[reg->spsr_current];
+          #endif
+        }
+      }
       else
         EXECUTEFN(exec_psrt)(machine, inst, op2);
     }
@@ -1418,7 +1448,8 @@ int EXECUTEFN(exec_cdt)(machineinfo* machine, instructionformat inst,
   IGNORE(null);
 
   if (!EXECUTEFN(exec_condition)(machine, inst)) return 0;
-//  fprintf(stderr, "Error: unimplemented instruction (cdt)\n");
+  fprintf(stderr, "Error: unimplemented instruction (cdt)\n");
+  abort();
   processor_und(machine);
   return 1;
 }
@@ -1444,6 +1475,11 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
   {
     registerinfo* reg = machine->reg;
     meminfo* mem = machine->mem;
+    uint5 pcaddr = PCADDR-8;
+
+    fprintf(stderr, "%.8x : %.8x : ", pcaddr, inst.instruction);
+    dispatch(machine, inst, &diss, (void*)pcaddr);
+    fprintf(stderr, "\n");
 
     if ((mem->currentmode & 15) == pm_USR26)
     {
@@ -1451,8 +1487,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
       return 1;*/
       fprintf(stderr, "Warning: attempt to use coprocessor reg transfer in "
         "usr mode\n");
-      INCPC;
-      return 0;
+/*      INCPC;
+      return 0;*/
     }
     
     /*fprintf(stderr, "Error: unimplemented instruction (crt)\n");
@@ -1472,7 +1508,9 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 // identify self as an SA110?
                 case 0: PCFLAGPUT(inst.crt.rd, 0x4401a100); break;
                 // is the following line right?
-                case 1: PCFLAGPUT(inst.crt.rd, mem->mmucontrol); break;
+                case 1: PCFLAGPUT(inst.crt.rd, mem->mmucontrol);
+                fprintf(stderr, "Copy mmucontrol to r%d\n", inst.crt.rd);
+                break;
                 case 5: PCFLAGPUT(inst.crt.rd, mem->faultstatus); break;
                 case 6: PCFLAGPUT(inst.crt.rd, mem->faultaddress); break;
                 case 0x8: case 0x9: case 0xa: case 0xb:
@@ -1515,8 +1553,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                     // because the virtual memory system has some latency
                     // when switching on and off. These little things just
                     // kill you honestly.
-                    fprintf(stderr, "Virtual memory state changed! ");
-                    for (i=0; i<2; i++)
+                    fprintf(stderr, "Virtual memory state changed!\n");
+                    for (i=0; i<3; i++)
                     {
                       instaddr = PCADDR-INSTSIZE*2;
                       inst.instruction = memory_readinstword(mem, instaddr);
@@ -1527,10 +1565,15 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                       dispatch(machine, inst, machine->exectab, 0);
                     }
 /*                    machine->trace = 1;*/
-                    fprintf(stderr, "[%s]\n", newstate ? "on" : "off");
-                    fprintf(stderr, "(old state was %s)\n",
-                      mem->mmucontrol & 1 ? "on" : "off");
+                    fprintf(stderr, "[virtual memory %s]\n",
+                      (newstate&1) ? "on" : "off");
+                    machine->trace = 1;
+                    machine->detracecounter = 4;
                     mem->mmucontrol = newstate;
+                    // otherwise the following data/instructions will get
+                    // a cached value!
+                    memory_invalidatetlb(&mem->insttlb);
+                    memory_invalidatetlb(&mem->datatlb);
                     return 1;
                   }
                   mem->mmucontrol = newstate;
@@ -1587,6 +1630,8 @@ int EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                 case 0xf:
                 {
                   fprintf(stderr, "> Test, Clock, Idle ctrl (SA)\n");
+                  machine->trace = 1;
+                  machine->detracecounter = 4;
                 }
                 break;
               }
