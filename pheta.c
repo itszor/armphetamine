@@ -177,9 +177,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
       if (!chunk->root)
         chunk->root = blockstart->data;
 
-      chunk->currentblock = blockstart->data;
-      fprintf(stderr, "i=%d\n", i);
-      assert(prev != chunk->currentblock);
+      // something screwy was going on here
       if (prev && prev->predicate==255)
         pheta_link(prev, ph_AL, chunk->currentblock, 0);
 
@@ -1142,6 +1140,7 @@ pheta_basicblock* pheta_getbasicblock(pheta_chunk* chunk, uint5 line)
   if ((e = hash_lookup(chunk->leaders, line)))
   {
     if (!e->data) e->data = pheta_newbasicblock(chunk, line);
+    else pheta_lsync(chunk);
     return e->data;
   }
   else
