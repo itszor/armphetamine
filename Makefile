@@ -1,7 +1,7 @@
 # A little makefile, copied from someone else
 
 CC	= gcc
-CFLAGS	= -g -pipe -W -Wall -pedantic -O0 -DQUICKWRITE \
+CFLAGS	= -g -pipe -W -Wall -pedantic -O2 -fstrict-aliasing -DQUICKWRITE \
 	  -DVERSION=\"0.3\" -DVIDCSUPPORT -DIOMDSUPPORT
 NASM	= nasm
 
@@ -30,7 +30,7 @@ SRC =	asmalutab.c cnew.c decode.c \
 
 TESTS =	divide simple armtest
 
-LIBS = -lm -lreadline -lhistory -lncurses -lSDL -lpthread -L/usr/X11R6/lib -lX11
+LIBS = -lm -lreadline -lhistory -lncurses `sdl-config --libs`
 
 .PHONY:	clean cleaner package webpkg romdump
 

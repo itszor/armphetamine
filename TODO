@@ -1,0 +1,30 @@
+To-do list for ARMphetamine
+===========================
+
+In no particular order:
+
+- Profiling/block gathering
+
+- Garbage collection
+
+- Cross-block variable lifetime optimisation pass
+
+- MOV (load/store) peephole optimisation pass (needs variable lifetime
+  to be passed down)
+
+- Some framework for sensible testing (important!)
+
+- Cycle counting/timer interrupt dispatch
+
+- Implement missing instructions in recompiler (mrs, msr, swp...)
+
+- Fix 26/32-bit subtleties
+
+- Thumb stuff (current decoder never tested!)
+
+- MMU stuff (testing!)
+
+- Soak-test register allocator. A new pass might be needed to distribute
+  memory-accesses, or else work done on instruction emitters to ensure
+  that, eg, ALU instructions with two memory operands generate working
+  code.
