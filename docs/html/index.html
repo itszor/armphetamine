@@ -12,33 +12,19 @@ href="#download">download</a> | <a href="#feedback">feedback</a>
 
 <p>ARMphetamine is a project to create a fast and accurate ARM processor emulator. A technique known as "dynamic recompilation" will be used so that the highest possible speed can be achieved for emulated code - ARM code programs are translated into native code as they are being emulated. The current development platform is Linux/x86.
 
-<p>The code is currently being rewritten to aid support of the features which had to be left out of the original code due to time constraints. When it's back in shape, I promise it'll be better than ever before.
-
-<p>ARMphetamine supports, or will support:
-
-<ul>
-<li>26-bit/32-bit (ARM610/710/SA110) code emulation (fairly complete)
-<li>Thumb mode (incomplete, untested)
-<li>Full memory-management unit (MMU) with domain access control, etc. (not extensively tested)
-<li>ARM7500/Risc PC-style physical memory map. Will later be configurable to suit different types of system.
-<li>ARM7500/Risc PC support hardware: VIDC20, IOMD (sketchy)
-<li>Dynamic binary translation (experimental)
-<ul>
-<li>IA-32 target architecture
-<li>Full cross-block register allocation, currently based on the linear scan algorithm (mostly working!)
-<li>Direct binary-code generation (partly working!)
-<li>Peephole optimiser (possibility)
-<li>More targets (possibility)
-</ul>
-<li>Built-in debugger
-<li>Bells, whistles, etc.
-</ul>
+<p>It is possible to configure ARMphetamine at compile time to support different processor revisions and hardware models. Check out the CVS source to find out more. ARMphetamine is currently not being written very much.
 
 <p>There is currently no projected release date. It would be a foolish thing to try to guess. If you'd be interested in building an emulator around ARMphetamine or incorporating it in an existing project, feel free to get in touch.
 
 <hr>
 
 <h1><a name="news">News</a></h1>
+
+<h3>Early 2003</h3>
+
+<p>You may have noticed the dynarec.com site is dead and gone. Cheers Neil, I've said it before, but thanks for hosting my site for all that time.
+
+<p>As for the code, I think some of the dependency problems which crept in after reorganisation have mostly gone away now. Update your CVS tree if you haven't already.
 
 <h3>22 November 2002</h3>
 
@@ -68,7 +54,7 @@ appropriately and type "make lartrun" in a suitable environment. Enjoy!
 
 <h1><a name="status">Status</a></h1>
 
-<p>Some preliminary (old!) comparative benchmarks are available:
+<p>Some preliminary (very old!) comparative benchmarks are available:
 
 <p><table align=center>
 <tr>
@@ -130,6 +116,7 @@ of the university project ARMphetamine was written for.
 <li>My thoughts on further work to be done on the project <a href="further.html">here</a>.
 <li>The <a href="pheta2.html">new intermediate representation</a>.
 <li><a href="design2.html">ARMphetamine 2</a> information.
+<li>Pheta3 information (soon - 4 March '03... pheta2 is good 'til I want to support more architectures I think)
 </ul>
 
 <hr>
@@ -138,7 +125,7 @@ of the university project ARMphetamine was written for.
 
 <p>The preferred way of getting hold of ARMphetamine now is by anonymous CVS from <a href="http://www.sourceforge.net/">Sourceforge</a>. Follow <a href="http://sourceforge.net/cvs/?group_id=18506">this link</a> for instructions. The <i>modulename</i> is "armphetamine".
 
-<p>You can download a tarball of the ARMphetamine source code here, but it might not be the absolute latest version.
+<p>You can download a tarball of the ARMphetamine source code here, but it might not be the absolute latest version (in fact it's a very, very old version).
 
 <p>Download <a href="bin/armphetamine-0.2.tar.gz">armphetamine-0.2.tar.gz</a>.
 
@@ -149,10 +136,7 @@ of the university project ARMphetamine was written for.
 <h1><a name="feedback">Feedback</a></h1>
 
 <p>You can get in contact with me about ARMphetamine at <a
-href="mailto:brown@cs.bris.ac.uk">brown@cs.bris.ac.uk</a>. If that doesn't work for whatever reason, you could try <a href="mailto:jules@dynarec.com">jules@dynarec.com</a> instead. I'd appreciate it if you didn't send mail in HTML format.
-
-<p>You can find more information about dynamic recompilation at <a
-href="http://www.dynarec.com/">dynarec.com</a>. Thanks to Neil Bradley for the web space!
+href="mailto:brown@cs.bris.ac.uk">brown@cs.bris.ac.uk</a>. If that doesn't work for whatever reason, you could try <a href="mailto:julesb@btinternet.com">julesb@btinternet.com</a> instead. I'd appreciate it if you didn't send mail in HTML format.
 
 <hr>
 
@@ -163,7 +147,7 @@ general...
 
 <ul>
 
-<li>David Sharp's <a href="http://www.dcs.warwick.ac.uk/~csuix/project/index.html">tARMac</a> dynarec project page
+<li>David Sharp's <a href="http://www.davidsharp.com/tarmac">tARMac</a> dynarec project page
 
 <li>Dave Gilbert's <a href="http://www.treblig.org">home page</a>,
 featuring ArcEm
