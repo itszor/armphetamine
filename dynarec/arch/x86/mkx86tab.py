@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 from sre import *
 from string import *
 
@@ -20,8 +22,10 @@ def expandflags(pat):
   
   return xpat
 
-infile=open('genx86tabsrc.dat', 'r')
-outfile=open('genx86_tab.c', 'w')
+infile=sys.stdin
+# open('genx86tabsrc.dat', 'r')
+outfile=sys.stdout
+# open('genx86_tab.c', 'w')
 
 lines = infile.readlines()
 

@@ -1,6 +1,6 @@
 include ../../Makefile.start
 
-LART =          .
+LART =          $(APBASEDIR)/mach/lart
 
 OBJBASE =	$(APBASEDIR)/mach/lart
 
@@ -15,10 +15,14 @@ INCLUDE =   -I. -I$(APBASEDIR)/libjtype -I$(APBASEDIR)/core \
 
 CFLAGS =        -g -O3 -pipe -W -Wall -DVERSION=\"$(VERSION)\" -DEMULART -DRECOMPILE
 
-OBJ =	        $(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) \
+OBJ :=	        $(LJTOBJS) $(COREOBJS) $(DROBJS) $(DRX86OBJS) $(LARTOBJS) \
                 $(DEBUGOBJS)
 
 TARGET =	$(LART)/virtualart
+
+all:	$(TARGET)
+
+lartrun:	$(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $(OBJ) $(LDFLAGS) $(LIBS) 

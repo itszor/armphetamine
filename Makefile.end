@@ -1,12 +1,3 @@
-TEMPFILES =     $(DRX86)/genx86_tab.c $(DRX86)/rtasm_fns.c \
-                $(DRX86)/rtasm_fns.h
-
-TESTS =	divide simple armtest
-
-.PHONY: clean cleaner package webpkg romdump lartrun
-
-# virtualart rohle riscpcemu
-all:	$(TARGET)
 
 clean:
 	rm -f $(OBJ) $(TARGET) $(TESTS)
@@ -54,10 +45,12 @@ $(DRX86)/rtasm_fns.c:	$(DRX86)/mkintel.pl $(DRX86)/intel.dat
 	$(DRX86)/mkintel.pl < $(DRX86)/intel.dat > $(DRX86)/rtasm_fns.c
 
 $(DRX86)/rtasm_fns.h:	$(DRX86)/rtasm_fns.c $(DRX86)/rtasm_mkheader.pl
-	$(DRX86)/rtasm_mkheader.pl < $(DRX86)/rtasm_fns.c > $(DRX86)/rtasm_fns.h
+	$(DRX86)/rtasm_mkheader.pl < $(DRX86)/rtasm_fns.c \
+                                   > $(DRX86)/rtasm_fns.h
 
 $(DRX86)/genx86_tab.c:	$(DRX86)/genx86tabsrc.dat $(DRX86)/mkx86tab.py
-	$(DRX86)/mkx86tab.py
+	$(DRX86)/mkx86tab.py < $(DRX86)/genx86tabsrc.dat \
+			     > $(DRX86)/genx86_tab.c
 
 $(DRX86)/structsupport:	$(STRUCTOBJ)
 	gcc -O2 $< -o $@

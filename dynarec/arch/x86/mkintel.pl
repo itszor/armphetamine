@@ -2,20 +2,14 @@
 
 # Take a couple of x86 definition files and output some C code?
 
-$input = "/dev/stdin";
-
-# "intel.dat";
-
-open(input);
-@inteldat = <input>;
-close(input);
+@inteldat = <>;
 
 print "#include \"x86asm.h\"\n";
 print "#include \"rtasm.h\"\n";
 
 foreach (@inteldat)
 {
-  chop;
+  chomp;
   s/#.*//g;      # strip comments
   if (!m/^\s*$/)  # no empty lines
   {

@@ -27,6 +27,7 @@ struct palloc_liverange {
 
 struct genx86_operand;
 
+/* Abstract type of allocation */
 struct palloc_info {
   palloc_type type;
   union {
@@ -34,7 +35,7 @@ struct palloc_info {
       uint5 num;
     } ireg;
     uint5 value;
-    jt_pqueue* extra;
+ /*   jt_pqueue* extra;*/
   } info;
   struct genx86_operand* slot;
   sint5 arm_affiliation;

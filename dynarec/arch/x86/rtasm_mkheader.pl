@@ -1,13 +1,10 @@
 #! /usr/bin/perl
 
-$file = "/dev/stdin";
-open(file);
-@lines = <file>;
-close(file);
+@lines = <>;
 
 foreach (@lines)
 {
-  chop;
+  chomp;
   if (m/void/)
   {
     print "extern $_;\n";

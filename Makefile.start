@@ -47,5 +47,11 @@ LIBS = -lm -lreadline -lhistory -lncurses -lutil
 
 STRUCTOBJ =	$(DRX86)/structsupport.o
 
+TEMPFILES =     $(DRX86)/genx86_tab.c $(DRX86)/rtasm_fns.c \
+                $(DRX86)/rtasm_fns.h
+
+TESTS = divide simple armtest
+
+.PHONY: clean cleaner package webpkg romdump lartrun
 
 

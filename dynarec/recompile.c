@@ -39,8 +39,8 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   fprintf(stderr, "Fixing up flags & predicates\n");
   pheta_fixup_flags(mychunk);
   phetadism_chunk(mychunk);
-  fprintf(stderr, "Outputting daVinci\n");
-  pheta_davinciprint(mychunk, "controlgraph.daVinci");
+  fprintf(stderr, "Outputting dotty graph\n");
+/*  pheta_davinciprint(mychunk, "controlgraph.daVinci");*/
   pheta_dotprint(mychunk, "controlgraph.dot");
   fprintf(stderr, "Finding live ranges\n");
   palloc_clearmarkers(mychunk);
@@ -60,10 +60,12 @@ nativeblockinfo* recompile_chunk(machineinfo* machine, uint5 start, uint5 end)
   mychunk->parentmachine = machine;
   palloc_linearscan(mychunk, machine->mem);
   jt_pqueue_delete(mychunk->active);
-  fprintf(stderr, "Inserting register load/store code\n");
-  genx86_insert_spill_code(mychunk);
   fprintf(stderr, "Completing allocation\n");
   genx86_complete_alloc(mychunk);
+  fprintf(stderr, "Allocation state:\n");
+  palloc_print(mychunk);
+  fprintf(stderr, "Inserting register load/store code\n");
+  genx86_insert_spill_code(mychunk);
   fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);
   fprintf(stderr, "Flattening code\n");

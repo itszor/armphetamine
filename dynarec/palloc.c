@@ -625,6 +625,7 @@ uint5 palloc_request_8bitsafe_ireg(pheta_chunk* chunk, uint5* reg, uint5 except)
   uint5 safereg[] = { EAX, ECX, EDX, EBX };
   uint5 i;
   
+  /* first, try looking at first four registers */
   for (i=0; i<4; i++)
   {
     if (chunk->reguse[i]==0 && !(except & (1<<i)))
@@ -634,6 +635,21 @@ uint5 palloc_request_8bitsafe_ireg(pheta_chunk* chunk, uint5* reg, uint5 except)
       return 1;
     }
   }
+  
+  /* if that fails, try moving some of the low-down registers we have to
+   * high up ones instead
+   */
+  for (i=0; i<4; i++)
+  {
+    if (palloc_evict_ireg(chunk, safereg[i], except))
+    {
+      *reg = safereg[i];
+      chunk->reguse[i] = 1;
+      return 1;
+    }
+  }
+  
+  /* even that failed, give up and try something else... */
     
   return 0;
 }
@@ -799,12 +815,14 @@ void palloc_print(pheta_chunk* chunk)
       case pal_SPILLED:
       {
         fprintf(stderr, "%3d: Spilled to %d\n", i, a->info.value);
+        abort();
       }
       break;
       
       case pal_STACK:
       {
         fprintf(stderr, "%3d: On stack, location %d\n", i, a->info.value);
+        abort();
       }
       break;
       

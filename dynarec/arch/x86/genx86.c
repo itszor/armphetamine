@@ -1073,13 +1073,13 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
               else
               {
                 fprintf(stderr, "Can't free second register!\n");
-                exit(1);
+                abort();
               }
             }
             else
             {
               fprintf(stderr, "Can't free a register!\n");
-              exit(1);
+              abort();
             }
           }
           break;
@@ -1780,11 +1780,11 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
     break;
 
     case ph_SWI:
-//      rtasm_nop(nat);
+    abort();
     break;
 
     case ph_UNDEF:
-//      rtasm_nop(nat);
+ /*   abort();*/
     break;
 
     case ph_STATE:
@@ -1880,6 +1880,11 @@ void genx86_complete_alloc(pheta_chunk* chunk)
     {
       genx86_translatealloc(chunk, alloc->slot, alloc);
     }
+    else
+    {
+      alloc->slot = jt_new(genx86_operand);
+      genx86_translatealloc(chunk, alloc->slot, alloc);
+    }
   }
 }
 
@@ -1907,6 +1912,7 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
           gowidth_DWORD);
         fprintf(stderr, "Commit %d to %d\n", dfc->var->info.ireg.num,
           dfc->src);
+        assert(dfc->var->slot);
         genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, mem, dfc->var->slot,
           0);
       }
@@ -1937,6 +1943,7 @@ void genx86_insert_spill_code_inner(genx86_buffer* buf, pheta_chunk* chunk)
       genx86_operand* mem = genx86_makebaseoffset(chunk, offset[dfc->src], 
         gowidth_DWORD);
       fprintf(stderr, "Fetch %d to %d\n", dfc->src, dfc->var->info.ireg.num);
+      assert(dfc->var->slot);
       genx86_insert(chunk, buf, dfc->loc->next, ab_MOV, dfc->var->slot, mem, 0);
     }
   }
@@ -2032,7 +2039,9 @@ void genx86_flatten_code_inner(nativeblockinfo* nat, pheta_chunk* chunk,
     }
   }
 
-  unconditional = ((blk->predicate & 0xf)==ph_AL);
+  unconditional = ((blk->predicate & 0xf)==ph_AL)
+               || ((blk->predicate & 0xf)==ph_NV)
+               || blk->predicate==-1;
 
   // if we have a true or a false block, and not a single true always block
   if ((blk->trueblk || blk->falseblk) && !unconditional)
