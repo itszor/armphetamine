@@ -90,6 +90,6 @@ extern void genx86_test(void);
 extern void genx86_out(nativeblockinfo* nat, uint5 opcode, palloc_info* dest,
                        palloc_info* src1, palloc_info* src2, list* x);
 extern nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* 
-                                         blk, uint5 startline);
+                                         blk, uint5* startline);
 
 #endif

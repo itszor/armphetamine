@@ -505,7 +505,7 @@ void debug_virtual(machineinfo* machine, char* cmd)
 void debug_phetatrans(machineinfo* machine, char* cmd)
 {
   pheta_chunk* mychunk;
-  uint5 start, end, i;
+  uint5 start, end, i, line=0;
   strsep(&cmd, " \t");
   if (!cmd)
   {
@@ -563,7 +563,7 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_print(mychunk);
   fprintf(stderr, "Generating x86 code\n");
   palloc_clearmarkers(mychunk);
-  genx86_translate(mychunk, mychunk->root, 0);
+  genx86_translate(mychunk, mychunk->root, &line);
   // pheta_destroychunk(mychunk);  (when it's written...)
 }
 

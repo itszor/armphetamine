@@ -115,8 +115,8 @@ void palloc_nonorthog(pheta_chunk* chunk)
 // If a source register in a particular instruction isn't used after that
 // particular instruction, alias the instruction's destination register to
 // that source register to take advantage of x86's two-address format
-void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
-                               uint5 startline)
+uint5 palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
+                                uint5 startline)
 {
   int i;
     
@@ -180,15 +180,19 @@ void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
   
   blk->marker = 1;
 
+  startline += blk->length;
+
   if (blk->trueblk && !blk->trueblk->marker)
   {
-    palloc_srcdestalias_inner(chunk, blk->trueblk, startline+blk->length);
+    startline = palloc_srcdestalias_inner(chunk, blk->trueblk, startline);
   }
   
   if (blk->falseblk && !blk->falseblk->marker)
   {
-    palloc_srcdestalias_inner(chunk, blk->falseblk, startline+blk->length);
+    startline = palloc_srcdestalias_inner(chunk, blk->falseblk, startline);
   }
+
+  return startline;
 }
 
 void palloc_srcdestalias(pheta_chunk* chunk)
@@ -295,8 +299,8 @@ uint5 palloc_close(pheta_chunk* chunk, uint5 reg)
     return reg;
 }
 
-void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
-                      uint5 startline)
+uint5 palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
+                       uint5 startline)
 {
   int i;
     
@@ -347,16 +351,20 @@ void palloc_findspans(pheta_chunk* chunk, pheta_basicblock* blk,
 
   // prevent scanning of self!
   blk->marker = 1;
+
+  startline += blk->length;
   
   if (blk->trueblk && !blk->trueblk->marker)
   {
-    palloc_findspans(chunk, blk->trueblk, startline+blk->length);
+    startline = palloc_findspans(chunk, blk->trueblk, startline);
   }
   
   if (blk->falseblk && !blk->falseblk->marker)
   {
-    palloc_findspans(chunk, blk->falseblk, startline+blk->length);
+    startline = palloc_findspans(chunk, blk->falseblk, startline);
   }
+  
+  return startline;
 }
 
 // this doesn't delete the actual container
@@ -379,8 +387,8 @@ void palloc_deletespans(pheta_chunk* chunk)
   }
 }
 
-void palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
-                             uint5 startline)
+uint5 palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
+                              uint5 startline)
 {
   pqueueitem* rstart;
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
@@ -492,22 +500,23 @@ void palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 
   blk->marker = 1;
 
+  startline += blk->length;
+
   if (blk->trueblk && !blk->trueblk->marker)
   {
-    palloc_linearscan_inner(chunk, blk->trueblk, startline+blk->length);
+    startline = palloc_linearscan_inner(chunk, blk->trueblk, startline);
   }
   
   if (blk->falseblk && !blk->falseblk->marker)
   {
-    palloc_linearscan_inner(chunk, blk->falseblk, startline+blk->length);
+    startline = palloc_linearscan_inner(chunk, blk->falseblk, startline);
   }
+  
+  return startline;
 }
 
 void palloc_linearscan(pheta_chunk* chunk)
 {
-  uint5 i;
-  list* scanblock;
-
   chunk->reguse[0] = chunk->reguse[1] = chunk->reguse[2] =
   chunk->reguse[3] = chunk->reguse[6] = chunk->reguse[7] = 0;
   chunk->reguse[4] = chunk->reguse[5] = 2;
@@ -573,7 +582,6 @@ void palloc_shufflecommit(pheta_chunk* chunk)
       uint5 opcode = blk->base[inststart];
       uint5 destr[ph_MAXDEST], srcr[ph_MAXSRC], ndest, nsrc, j;
       
-
       if (opcode==ph_COMMIT)
       {
         uint5 armreg = blk->base[inststart+1];

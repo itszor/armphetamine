@@ -7,12 +7,14 @@
 #include "machine.h"
 #include "bset.h"
 #include "pqueue.h"
+#include "clist.h"
 
 typedef enum {
   ph_CONST,
   ph_CONSTB,
   ph_FETCH,
   ph_COMMIT,
+  ph_ASSOC,
   ph_SPILL,
   ph_RELOAD,
   ph_FEXPECT,
@@ -85,8 +87,29 @@ typedef enum {
 
 #define ph_IREG 8
 
+typedef struct {
+  union {
+    struct {
+      uint4 dest;
+      uint4 src1;
+      uint4 src2;
+    } op;
+    uint5 imm;
+    struct {
+      uint4 pred;
+      uint3 need;
+      uint3 have;
+    } flag;
+    struct {
+      uint5 imm;
+      uint4 dest;
+    } con;
+  } data;
+  uint3 opcode;
+} pheta_instr;
+
 typedef struct pheta_basicblock_t {
-  uint3* base;
+  clist* base;
   uint5 length;
   uint5 size;
   uint5 cycles;
@@ -131,6 +154,7 @@ typedef struct {
   uint5 regno;
   uint5* rename;
   pqueue* active;
+  list* assoc;
 } pheta_chunk;
 
 /*

@@ -7,12 +7,12 @@
 #include "phetadism.h"
 #include "list.h"
 
-static const char* opname[] = { "const", "constb", "fetch", "commit", "spill",
-  "reload", "fexpect", "fcommit", "fensure", "nfexpect", "nfcommit", "nfensure",
-  "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", "rlx", "mov", "not",
-  "and", "or", "eor", "teq", "tst", "add", "adc", "sub", "sbc", "cmp", "cmn",
-  "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", "state", "sync", "xjmp", 
-  "ukjmp", "cajmp", "rts" };
+static const char* opname[] = { "const", "constb", "fetch", "commit", "assoc", 
+  "spill", "reload", "fexpect", "fcommit", "fensure", "nfexpect", "nfcommit", 
+  "nfensure", "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", "rlx", "mov", 
+  "not", "and", "or", "eor", "teq", "tst", "add", "adc", "sub", "sbc", "cmp", 
+  "cmn", "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", "state", "sync", 
+  "xjmp", "ukjmp", "cajmp", "rts" };
 
 static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
                             "hi","ls","ge","lt","gt","le","al","nv"};
@@ -24,7 +24,7 @@ void phetadism_chunk(pheta_chunk* chunk)
   list* walk = chunk->blocks;
 
   for (; walk; walk = walk->prev)
-    phetadism_block((pheta_basicblock*) walk->data);
+    phetadism_block((pheta_basicblock*) walk->data, 0);
 }
 
 static void writeflags(uint5 flags)
@@ -36,7 +36,7 @@ static void writeflags(uint5 flags)
       printf("%s", txtflag[j]);
 }
 
-void phetadism_block(pheta_basicblock* blk)
+void phetadism_block(pheta_basicblock* blk, uint5 startline)
 {
   uint5 i;
   
@@ -45,7 +45,7 @@ void phetadism_block(pheta_basicblock* blk)
   for (i=0; i<blk->length; i++)
   {
     uint5 opcode = blk->base[i++];
-    printf("%4d: ", i-1);
+    printf("%4d: ", startline+i-1);
     switch (opcode)
     {
       case ph_CONST:
@@ -76,10 +76,11 @@ void phetadism_block(pheta_basicblock* blk)
       break;
 
       case ph_COMMIT:
+      case ph_ASSOC:
       {
         uint5 reg = blk->base[i++];
         uint5 src = blk->base[i++];
-        printf("commit    r%d, %%%d\n", reg, src);
+        printf("%-10sr%d, %%%d\n", opname[opcode], reg, src);
       }
       break;
 
@@ -99,9 +100,9 @@ void phetadism_block(pheta_basicblock* blk)
         uint5 mask = blk->base[i++], first=1;
         uint5 j;
         
-        printf("%-10s[", opname[opcode]);
+        printf("%-10s{", opname[opcode]);
         writeflags(mask);
-        printf("]\n");
+        printf("}\n");
         
 /*        if (mask & ph_C) strcat(flags, (first=0, "c"));
         if (mask & ph_V) strcat(flags, first ? (first=0, "v") : ",v");
@@ -120,11 +121,11 @@ void phetadism_block(pheta_basicblock* blk)
         uint5 pred = blk->base[i++];
         pred |= blk->base[i++]<<8;
         
-        printf("%-10s[", opname[opcode]);
+        printf("%-10s{", opname[opcode]);
         writeflags(have);
-        printf("], [");
+        printf("}, {");
         writeflags(need);
-        printf("], [");
+        printf("}, {");
         for (j=0; j<16; j++)
         {
           if (pred & (1<<j))
@@ -133,7 +134,7 @@ void phetadism_block(pheta_basicblock* blk)
             first = 0;
           }
         }
-        printf("]\n");
+        printf("}\n");
       }
       break;
 
@@ -198,18 +199,32 @@ void phetadism_block(pheta_basicblock* blk)
       case ph_RLX:
       case ph_MOV:
       case ph_NOT:
-      case ph_LDW:
-      case ph_LDB:
       case ph_TEQ:
       case ph_TST:
       case ph_CMP:
       case ph_CMN:
+      {
+        uint5 op1 = blk->base[i++];
+        uint5 op2 = blk->base[i++];
+        printf("%-10s%%%d, %%%d\n", opname[opcode], op1, op2);
+      }
+      break;
+
+      case ph_LDW:
+      case ph_LDB:
+      {
+        uint5 op1 = blk->base[i++];
+        uint5 op2 = blk->base[i++];
+        printf("%-10s%%%d, [%%%d]\n", opname[opcode], op1, op2);
+      }
+      break;
+
       case ph_STW:
       case ph_STB:
       {
         uint5 op1 = blk->base[i++];
         uint5 op2 = blk->base[i++];
-        printf("%-10s%%%d, %%%d\n", opname[opcode], op1, op2);
+        printf("%-10s[%%%d], %%%d\n", opname[opcode], op1, op2);
       }
       break;
 
@@ -221,7 +236,7 @@ void phetadism_block(pheta_basicblock* blk)
         start |= blk->base[i++]<<16;
         start |= blk->base[i++]<<24;
         
-        printf("%-10s[", opname[opcode]);
+        printf("%-10s(", opname[opcode]);
         
         for (scan=(list*)start; scan; scan=scan->prev)
         {
@@ -229,7 +244,7 @@ void phetadism_block(pheta_basicblock* blk)
           printf(first ? "r%d:%%%d" : " r%d:%%%d", rpair->ph, rpair->arm);
           first = 0;
         }
-        printf("]\n");
+        printf(")\n");
       }
       break;
 

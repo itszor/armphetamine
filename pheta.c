@@ -18,6 +18,7 @@ const uint3 pheta_instlength[] = {
   3,  /* constb */
   3,  /* fetch */
   3,  /* commit */
+  3,  /* assoc */
   2,  /* spill */
   2,  /* reload */
   2,  /* fexpect */
@@ -93,6 +94,7 @@ pheta_chunk* pheta_newchunk(uint5 start, uint5 length)
   p->force = -1;
   p->currentblock = 0;
   p->stacksize = 0;
+  p->assoc = 0;
     
   return p;
 }
@@ -321,6 +323,7 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     break;
     
     case ph_COMMIT:
+    case ph_ASSOC:
     emitbyte(block, &written, va_arg(ap, uint5));
     emitbyte(block, &written, va_arg(ap, uint5));
     break;
@@ -469,7 +472,7 @@ void pheta_getused(uint3* base, int index, uint5* numdest, uint5 dest[],
       dest[(*numdest)++] = base[index];
     }
     break;
-
+    
     case ph_COMMIT:
     {
       src[(*numsrc)++] = base[index+1];
@@ -718,8 +721,10 @@ uint5 pheta_lfetch(pheta_chunk* chunk, uint5 regno)
 
 void pheta_lcommit(pheta_chunk* chunk, uint5 regno, uint5 tempno)
 {
+  pheta_rpair* rpair;
   chunk->currentblock->lbuf[regno] = tempno;
   chunk->currentblock->dirtybuf[regno] = 1;
+  pheta_emit(chunk, ph_ASSOC, regno, tempno);
 }
 
 void pheta_lsync(pheta_chunk* chunk)

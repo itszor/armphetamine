@@ -6,6 +6,6 @@
 #include "machine.h"
 
 extern void phetadism_chunk(pheta_chunk* chunk);
-extern void phetadism_block(pheta_basicblock* basic);
+extern void phetadism_block(pheta_basicblock* basic, uint5 startline);
 
 #endif

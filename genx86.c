@@ -996,7 +996,7 @@ void genx86_move(nativeblockinfo* nat, palloc_info* dest, palloc_info* src,
 }
 
 nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
-                                  uint5 startline)
+                                  uint5* startline)
 {
   uint5 i;
   nativeblockinfo* nat = x86asm_newnative();
@@ -1374,8 +1374,9 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
       
       case ph_LDW:
       {
-        palloc_info rel;
+        palloc_info rel, dest, src;
         uint5 i;
+        list* scan;
         rel.type = pal_CONST;
         rel.info.value = 0;
         /*  memory structure base
@@ -1385,6 +1386,18 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
         rel.type = pal_CONSTB;
         rel.info.value = 6;
         genx86_out(nat, ab_JECXZ, &rel, &nul, &nul, map);
+        for (scan=map; scan; scan=scan->prev)
+        {
+          pheta_rpair* rpair = (pheta_rpair*) scan->data;
+          if (chunk->alloc[rpair->ph].type == pal_IREG)
+          {
+            dest.type = pal_RFILE;
+            dest.info.value = rpair->arm;
+            src.type = pal_IREG;
+            src.info.ireg.num = chunk->alloc[rpair->ph].info.ireg.num;
+            genx86_out(nat, ab_MOV, &dest, &src, &nul, map);
+          }
+        }
         rel.type = pal_CONST;
         rel.info.value = 0;
         genx86_out(nat, ab_CALL, &rel, &nul, &nul, map);
@@ -1411,10 +1424,10 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
 
       case ph_STATE:
       {
-        uint5 start = blk->base[i++], first = 1;
-        start |= blk->base[i++]<<8;
-        start |= blk->base[i++]<<16;
-        start |= blk->base[i++]<<24;
+        uint5 start = blk->base[i+1], first = 1;
+        start |= blk->base[i+2]<<8;
+        start |= blk->base[i+3]<<16;
+        start |= blk->base[i+4]<<24;
         map = (list*)start;
       }
       break;
@@ -1443,16 +1456,18 @@ nativeblockinfo* genx86_translate(pheta_chunk* chunk, pheta_basicblock* blk,
     i += pheta_instlength[opcode];
   }  // for (...)
 
-  phetadism_block(blk);
+  phetadism_block(blk, *startline);
   x86dism_block(nat);
 
   blk->marker = 1;
 
+  (*startline) += blk->length;
+
   if (blk->trueblk && !blk->trueblk->marker)
-    truebranch = genx86_translate(chunk, blk->trueblk, startline+blk->length);
+    truebranch = genx86_translate(chunk, blk->trueblk, startline);
   
   if (blk->falseblk && !blk->falseblk->marker)
-    falsebranch = genx86_translate(chunk, blk->falseblk, startline+blk->length);
+    falsebranch = genx86_translate(chunk, blk->falseblk, startline);
 
   /* join parent block to true/false blocks... */
 
