@@ -112,10 +112,8 @@
 #  define STOREREG(C,V) if ((C)==15) { \
                           RPUT((C), V); \
                           if (inst.dp.s && reg->spsr_current!=0) { \
-                            psrinfo spsr = reg->spsr[reg->spsr_current]; \
                             processor_mode(machine, \
                               reg->spsr[reg->spsr_current].flag.mode); \
-                            reg->cpsr = spsr; \
                             if (reg->cpsr.flag.interrupt & 0x2) \
                             { \
                               fprintf(stderr, "-- IRQ Disabled (storereg)\n"); \
@@ -130,6 +128,15 @@
 #endif
 
 #define PRINTOPS 1
+
+#ifdef EMULART
+#undef STOREPCPLUS12
+#define STOREPCPLUS8
+#else
+#define STOREPCPLUS12
+#undef STOREPCPLUS8
+#endif
+
 // #define FAKESWI 1
 
 extern int exec_dp_26(machineinfo* machine, instructionformat inst,

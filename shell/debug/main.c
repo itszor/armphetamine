@@ -258,10 +258,10 @@ int main(int argc, char* argv[])
   debug_shell(machine);
 #endif
 
-	fprintf(stderr, "Beginning emulation at %x...\n", reg->r[15]-8);
+  fprintf(stderr, "Beginning emulation at %x...\n", reg->r[15]-8);
 
-	while (1)
-	{
+  while (1)
+  {
     uint5 instaddr = PCADDR-8;
 #ifdef RECOMPILE2
     if (!block_gather(machine, instaddr))

@@ -824,19 +824,18 @@ int EXECUTEFN(exec_psrt)(machineinfo* machine, instructionformat inst,
       /* control fields updated? */
       if (field & 0xff)
       {
-        if (val<=0x1f)
-          processor_mode(machine, val & 0x1f);
+        processor_mode(machine, val & 0x1f);
 
-     /*   if (!(reg->cpsr.flag.interrupt & 0x2))
+/*        if (!(reg->cpsr.flag.interrupt & 0x2))
         {
           fprintf(stderr, "-- IRQ Enabled\n");
-          interrupt = 1;
+         // interrupt = 1;
         }
         else
         {
-          if (!before) fprintf(stderr, "-- IRQ Disabled\n");
-        }
-*/
+          fprintf(stderr, "-- IRQ Disabled\n");
+        }*/
+
         reg->cpsr.value &= ~field;
         reg->cpsr.value |= val & field;
 
@@ -1059,8 +1058,12 @@ int EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
     else  // store
     {
       // STR PC stores PC+12
+      #ifdef STOREPCPLUS12
       uint5 src = inst.sdt.rd==15 ? RGET(inst.sdt.rd)+INSTSIZE
                                   : RGET(inst.sdt.rd);
+      #else
+      uint5 src = RGET(inst.sdt.rd);
+      #endif
       if (inst.sdt.b)
       {
         // uint3* caddr = (uint3*) addr;
@@ -1216,7 +1219,7 @@ int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
 #define PCTRANSFER if (inst.bdt.l) { \
                      if (inst.bdt.s) PCSETADFL(memory_readdataword(mem, base)) \
                        else PCSETADDR(memory_readdataword(mem, base)); \
-                   } else memory_writeword(mem, base, reg->r[15]);
+                   } else memory_writeword(mem, base, pcstore);
 
 // block data transfer always tries to use ready-translated address unless
 // straddling a page boundary
@@ -1234,6 +1237,12 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     sint5 i;
     uint5 originalmode = reg->cpsr.flag.mode;
     uint5 oldpc = reg->r[15];
+    /* the value to store for pc */
+    #ifdef STOREPCPLUS12
+    uint5 pcstore = reg->r[15]+INSTSIZE;
+    #else
+    uint5 pcstore = reg->r[15];
+    #endif
 
 #ifdef ARM26BIT
     if (inst.bdt.s && !(inst.bdt.l && (inst.bdt.reglist & (1<<15))))
@@ -1363,21 +1372,18 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 
     if (inst.bdt.s && inst.bdt.l && (inst.bdt.reglist & (1<<15)))
     {
-      int oldmode;
       fprintf(stderr, "Potential trouble spot (LDM)\n");
       fprintf(stderr, "Address = %.8x\n", oldpc-8);
 /*      machine->trace = 1;*/
     /*  reg->cpsr.flag.interrupt &= 1;*/
-      oldmode = reg->spsr_current;
-      fprintf(stderr, "Old (current) mode: %d\n", oldmode);
       fprintf(stderr, "Causing mode switch to: %d\n", 
-        reg->spsr[oldmode].flag.mode);
-      processor_mode(machine, reg->spsr[oldmode].flag.mode);
-      reg->cpsr.flag.interrupt = reg->spsr[oldmode].flag.interrupt;
-      reg->cpsr.flag.v = reg->spsr[oldmode].flag.v;
-      reg->cpsr.flag.c = reg->spsr[oldmode].flag.c;
-      reg->cpsr.flag.n = reg->spsr[oldmode].flag.n;
-      reg->cpsr.flag.z = reg->spsr[oldmode].flag.z;
+        reg->spsr[reg->spsr_current].flag.mode);
+      processor_mode(machine, reg->spsr[reg->spsr_current].flag.mode);
+    //  reg->cpsr = reg->spsr[oldmode&15];
+      machine->trace = 1;
+      /* mumble */
+      reg->r[15]+=INSTSIZE*2;
+      return 1;
      /* fprintf(stderr, "Unimplemented mode change in LDM!\n");
       abort();*/
     }

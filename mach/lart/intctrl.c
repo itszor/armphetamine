@@ -79,12 +79,16 @@ void intctrl_fire(machineinfo* machine)
   {
     fprintf(stderr, "Firing FIQ!\n");
     processor_fiq(machine);
+    icr->icpr = 0;
+    icr->icfp = 0;
   }
   else if (icr->icip && !(reg->cpsr.flag.interrupt & 0x2) &&
-    mem->currentmode!=pm_IRQ32 && mem->currentmode!=pm_FIQ32)
+    mem->currentmode!=pm_FIQ32)
   {
     fprintf(stderr, "Firing IRQ!\n");
     processor_irq(machine);
+    icr->icpr = 0;
+    icr->icip = 0;
   }
 }
 

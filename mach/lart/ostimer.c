@@ -47,12 +47,10 @@ void ostimer_write(meminfo* mem, uint5 address, uint5 data)
       case 0x14:
       /* clears bits set to one in data */
       mem->ostimer->ossr &= ~data;
-/*      if (!mem->ostimer->ossr)
-      {
-        fprintf(stderr, "Stripping int bits\n");
-        mem->intctrl->icip &= ~0x3c000000;
-        mem->intctrl->icfp &= ~0x3c000000;
-      }*/
+      fprintf(stderr, "Stripping int bits\n");
+      mem->intctrl->icip &= ~(data<<26);
+      mem->intctrl->icfp &= ~(data<<26);
+      mem->intctrl->icpr &= ~(data<<26);
       break;
 
       case 0x18:
@@ -211,6 +209,8 @@ void ostimer_clock(machineinfo* machine)
   }
 
   intctrl_add(machine, (oti->ossr&0xf)<<26);
+  
+//fprintf(stderr, "icip=%.8x, int=%x\n", icr->icip, reg->cpsr.flag.interrupt);
   
   intctrl_fire(machine);
 }

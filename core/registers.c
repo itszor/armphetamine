@@ -14,6 +14,7 @@ registerinfo* registers_new(void)
 
   reg->cpsr.value = 0;
   reg->cpsr.flag.mode = pm_SVC32;
+  reg->spsr_current = 3;
   reg->vectorbase = 0;
 
 //	fprintf(stderr, "Initialised register bank\n");

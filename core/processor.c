@@ -133,6 +133,7 @@ void processor_mode(machineinfo* machine, uint5 newmode)
 
   assert(newmode>=16);
 
+#ifdef DEBUGGIN_MODE_SWITCH
   if (omode!=newmode)
   {
     fprintf(stderr, "Switching mode from %s to %s\n",
@@ -165,17 +166,13 @@ void processor_mode(machineinfo* machine, uint5 newmode)
       }
     }
   }
+#endif
 
- /* if ((newmode&15)>0)
-  {*/
-/*    fprintf(stderr, "Storing cpsr %.8x to spsr[%d]\n", reg->cpsr,
-      newmode&15);*/
-    /*if (newmode != omode)*/ reg->spsr[newmode&15] = reg->cpsr;
-/*  }*/
-
+  reg->spsr[omode&15] = reg->cpsr;
   processor_reg_savecurrent(machine, omode);
   processor_reg_restorenew(machine, newmode);
-
+  reg->cpsr = reg->spsr[newmode&15];
+  
   reg->cpsr.flag.mode = newmode;
   // keep a copy of current mode for use by memory subsystem
   machine->mem->currentmode = newmode; // & 15;
@@ -238,11 +235,13 @@ void processor_mode(machineinfo* machine, uint5 newmode)
   }*/
 }
 
+/* FIQ & IRQ happen *after* PC has been updated for a given instruction */
+/* hence -8 not -4 */
 void processor_fiq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_FIQ32);
-  reg->r[14] = reg->r[15];
+  reg->r[14] = reg->r[15]-8;
   reg->cpsr.flag.interrupt = 3;  // disable fiq, irq
   reg->r[15] = reg->vectorbase+0x1C+8;
 }
@@ -251,7 +250,7 @@ void processor_irq(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_IRQ32);
-  reg->r[14] = reg->r[15];
+  reg->r[14] = reg->r[15]-8;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x18+8;
 }
@@ -278,7 +277,7 @@ void processor_swi(machineinfo* machine)
 {
   registerinfo* reg = machine->reg;
   processor_mode(machine, pm_SVC32);
-  reg->r[14] = reg->r[15]-8;
+  reg->r[14] = reg->r[15]-4;
   reg->cpsr.flag.interrupt |= 2;  // disable irq
   reg->r[15] = reg->vectorbase+0x08+8;
 }
