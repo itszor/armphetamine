@@ -208,7 +208,7 @@ pheta_chunk* pheta_translatechunk(machineinfo* machine, uint5 base,
     }
   }
 
-  pheta_lsync(chunk);
+  if (chunk->currentblock) pheta_lsync(chunk);
 
   // this is a memory leak waiting to happen
   hash_nuke(leaders, NULL);
@@ -877,10 +877,11 @@ void pheta_davinciprint(pheta_chunk* chunk, char* outfile)
   fclose(f);
 }
 
-void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
+uint5 pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag)
 {
   clist* walk;
+  uint5 succ = 0;
   
   if (needpred==ph_AL || needpred==ph_NV || needpred==255) needpred = -1;
   
@@ -953,15 +954,23 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   if (needflag != 0 || needpred != (uint5)-1)
   {
     clist* l;
+    
     fprintf(stderr, "Trying next level up\n");
+    
+    succ = 1;
 
     for (l=blk->predecessor->next; l->data; l=l->next)
     {
       pheta_basicblock* pre = l->data;
       fprintf(stderr, "-- trying %p\n", pre);
-      pheta_fixup_flags_inner(pre, blktag, needpred, needflag);
+      // !!! not thought about this
+      if (pre != blk)
+        succ &= pheta_fixup_flags_inner(pre, blktag, needpred, needflag);
     }
   }
+  else succ = 1;
+  
+  return succ;
 }
 
 void pheta_fixup_flags(pheta_chunk* chunk)
@@ -974,8 +983,15 @@ void pheta_fixup_flags(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev, tag++)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
+    uint5 succ;
+    
     fprintf(stderr, "Fixup block %p\n", blk);
-    pheta_fixup_flags_inner(blk, tag, blk->predicate, 0);
+    succ = pheta_fixup_flags_inner(blk, tag, blk->predicate, 0);
+    if (!succ)
+    {
+      fprintf(stderr, "Non-local flags, panic\n");
+      abort();
+    }
   }
 }
 
@@ -1000,7 +1016,7 @@ void pheta_optimise_transitive_branch(pheta_chunk* chunk)
             blk->trueblk = blk->trueblk->trueblk;
             change = 1;
           }
-          else if (blk->predicate==blk->trueblk->predicate)
+          else if (blk->predicate==blk->trueblk->predicate && blk!=blk->trueblk)
           {
             blk->trueblk = blk->trueblk->trueblk;
             change = 1;
@@ -1017,7 +1033,7 @@ void pheta_optimise_transitive_branch(pheta_chunk* chunk)
       {
         if (blk->falseblk->base->next->data==0)
         {
-          if (blk->predicate==blk->falseblk->predicate)
+          if (blk->predicate==blk->falseblk->predicate && blk!=blk->falseblk)
           {
             blk->falseblk = blk->falseblk->falseblk;
             change = 1;
@@ -1144,7 +1160,7 @@ int pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
   uint5 line = 
     (((pheta_chunk*)chunk)->virtualaddress-((pheta_chunk*)chunk)->start)>>2;
   
-  op2 = pheta_lfetch(chunk, rm);
+  op2 = pheta_lfetch(chunk, rm==15 ? ph_R15_FULL : rm);
   
   if (regshift)
   {
@@ -1588,7 +1604,7 @@ void pheta_dp_guts(machineinfo* machine, instructionformat inst,
   IGNORE(machine);
   
   if (needop1mask & (1<<inst.dp.opcode))
-    op1 = pheta_lfetch(chunk, inst.dp.rn);
+    op1 = pheta_lfetch(chunk, (inst.dp.rn==15) ? ph_R15_ADDR : inst.dp.rn);
   
   switch (inst.dp.opcode)
   {

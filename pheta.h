@@ -261,7 +261,7 @@ extern void pheta_predecessor(pheta_chunk* chunk);
 
 extern void pheta_gdlprint(pheta_chunk* chunk, char* outfile);
 
-extern void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
+extern uint5 pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
   uint5 needpred, uint5 needflag);
   
 extern void pheta_fixup_flags(pheta_chunk* chunk);

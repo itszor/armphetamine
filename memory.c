@@ -540,6 +540,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
     tlb->virtual = tlb->physical = virtualaddress & 0xff000000;
     tlb->mask = 0xff000000;  // can't use whole memory (I/O etc.)
     memory_physicalmap(tlb, virtualaddress, 1, 1);
+    tlb->modestamp = mem->currentmode;
     return virtualaddress;
   }
 

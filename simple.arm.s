@@ -4,15 +4,12 @@
         .type    simple,function
 
 simple:
-	adds pc,pc,r1,lsl #2
-	add r5,r6,r7
-	b one
-	b two
-one:
-	mov r5,#7
-	b done
-two:
-	mov r5,#13
-done:
+	mov r0,#5
+	add pc,pc,r0,lsl #2
+	mov r2,r2
+	mov r2,r2
+	mov r2,r2
+	mov r2,r2
+	mov r2,r2
+	
 	mov pc,r14
-

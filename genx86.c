@@ -1604,7 +1604,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       misc = genx86_makeconstant(chunk, 8);      
       genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
       
-      misc = cnew(genx86_op);
+      misc = cnew(genx86_operand);
       misc->type = gotype_ADDRESS;
       misc->width = gowidth_BYTE;
       misc->data.addr = (uint5)mem + offsetof(meminfo, memoryfault);
@@ -1694,7 +1694,7 @@ uint5 genx86_translate_opcode(genx86_buffer* buf, pheta_chunk* chunk,
       misc = genx86_makeconstant(chunk, 12);
       genx86_append(chunk, buf, ab_ADD, regesp, misc, 0);
             
-      misc = cnew(genx86_op);
+      misc = cnew(genx86_operand);
       misc->type = gotype_ADDRESS;
       misc->width = gowidth_BYTE;
       misc->data.addr = (uint5)mem + offsetof(meminfo, memoryfault);
@@ -1951,9 +1951,8 @@ void genx86_flatten_code(pheta_chunk* chunk)
       if (!unconditional)
       {
         op = cnew(genx86_op);
-        off = cnew(genx86_operand);
         op->operator = ab_TEST;
-        off = genx86_makebaseoffset(chunk, last->predicate & ph_NAT ?
+        off = genx86_makebaseoffset(chunk, (last->predicate & ph_NAT) ?
           offsetof(registerinfo, npredbuf[last->predicate & 0xf]) :
           offsetof(registerinfo, predbuf[last->predicate & 0xf]), gowidth_BYTE);
         op->op[0] = off;
@@ -2028,14 +2027,13 @@ void genx86_flatten_code(pheta_chunk* chunk)
       {
         op = cnew(genx86_op);
         op->operator = ab_TEST;
-        off = genx86_makebaseoffset(chunk, blk->predicate & ph_NAT ?
+        off = genx86_makebaseoffset(chunk, (blk->predicate & ph_NAT) ?
           offsetof(registerinfo, npredbuf[blk->predicate & 0xf]) :
           offsetof(registerinfo, predbuf[blk->predicate & 0xf]), gowidth_BYTE);
         op->op[0] = off;
         op->op[1] = genx86_makeconstant(chunk, 1);
         op->op[2] = 0;
         genx86_asm(nat, op);
-        free(off);
         free(op);
       }
       
