@@ -1,4 +1,4 @@
-romload lart-blob2       0x00000000
+romload lart-blob        0x00000000
 romload lart-kernel-2417 0x00020000
 romload lart-initrd      0x00100000
 # break 0xc0008000
