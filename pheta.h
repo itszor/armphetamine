@@ -49,6 +49,7 @@ typedef enum {
   ph_STB,
   ph_SWI,
   ph_UNDEF,
+  ph_STATE,
   ph_SYNC,
   ph_XJMP,
   ph_UKJMP,
@@ -82,6 +83,8 @@ typedef enum {
   ph_NUMREG
 } pheta_armregisters;
 
+#define ph_IREG 8
+
 typedef struct pheta_basicblock_t {
   uint3* base;
   uint5 length;
@@ -102,6 +105,10 @@ typedef struct pheta_basicblock_t {
   pqueue* live;
   uint3 predicate;
 } pheta_basicblock;
+
+typedef struct {
+  uint5 ph, arm;
+} pheta_rpair;
 
 struct palloc_info;
 struct palloc_liverange;

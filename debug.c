@@ -505,7 +505,7 @@ void debug_virtual(machineinfo* machine, char* cmd)
 void debug_phetatrans(machineinfo* machine, char* cmd)
 {
   pheta_chunk* mychunk;
-  uint5 start, end;
+  uint5 start, end, i;
   strsep(&cmd, " \t");
   if (!cmd)
   {
@@ -550,20 +550,20 @@ void debug_phetatrans(machineinfo* machine, char* cmd)
   palloc_findspans(mychunk, mychunk->root, 0);
   palloc_printspans(mychunk);
   fprintf(stderr, "Doing linear scan allocation\n");
-  fprintf(stderr, "Allocation state:\n");
-  palloc_print(mychunk);
+/*  fprintf(stderr, "Allocation state:\n");
+  palloc_print(mychunk);*/
 
   palloc_linearscan(mychunk);
   pqueue_delete(mychunk->active);
-  fprintf(stderr, "Allocation state:\n");
-  palloc_print(mychunk);
+ /* fprintf(stderr, "Allocation state:\n");
+  palloc_print(mychunk);*/
   fprintf(stderr, "Closing aliases\n");
   palloc_closealias(mychunk);
   fprintf(stderr, "Allocation state:\n");
   palloc_print(mychunk);
   fprintf(stderr, "Generating x86 code\n");
   palloc_clearmarkers(mychunk);
-  genx86_translate(mychunk, mychunk->root);
+  genx86_translate(mychunk, mychunk->root, 0);
   // pheta_destroychunk(mychunk);  (when it's written...)
 }
 

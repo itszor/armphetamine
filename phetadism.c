@@ -5,13 +5,14 @@
 #include "defs.h"
 #include "pheta.h"
 #include "phetadism.h"
+#include "list.h"
 
 static const char* opname[] = { "const", "constb", "fetch", "commit", "spill",
   "reload", "fexpect", "fcommit", "fensure", "nfexpect", "nfcommit", "nfensure",
   "fwrite", "lsl", "lsr", "asr", "ror", "rol", "rrx", "rlx", "mov", "not",
   "and", "or", "eor", "teq", "tst", "add", "adc", "sub", "sbc", "cmp", "cmn",
-  "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", "sync", "xjmp", "ukjmp",
-  "cajmp", "rts" };
+  "mul", "ldw", "ldb", "stw", "stb", "swi", "undef", "state", "sync", "xjmp", 
+  "ukjmp", "cajmp", "rts" };
 
 static const char* txtcc[]={"eq","ne","cs","cc","mi","pl","vs","vc",
                             "hi","ls","ge","lt","gt","le","al","nv"};
@@ -209,6 +210,26 @@ void phetadism_block(pheta_basicblock* blk)
         uint5 op1 = blk->base[i++];
         uint5 op2 = blk->base[i++];
         printf("%-10s%%%d, %%%d\n", opname[opcode], op1, op2);
+      }
+      break;
+
+      case ph_STATE:
+      {
+        list* scan;
+        uint5 start = blk->base[i++], first = 1;
+        start |= blk->base[i++]<<8;
+        start |= blk->base[i++]<<16;
+        start |= blk->base[i++]<<24;
+        
+        printf("%-10s[", opname[opcode]);
+        
+        for (scan=(list*)start; scan; scan=scan->prev)
+        {
+          pheta_rpair* rpair = scan->data;
+          printf(first ? "r%d:%%%d" : " r%d:%%%d", rpair->ph, rpair->arm);
+          first = 0;
+        }
+        printf("]\n");
       }
       break;
 

@@ -54,6 +54,7 @@ const uint3 pheta_instlength[] = {
   3,  /* stb */
   1,  /* swi */
   1,  /* undef */
+  5,  /* state */
   1,  /* sync */
   5,  /* xjmp */
   1,  /* ukjmp */
@@ -423,6 +424,16 @@ uint5 pheta_emit(pheta_chunk* chunk, pheta_opcode opcode, ...)
     }
     break;
     
+    case ph_STATE:
+    {
+      uint5 addr = va_arg(ap, uint5);
+      emitbyte(block, &written, addr & 0xff);
+      emitbyte(block, &written, (addr>>8) & 0xff);
+      emitbyte(block, &written, (addr>>16) & 0xff);
+      emitbyte(block, &written, (addr>>24) & 0xff);
+    }
+    break;
+    
     default:
     break;
   }
@@ -653,6 +664,13 @@ void pheta_fixup_flags_inner(pheta_basicblock* blk, uint5 blktag,
         blk->base[inststart+4] = (pred>>8) & 0xff;
       }
       break;
+
+      case ph_FENSURE:
+      {
+        uint5 mask = blk->base[inststart+1];
+        needflag |= mask;
+      }
+      break;
     
       default:
       // do nothing
@@ -716,6 +734,25 @@ void pheta_lsync(pheta_chunk* chunk)
       chunk->currentblock->lbuf[i] = -1;
     }
   }
+}
+
+void pheta_state(pheta_chunk* chunk)
+{
+  uint5 i;
+  list* alive = 0;
+  
+  for (i=0; i<ph_NUMREG; i++)
+  {
+    if (chunk->currentblock->lbuf[i] != -1 && chunk->currentblock->dirtybuf[i])
+    {
+      pheta_rpair* rpair;
+      list_add(&alive);
+      rpair = alive->data = cnew(pheta_rpair);
+      rpair->ph = i;
+      rpair->arm = chunk->currentblock->lbuf[i];
+    }
+  }
+  pheta_emit(chunk, ph_STATE, alive);
 }
 
 void pheta_dp(machineinfo* machine, instructionformat inst, void* chunk)
@@ -1580,6 +1617,8 @@ void pheta_sdt(machineinfo* machine, instructionformat inst, void* chunk)
   
   if (inst.sdt.p && offsetreg != -1)  // pre-indexed if 1
     basereg = pheta_emit(chunk, ph_ADD, basereg, offsetreg);
+
+  pheta_state(chunk);
   
   if (inst.sdt.l)  // load
   {
@@ -1656,6 +1695,8 @@ void pheta_bdt(machineinfo* machine, instructionformat inst, void* chunk)
 
     pheta_lcommit(chunk, inst.bdt.rn, offsetby);
   }
+
+  pheta_state(chunk);
 
   if (inst.bdt.u)  // transfer upwards
   {

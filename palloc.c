@@ -506,6 +506,7 @@ void palloc_linearscan_inner(pheta_chunk* chunk, pheta_basicblock* blk,
 void palloc_linearscan(pheta_chunk* chunk)
 {
   uint5 i;
+  list* scanblock;
 
   chunk->reguse[0] = chunk->reguse[1] = chunk->reguse[2] =
   chunk->reguse[3] = chunk->reguse[6] = chunk->reguse[7] = 0;
@@ -515,13 +516,13 @@ void palloc_linearscan(pheta_chunk* chunk)
 
   palloc_clearmarkers(chunk);
 
-  chunk->rename = cnewarray(uint3, chunk->tempno);
+//  chunk->rename = cnewarray(uint3, chunk->tempno);
   
   // start off with a 1-to-1 mapping
-  for (i=0; i<chunk->tempno; i++)
+/*  for (i=0; i<chunk->tempno; i++)
   {
     chunk->rename[i] = i;
-  }
+  }*/
   
   palloc_linearscan_inner(chunk, chunk->root, 0);
 }
