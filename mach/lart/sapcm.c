@@ -11,6 +11,16 @@
 #include "mach/lart/sapcm.h"
 #include "core/memory.h"
 
+static int xterm_pid = -1;
+
+void kill_xterm(void)
+{
+  if (xterm_pid != -1)
+  {
+    kill(xterm_pid, 9 /*SIGKILL*/);
+  }
+}
+
 void sa1100_serial_initialise(meminfo* mem)
 {
   pid_t child;
@@ -39,7 +49,9 @@ void sa1100_serial_initialise(meminfo* mem)
   sscanf(&ptyname[namelen+1], "%d", &devno);
 /*  fprintf(stderr, "devno=%d\n", devno);*/
   
-  if ((child=fork())==0)
+  child=fork();
+  
+  if (child==0)
   {
     // we are the child
     char slave[40];
@@ -49,6 +61,13 @@ void sa1100_serial_initialise(meminfo* mem)
       "0123456789abcdef"[devno&15], mem->sapcm.amaster);
   /*  fprintf(stderr, "Using slave %s\n", slave);*/
     execlp("xterm", "xterm", &slave[0], "-T", "VirtuaLART", NULL);
+  }
+  else
+  {
+    fprintf(stderr, "xterm child pid=%d\n", child);
+    xterm_pid = child;
+    /* sometimes it doesn't die, maybe this will help... */
+    atexit(kill_xterm);
   }
 }
 

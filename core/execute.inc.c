@@ -1226,6 +1226,8 @@ int EXECUTEFN(exec_sdth)(machineinfo* machine, instructionformat inst,
           // I don't think this is possible
           RPUT(inst.sdth.rd, memory_readbyte(mem, base));
           fprintf(stderr, "WARNING: Found braindamaged load-byte encoding\n");
+          fprintf(stderr, "Should have decoded as multiply, swap\n");
+          abort();
         }
       }
     }
@@ -1454,8 +1456,8 @@ int EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
     //  reg->cpsr = reg->spsr[oldmode&15];
 /*      machine->trace = 1;*/
       /* mumble */
-      reg->r[15]+=INSTSIZE*2;
-      return 1;
+   /*   reg->r[15]+=INSTSIZE*2;
+      return 1;*/
      /* fprintf(stderr, "Unimplemented mode change in LDM!\n");
       abort();*/
     }
