@@ -731,25 +731,27 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   uint3 isuser = (mem->currentmode==0);
   // bits go: aprsvd
   static const uint3 apfault[] = {
-    0, 0, 0, 0,
-    1, 0, 1, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 0,
+//  user  super
+//  r  w  r  w
+    0, 0, 0, 0,  // ap = 00, r = 0, s = 0
+    0, 0, 1, 0,  // ap = 00, r = 0, s = 1
+    1, 0, 1, 0,  // ap = 00, r = 1, s = 0
+    0, 0, 0, 0,  // ap = 00, r = 1, s = 1
     
-    0, 0, 1, 1,
-    0, 0, 1, 1,
-    0, 0, 1, 1,
-    0, 0, 0, 0,
+    0, 0, 1, 1,  // ap = 01, r = 0, s = 0
+    0, 0, 1, 1,  // ap = 01, r = 0, s = 1
+    0, 0, 1, 1,  // ap = 01, r = 1, s = 0
+    0, 0, 0, 0,  // ap = 01, r = 1, s = 1
     
-    1, 0, 1, 1,
-    1, 0, 1, 1,
-    1, 0, 1, 1,
-    0, 0, 0, 0,
+    1, 0, 1, 1,  // ap = 10, r = 0, s = 0
+    1, 0, 1, 1,  // ap = 10, r = 0, s = 1
+    1, 0, 1, 1,  // ap = 10, r = 1, s = 0
+    0, 0, 0, 0,  // ap = 10, r = 1, s = 1
     
-    1, 1, 1, 1,
-    1, 1, 1, 1,
-    1, 1, 1, 1,
-    0, 0, 0, 0
+    1, 1, 1, 1,  // ap = 11, r = 0, s = 0
+    1, 1, 1, 1,  // ap = 11, r = 0, s = 1
+    1, 1, 1, 1,  // ap = 11, r = 1, s = 0
+    0, 0, 0, 0   // ap = 11, r = 1, s = 1
   };
 
   if (!(mem->mmucontrol & 1)) {
@@ -763,7 +765,7 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
   if ((mem->mmucontrol & 2) && (virtualaddress & 3)) {
   /* !!! ok, this is disabled 'cos it triggers on bytes, which is stupid */
     fprintf(stderr, "Alignment fault!\n");
-    mem->memoryfault = 1;
+//    mem->memoryfault = 1;
   }
 
   tableindex = virtualaddress >> 20;
@@ -877,7 +879,9 @@ uint5 memory_virtualtophysical(meminfo* mem, uint5 virtualaddress,
 
             if (!isuser) fltbase += 2;
 
-            fprintf(stderr, "fltbase=%d\n", fltbase);
+            fprintf(stderr, "fltbase=%d, subpage=%d, "
+              "S bit=%d, R bit=%d\n", fltbase, subpage,
+                (mem->mmucontrol >> 8)&1, (mem->mmucontrol >> 9)&1);
 
             memory_physicalmap(tlb, physaddress,
               apfault[fltbase+0], apfault[fltbase+1]);
