@@ -652,7 +652,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
   
   fprintf(f, "graph: {\n");
   fprintf(f, "  splines: yes\n");
-  fprintf(f, "  layoutalgorithm: dfs finetuning: no\n");
+  fprintf(f, "  layoutalgorithm: dfs finetuning: yes\n");
   fprintf(f, "  display_edge_labels: yes\n");
   
   fprintf(f, "  node: {\n");
@@ -710,7 +710,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
 
     fprintf(f, "  node: {\n");
     fprintf(f, "    title: \"%.8x:%s%s\"\n", blk,
-      (blk->predicate&16)?"native":"", txtcc[blk->predicate&15]);
+      (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
     fprintf(f, "    shape: rhomboid\n");
     fprintf(f, "  }\n");
 
@@ -721,7 +721,7 @@ void pheta_gdlprint(pheta_chunk* chunk, char* outfile)
       fprintf(f, "    sourcename: \"%.8x:%.4x:", blk, i-1);
       phetadism_instruction(f, prev);
       fprintf(f, "\"\n    targetname: \"%.8x:%s%s\"\n", blk,
-        (blk->predicate&16)?"native":"", txtcc[blk->predicate&15]);
+        (blk->predicate&16)?"native-":"", txtcc[blk->predicate&15]);
       fprintf(f, "  }\n");
     }
 
