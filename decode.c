@@ -56,6 +56,23 @@ insttab exec32 = {
         NULL
 };
 
+// execution function table, thumb mode (subtle differences to 32-bit, etc)
+insttab execthm = {
+	exec_dp_thm,
+	exec_dp_imm_thm,
+	exec_mul_thm,
+	exec_sdt_thm,
+	exec_bdt_thm,
+	exec_bra_thm,
+	exec_swi_thm,
+	exec_cdt_thm,
+	exec_cdo_thm,
+	exec_crt_thm,
+	exec_sds_thm,
+	exec_und_thm,
+        exec_thumbl_thm
+};
+
 // intermediate code translator function table
 insttab pseudo = {
   pseudo_dp,

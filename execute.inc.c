@@ -270,7 +270,7 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   // mask for rd-affecting instructions
   const uint5 affectrd = 0xf0ff;
   // I suppose this should be...
-  uint5 rm = ((temp&15)==15 && regshift) ? GET(temp&15)+4 : GET(temp&15);
+  uint5 rm = ((temp&15)==15 && regshift) ? GET(temp&15)+INSTSIZE : GET(temp&15);
   uint5 shifttype = (temp>>5)&3, amount;
   // islogic affects the way the carry flag is set
   int islogic = logic & (1<<inst.dp.opcode);
@@ -545,7 +545,7 @@ void EXECUTEFN(exec_dp)(machineinfo* machine, instructionformat inst,
   if (inst.dp.s) { ZNFLAGS; }
 
   if (inst.dp.rd==15 && (affectrd & (1<<inst.dp.opcode)))
-    reg->r[15]+=8;
+    reg->r[15]+=INSTSIZE*2;
   else
     INCPC;
 }
@@ -704,7 +704,7 @@ void EXECUTEFN(exec_dp_imm)(machineinfo* machine, instructionformat inst,
   if (inst.dp.s) { ZNFLAGS; }
 
   if (inst.dp.rd==15 && (affectrd & (1<<inst.dp.opcode)))
-    reg->r[15]+=8;
+    reg->r[15]+=INSTSIZE*2;
   else
     INCPC;
 }
@@ -762,12 +762,12 @@ void EXECUTEFN(exec_bra)(machineinfo* machine, instructionformat inst,
   {
     registerinfo* reg = machine->reg;
     sint5 offset = (sint5)(inst.bra.offset<<8)>>6;
-    offset+=8;
+    offset+=INSTSIZE*2;
 
     if (offset==0) exit(0);
 
     // PC now holds actual instruction+8 bytes, same as a real ARM
-    if (inst.bra.l) RPUT(14, RGET(15)-4);  // prefetch adjustment
+    if (inst.bra.l) RPUT(14, RGET(15)-INSTSIZE);  // prefetch adjustment
     RPUT(15, RGET(15)+offset);
   }
 }
@@ -883,7 +883,8 @@ void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
     else  // store
     {
       // STR PC stores PC+12
-      uint5 src = inst.sdt.rd==15 ? RGET(inst.sdt.rd)+4 : RGET(inst.sdt.rd);
+      uint5 src = inst.sdt.rd==15 ? RGET(inst.sdt.rd)+INSTSIZE
+                                  : RGET(inst.sdt.rd);
       if (inst.sdt.b)
       {
         // uint3* caddr = (uint3*) addr;
@@ -920,7 +921,7 @@ void EXECUTEFN(exec_sdt)(machineinfo* machine, instructionformat inst,
 
     // pipelining correction  
     if (inst.sdt.l && inst.sdt.rd==15)
-      reg->r[15]+=8;
+      reg->r[15]+=INSTSIZE*2;
     else
       INCPC;
   }
@@ -1186,7 +1187,7 @@ void EXECUTEFN(exec_bdt)(machineinfo* machine, instructionformat inst,
 
     // pipeline correction, or just next instruction
     if (inst.bdt.l && (inst.bdt.reglist & (1<<15)))
-      reg->r[15]+=8;
+      reg->r[15]+=INSTSIZE*2;
     else
       INCPC;
   }
@@ -1303,7 +1304,7 @@ void EXECUTEFN(exec_crt)(machineinfo* machine, instructionformat inst,
                     fprintf(stderr, "Virtual memory state changed!\n");
                     for (i=0; i<2; i++)
                     {
-                      instaddr = PCADDR-8;
+                      instaddr = PCADDR-INSTSIZE*2;
                       inst.instruction = memory_readinstword(mem, instaddr);
                       fprintf(stderr, "%.8x : %.8x : ", instaddr, 
                               inst.instruction);
@@ -1407,3 +1408,26 @@ void EXECUTEFN(exec_und)(machineinfo* machine, instructionformat inst,
   fprintf(stderr, "Warning: undefined instruction\n");
   processor_und(machine);
 }
+
+#ifdef ARMTHUMB
+
+void EXECUTEFN(exec_thumbl)(machineinfo* machine, instructionformat inst,
+  void* null)
+{
+  registerinfo* reg = machine->reg;
+  if (inst.instruction & 0x0100)
+  {
+    // part 1, latch low bits
+    reg->r[14] = PCADDR + ((inst.instruction & 0x07ff)<<12);
+  }
+  else
+  {
+    uint5 oldpc = reg->r[15];
+    sint5 newaddr = reg->r[14] + ((inst.instruction & 0x07ff)<<1);
+    newaddr = (newaddr<<8)>>8;
+    reg->r[15] += newaddr;
+    reg->r[14] = oldpc-2;
+  }
+}
+
+#endif

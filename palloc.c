@@ -124,7 +124,7 @@ void palloc_srcdestalias_inner(pheta_chunk* chunk, pheta_basicblock* blk,
   {
     uint5 opcode = blk->base[i];
     uint5 nsrc, srcr[ph_MAXSRC], ndest, destr[ph_MAXDEST];
-    uint5 thisline = startline+i, j;
+    uint5 thisline = startline+i;
 
     switch (opcode)
     {
@@ -358,7 +358,6 @@ void palloc_deletespans(pheta_chunk* chunk)
   for (scanblock=chunk->blocks; scanblock; scanblock=scanblock->prev)
   {
     pheta_basicblock* blk = (pheta_basicblock*)scanblock->data;
-    pqueueitem* del;
     int i;
     
     for (i=0; i<blk->live->length; i++)
@@ -378,7 +377,6 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
   const char* regname[] = {"EAX", "ECX", "EDX", "EBX",
                            "ESP", "EBP", "ESI", "EDI"};
   const uint5 maxreg = 6;
-  uint5 regc = 0, i;
   
   while ((rstart = pqueue_extract(blk->live)))
   {
@@ -418,8 +416,7 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
       }
       else  // have to spill a register
       {
-        pqueueitem* splititem;
-        palloc_liverange* delrange, *splitrange;
+        palloc_liverange* delrange;
         uint5 j;
         sint5 f = -1;
         uint5 end = range->startline + range->length;
@@ -458,7 +455,7 @@ void palloc_linearscan(pheta_chunk* chunk, pheta_basicblock* blk,
         {
           palloc_splitalloc* split;
           chunk->alloc[delrange->reg].type = pal_SPLIT;
-          split = chunk->alloc[delrange->reg].info.extra =
+          chunk->alloc[delrange->reg].info.extra = (void*)split =
             cnew(palloc_splitalloc);
 
           split->upper = chunk->alloc[delrange->reg];
@@ -695,6 +692,10 @@ void palloc_print(pheta_chunk* chunk)
       {
         fprintf(stderr, "%3d: On stack, location %d\n", i, a->info.value);
       }
+      break;
+      
+      default:
+      assert(0);
       break;
     }
   }

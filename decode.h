@@ -178,10 +178,12 @@ typedef union {
 typedef void (*inst_fn)(machineinfo* m, instructionformat inst, void* data);
 
 // instruction command-function table
-typedef struct {
+struct insttab {
 	inst_fn dp, dp_imm, mul, sdt, bdt, bra, swi, cdt, cdo, crt, sds, und;
         inst_fn thumbl;
-} insttab;
+};
+
+typedef struct insttab insttab;
 
 typedef enum {
   dp_AND=0,

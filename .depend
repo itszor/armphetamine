@@ -108,3 +108,6 @@ palloc.o: palloc.c palloc.h defs.h pheta.h list.h decode.h machine.h \
  pqueue.h cnew.h x86asm.h
 decodet.o: decodet.c decode.h defs.h machine.h processor.h registers.h \
  memory.h keyboard.h mouse.h hash.h list.h
+executethm.o: executethm.c execute.inc.c defs.h machine.h processor.h \
+ registers.h memory.h keyboard.h mouse.h hash.h list.h execute.h \
+ decode.h fakesys.h

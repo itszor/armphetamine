@@ -52,7 +52,13 @@
 #define RGET(X) (reg->r[X])
 #define RPUT(X,V) reg->r[X] = (V)
 
-#define INCPC reg->r[15]+=4
+#ifdef ARMTHUMB
+#  define INSTSIZE (2)
+#else
+#  define INSTSIZE (4)
+#endif
+
+#define INCPC reg->r[15]+=INSTSIZE
 
 #ifdef ARM26BIT
 #  define PCADDR (reg->r[15] & ~0xfc000003)
@@ -139,5 +145,34 @@ extern void exec_sds_32(machineinfo* machine, instructionformat inst,
                         void* null);
 extern void exec_und_32(machineinfo* machine, instructionformat inst,
                         void* null);
+
+extern void exec_dp_thm(machineinfo* machine, instructionformat inst,
+                       void* null);
+extern void exec_dp_imm_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_psrt_thm(machineinfo* machine, instructionformat inst,
+                         uint5 op2);
+extern void exec_mul_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_sdt_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_bdt_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_bra_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_swi_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_cdt_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_cdo_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_crt_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_sds_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_und_thm(machineinfo* machine, instructionformat inst,
+                        void* null);
+extern void exec_thumbl_thm(machineinfo* machine, instructionformat inst,
+                            void* null);
 
 #endif
