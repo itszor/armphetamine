@@ -6,9 +6,9 @@
 
 <h3>Background: Accelerated Virtual Machines</h3>
 
-<p>Virtual machines have become an integral part of computing today: Java, Transmeta's Crusoe processor, Intel's IA-64 with its built-in IA-32 hardware emulation layer, VMware for running two operating systems simulateously on one PC, Connectix Virtual PC/Gamestation and Microsoft's .NET all utilise virtual machine technology. Virtual machines are useful for security: building safe sandboxes in which to run untrusted software, for the development of new hardware devices, as well as the traditional purpose of preserving software which would otherwise becomes unusable as the legacy hardware it runs on becomes obsolete.
+<p>Virtual machines have become an integral part of computing today: Java, Transmeta's Crusoe processor, Intel's IA-64 with its built-in IA-32 hardware emulation layer, VMware for running two operating systems simulateously on one PC, Connectix Virtual PC/Gamestation and Microsoft's .NET all utilise virtual machine technology. Virtual machines are useful for security: building safe sandboxes in which to run untrusted software, for the development of new hardware devices, as well as their traditional purpose of preserving software which would otherwise becomes unusable as the legacy hardware it runs on becomes obsolete.
 
-<p>I am currently working on a retargetable, and possibly resourcable, machine emulation system. The original source is an ARM-processor based machine, and the host architecture is Intel IA-32. The aim is to achieve the highest speed possible for running a complete operating system on the guest virtual machine, at great levels of accuracy. This will be achieved by dynamically translating the binary code of the guest system on-the-fly as as it is emulated into the .
+<p>I am currently working on a retargetable, and possibly resourcable, machine emulation system. The original source is an ARM-processor based machine, and the host architecture is Intel IA-32. The aim is to achieve the highest speed possible for running a complete operating system on the guest virtual machine, at great levels of accuracy. This will be achieved by dynamically translating the binary code of the guest system on-the-fly as as it is emulated into the binary code format of the host system.
 
 <p>The first prototype is complete, and is described in <a href="diss.ps">this</a> postscript file. This document describes the changes and improvements already implemented or planned for version two of the system.
 
@@ -52,9 +52,9 @@
 
 <p>The basic idea is to use a one-entry TLB, which contains a (virtual, physical) address tuple, a bitmask for the page size, and pointers to byte- and word-sized load and store functions. When a new virtual address is encountered, it is masked, compared to the virtual part of the (virtual, physical) tuple, combined with the physical part if the match is successful then the appropriate access function is transferred to directly. If a miss occurs, code is called which walks over the page tables and generates a new TLB entry. The function pointers may point to functions which handle emulated physical RAM, ROM, or memory-mapped I/O space, providing a uniform interface for each.
 
-<p>The TLB is also tagged with the current processor mode, to avoid potential unsafe access by user-mode code by a tuple which was set up in a priveleged mode.
+<p>The function which performs page walking also encodes access permission into TLB entry by pointing the read/write function pointers to dummy functions which cause a data abort to be raised. The entry is also tagged with the current processor mode when it is set up, to avoid potential unsafe access from user-mode code when the entry was set up in a priveleged mode.
 
-<p>It might be worth investigating whether more than one TLB entry provides better results. Intuition suggests otherwise, since emulating CAM in software is not a particularly fast operation. However, one interesting scheme to try might be to keep a buffer containing the last few translated entries - still always only checking the first on most memory accesses, but keeping the previous few entries in a fifo or move-to-front buffer to search before doing a full page-table walk.
+<p>It might be worth investigating whether more than one TLB entry provides better results. Intuition suggests otherwise, since emulating CAM in software is not a particularly fast operation. However, one interesting scheme to try might be to keep a buffer containing the last few translated entries - still always only checking the first on most memory accesses, but keeping the previous few entries in a FIFO or move-to-front buffer to search before doing a full page-table walk.
 
 <h3>A Malleable Intermediate Representation: ph2</h3>
 
@@ -154,20 +154,18 @@
 
 <p>One approach (that used in ARMphetamine v1), is to save and restore flags individually, on-demand, in recompiled code. This was proven to work adequately, but produced bulky and slow code. The reason is mainly a shortcoming of IA-32, which makes it particularly difficult to alter individual bits corresponding to the S, Z and O flags in the flags register. The code sequence used - not necessarily the best - took between 9 and 18 instructions to restore between one and four bits. When this was multiplied by the number of times such an operation was necessary in a chunk of code, this meant a fairly large proportion of code was dedicated to essentially twiddling just a couple of bits.
 
-<p>A better approach is to group flags forming a condition code together, and treat them as an atomic unit (IA-32 provides convenient <tt>set<i>xx</i></tt> instruction which allow you to do just that). This means that the state of the flags is not mirrored exactly in recompiled code, and the on-demand scheme can no longer be utilised. Trivially, when we encounter a conditional branch (say), we scan the ph2 representation backwards (over block boundaries if necessary) until we find the instruction which last altered the flags correponding to the relevent condition code. Then we insert an instruction which saves that condition code into a predicate buffer, and use that value rather than the condition flags when we decide whether to take the branch or not.
-
-is capable of writing perfectly legal but nasty code like this:
+<p>A better approach is to group flags forming a condition code together, and treat them as an atomic unit (IA-32 provides convenient <tt>set<i>xx</i></tt> instruction which allow you to do just that). This means that the state of the flags is not mirrored exactly in recompiled code, and the on-demand scheme can no longer be utilised. Trivially, when we encounter a conditional branch (say), we scan the ph2 representation backwards (over block boundaries if necessary) until we find the instruction which last altered the flags correponding to the relevent condition code. Then we insert an instruction which saves that condition code into a predicate buffer, and use that value rather than the condition flags when we decide whether to take the branch or not. The assembly-language programmer or wizard compiler-writer is capable of writing perfectly legal but nasty code like this:
 <pre>
-        <b>movs</b> r0,r1,ror #3   <i># sets C flag</i>
+        <b>movs</b> r0,r1,ror #3   <i># sets C,N,Z flags</i>
         <b>add</b> r0,r0,r3        <i># sets nothing, IA-32 add destroys C,V,N,Z equivalents</i>
         <b>tst</b> r0,r2           <i># sets N,Z flags</i>
         <b>bhi</b> somewhere       <i># depends on C,Z (unsigned higher)</i>
 </pre>
-<p>Inserting an instruction in the ph2 representation of this to save the "hi" condition after the <tt>tst</tt> instruction will lead to different results than the original code. This isn't insurmountable obviously, but hopefully illustrates that the successful implementation of this algorithm would be a bit tricky. This is mainly why ph2 has such a verbose syntax for "expecting" and "committing" flags.
+<p>Inserting an instruction in the ph2 representation of this to save the "hi" condition after the <tt>tst</tt> instruction will lead to different results from the original code, since the C flag from the <tt>add</tt> rather than the rotation in the <tt>movs</tt> instruction will erroneously be used. This isn't insurmountable obviously, but hopefully illustrates that the successful implementation of this algorithm would be a bit tricky. This is mainly why ph2 has such a verbose syntax for "expecting" and "committing" flags.
 
 <h5>Summary of ph2</h5>
 
-<p>ph2 is essentially a register-transfer language. The translation stage from ARM code to ph2 performs <b>register renaming</b> in much the same way as many modern superscalar processors, which aids register allocation later by splitting the liveness of registers in many fragments of ARM code into smaller pieces, which overlap less and thus ease the allocation of registers on the register-starved IA-32 architecture.
+<p>ph2 is essentially a form of register-transfer language. The translation stage from ARM code to ph2 performs <b>register renaming</b> in much the same way as many modern superscalar processors, which aids register allocation later by splitting the liveness of registers in many fragments of ARM code into smaller pieces, which overlap less and thus ease the allocation of registers on the register-starved IA-32 architecture.
 
 <p>Translation of ARM code chunks to ph2 results in a directed graph which represents the flow of control between basic blocks, where one block of ph2 code corresponds exactly to one block of ARM code. These blocks are position-independent and non-internally referencing, which makes them easier to manipulate.
 
